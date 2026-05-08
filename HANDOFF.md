@@ -4,25 +4,24 @@
 > Edit this in place. Don't append a new section per handoff — overwrite stale lines.
 
 **Last updated:** 2026-05-08
-**Updated by:** initial scaffold
+**Updated by:** v0.2 PR
 
 ---
 
 ## TL;DR
 
-v0.1 of the Xcode Cleanup Shortcut is shipped to `main` and works end-to-end. The canonical AppleScript is `xcode-cleanup.applescript`. No open work, no blockers. PRD has a v0.2 wishlist if anyone wants to pick something up.
+v0.2 is in PR right now. Adds dry-run + demo + force flags, a Makefile with 10 targets, recording instructions for the README GIF, and a CHANGELOG. Shortcut UX is unchanged for non-flag users. One outstanding follow-up: capture the progress-bar GIF for the README (instructions in `assets/RECORDING.md`, target `make record-demo`).
 
 ## Current status
 
-- ✅ Repo scaffolded
-- ✅ AppleScript v0.1 committed and tested manually on the maintainer's machine
-- ✅ README, PRD, HANDOFF, LICENSE in place
-- ⬜ No CI yet (probably not needed — script is too short to test meaningfully)
-- ⬜ No `.shortcut` bundle export (open question in PRD)
+- ✅ v0.1 shipped to `main` (initial release)
+- 🟡 v0.2 PR open: dry-run, demo, force, Makefile, CHANGELOG
+- ⬜ Progress-bar GIF not yet captured (placeholder reference in README)
+- ⬜ No CI yet (`make check` could be wired into GitHub Actions for v0.3)
 
 ## In flight right now
 
-Nothing. Repo is at rest.
+PR #1 (`v0.2-dry-run-makefile` branch). Diff is purely additive plus README expansion — no risk to existing v0.1 install.
 
 ## Recent decisions
 
@@ -30,9 +29,11 @@ Nothing. Repo is at rest.
 |---|---|---|
 | 2026-05-08 | Build as a Shortcut + Run AppleScript, not a Mac app | Lower friction, no signing, native progress + notifications, schedulable. |
 | 2026-05-08 | 50 GB threshold, hardcoded | Reasonable absolute floor for an active dev machine. Easy to edit. |
-| 2026-05-08 | Skip `Archives/` and active simulator devices | Preserves crash symbolication and installed simulator app state. |
-| 2026-05-08 | Use `xcrun simctl delete unavailable`, not `erase all` | Removes only simulators whose runtime is uninstalled; leaves active sims intact. |
-| 2026-05-08 | `/tmp` orphan patterns are explicit globs, not `/tmp/*` | Avoids nuking active scratch (e.g. Claude session state under `/private/tmp/claude-*`). |
+| 2026-05-08 | Skip `Archives/` and active simulator devices | Preserves crash symbolication and installed simulator state. |
+| 2026-05-08 | `xcrun simctl delete unavailable`, not `erase all` | Removes only simulators whose runtime is uninstalled. |
+| 2026-05-08 | `/tmp` orphan patterns are explicit globs | Avoids nuking active scratch (e.g. Claude session state under `/private/tmp/claude-*`). |
+| 2026-05-08 | v0.2 flags via env vars (system attribute), not Shortcut variables | Keeps the Shortcut path one-paste; flags are for power users invoking via Makefile. |
+| 2026-05-08 | Dry-run uses `du -sk` per phase, not df-delta | Df-delta would be 0 in dry-run; per-phase measurement gives the answer the user wants. |
 
 ## Blockers
 
@@ -40,26 +41,29 @@ None.
 
 ## Open questions (mirrored from PRD)
 
-1. **Threshold: absolute GB or percentage?** — currently 50 GB hardcoded. Untested on small drives.
-2. **Ship a prebuilt `.shortcut` bundle?** — saves install friction but bundles are tied to creator's iCloud signature.
-3. **Dry-run mode?** — would land in v0.2 if anyone wants it.
+1. **Threshold: absolute GB or percentage?** — currently 50 GB hardcoded.
+2. **Ship a prebuilt `.shortcut` bundle?** — saves install friction but bundles are tied to creator's iCloud signature. v0.2 mitigates with `make install-shortcut`.
 
 ## Next steps (in priority order)
 
-1. **Use it for a few weeks.** Confirm the thresholds and `/tmp` patterns are right before adding features.
-2. **(v0.2)** Dry-run env var. Easy win.
-3. **(v0.2)** Per-phase opt-out variables (`SKIP_SIMS=1`, etc.).
-4. **(v0.2)** Append a one-line entry to `~/Library/Logs/xcode-cleanup.log` per run.
-5. **(future)** SwiftBar plugin sibling repo if this gets enough use to want a live menu-bar indicator.
+1. **Merge v0.2 PR** once green / once owner reviews.
+2. **Capture progress-bar GIF** via `make record-demo` and commit to `assets/`. Open a follow-up PR.
+3. **(v0.3)** Per-phase opt-out env vars.
+4. **(v0.3)** GitHub Actions workflow that runs `make check` on every PR.
+5. **(v0.3)** History log appended to `~/Library/Logs/xcode-cleanup.log`.
+6. **(future)** SwiftBar plugin sibling repo if usage merits a live menu-bar indicator.
 
 ## Key files
 
 | File | What it is |
 |---|---|
 | `xcode-cleanup.applescript` | The canonical script. The whole product is this one file. |
+| `Makefile` | CLI targets for users who'd rather run from terminal than Shortcuts. |
 | `README.md` | User-facing install + usage. |
 | `PRD.md` | Why this exists, what's in / out of scope, success metrics. |
+| `CHANGELOG.md` | Version history. |
 | `HANDOFF.md` | This file. Overwrite, don't append. |
+| `assets/RECORDING.md` | How to capture the README progress-bar GIF. |
 | `LICENSE` | MIT. |
 
 ## Contact / context
