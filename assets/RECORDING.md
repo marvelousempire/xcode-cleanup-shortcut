@@ -19,10 +19,10 @@ The `progress-bar.gif` shown in the README needs to be captured locally — the 
 XCODE_CLEANUP_DEMO=1 osascript xcode-cleanup.applescript
 # 3. Stop recording
 # 4. Convert
-ffmpeg -i ~/Desktop/recording.mov -vf "fps=10,scale=720:-1:flags=lanczos" -f gif - | gifsicle --optimize=3 > assets/progress-bar.gif
+ffmpeg -i ~/Desktop/recording.mov -filter_complex 'fps=12,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle' -y assets/progress-bar.gif
 ```
 
-`brew install ffmpeg gifsicle` if you don't have them.
+`brew install ffmpeg` (ffmpeg only, no gifsicle needed) if you don't have them.
 
 ## What to capture
 

@@ -44,8 +44,8 @@ record-demo: ## Print recording instructions, then run the demo
 	@$(MAKE) demo
 	@echo ""
 	@echo "→ Stop the recording (menu bar Stop button or ⌘⌃Esc)."
-	@echo "→ Convert .mov to .gif (requires ffmpeg + gifsicle):"
-	@echo "    ffmpeg -i ~/Desktop/recording.mov -vf 'fps=10,scale=720:-1:flags=lanczos' -f gif - | gifsicle --optimize=3 > assets/progress-bar.gif"
+	@echo "→ Convert .mov to .gif (ffmpeg only, no gifsicle needed):"
+	@echo "    ffmpeg -i ~/Desktop/recording.mov -filter_complex 'fps=12,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle' -y assets/progress-bar.gif"
 
 check: ## Verify the AppleScript compiles
 	@osacompile -o /tmp/xcode-cleanup-check.scpt $(SCRIPT) \
