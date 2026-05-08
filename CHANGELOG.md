@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.1 — 2026-05-08
+
+### Added
+- **`XCODE_CLEANUP_AUTO_CONFIRM=1`** — skips the confirmation alert. Intended for scripted screen-recording (so the alert doesn't block the capture timeline). Real users should leave this off — the alert is the safety gate before destructive deletion.
+- **Demo mode now fires per-phase `display notification` banners** so the recording catches a visible 4-step sequence instead of silent sleeps.
+
 ## v0.2 — 2026-05-08
 
 ### Added

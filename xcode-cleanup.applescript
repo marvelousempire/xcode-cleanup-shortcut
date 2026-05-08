@@ -9,6 +9,7 @@
 --   XCODE_CLEANUP_DRY_RUN=1   Measure what would be freed; delete nothing.
 --   XCODE_CLEANUP_DEMO=1      Sleep instead of deleting (for screen recording).
 --   XCODE_CLEANUP_FORCE=1     Skip the >50 GB free threshold check.
+--   XCODE_CLEANUP_AUTO_CONFIRM=1  Skip the confirmation alert (for scripted recording).
 
 property kVersion : "0.2"
 
@@ -16,6 +17,7 @@ on run
 	set dryRun to my isFlag("XCODE_CLEANUP_DRY_RUN")
 	set demoMode to my isFlag("XCODE_CLEANUP_DEMO")
 	set forceMode to my isFlag("XCODE_CLEANUP_FORCE")
+	set autoConfirm to my isFlag("XCODE_CLEANUP_AUTO_CONFIRM")
 	
 	-- 1. Measure
 	set beforeKB to my freeKB()
@@ -33,10 +35,12 @@ on run
 	if dryRun then set body to "Dry run — measure what cleanup would free. No files deleted."
 	if demoMode then set body to "Demo mode — simulate phases without touching files. For screen recording."
 	
-	set go to button returned of (display alert "Disk at " & freeNow & " free" ¬
-		message body ¬
-		buttons {"Cancel", "Run"} default button "Run")
-	if go is "Cancel" then return "Cancelled"
+	if not autoConfirm then
+		set go to button returned of (display alert "Disk at " & freeNow & " free" ¬
+			message body ¬
+			buttons {"Cancel", "Run"} default button "Run")
+		if go is "Cancel" then return "Cancelled"
+	end if
 	
 	-- 4. Phases
 	set titleSuffix to ""
@@ -62,6 +66,7 @@ on run
 	set p3Caches to "~/Library/Developer/CoreSimulator/Caches/*"
 	set p3KB to my dirSizeKB(p3Caches)
 	if demoMode then
+		display notification "3/4 · Unavailable simulators" with title "Xcode Cleanup (Demo)"
 		do shell script "sleep 1"
 	else if not dryRun then
 		do shell script "rm -rf " & p3Caches & " 2>/dev/null; xcrun simctl delete unavailable 2>/dev/null; true"
@@ -120,6 +125,7 @@ on doPhase(label, paths, dryRun, demoMode)
 	set progress additional description to label
 	set sizeKB to my dirSizeKB(paths)
 	if demoMode then
+		display notification label with title "Xcode Cleanup (Demo)"
 		do shell script "sleep 1"
 	else if not dryRun then
 		do shell script "rm -rf " & paths & " 2>/dev/null; true"

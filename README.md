@@ -4,9 +4,6 @@ A one-button macOS Shortcut that reclaims disk space Xcode silently hoards: `Der
 
 > Typical reclaim on an active dev machine: **10–25 GB** per run.
 
-<!-- TODO: capture the progress-bar GIF — see assets/RECORDING.md -->
-![Progress bar demo](assets/progress-bar.gif)
-
 ## What it does
 
 1. Reads current free space.
@@ -81,6 +78,7 @@ The AppleScript reads three optional env vars:
 | `XCODE_CLEANUP_DRY_RUN=1` | Measure phase sizes; no files deleted. |
 | `XCODE_CLEANUP_DEMO=1` | Sleep instead of deleting. For screen recording. |
 | `XCODE_CLEANUP_FORCE=1` | Skip the 50 GB free threshold check. |
+| `XCODE_CLEANUP_AUTO_CONFIRM=1` | Skip the confirmation alert. For scripted recording only — leave off for normal use. |
 
 Set them when invoking via `osascript` (the Makefile targets do this for you). They're not visible to the Shortcuts UI itself; the Shortcut always runs in normal mode.
 
