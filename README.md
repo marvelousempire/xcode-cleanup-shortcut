@@ -1,8 +1,24 @@
-# Xcode Cleanup Shortcut
+<p align="center">
+  <img src="assets/icon-hero.svg" width="96" height="96" alt="Xcode Cleanup">
+</p>
 
-A one-button macOS Shortcut that reclaims disk space Xcode silently hoards: `DerivedData`, iOS/watchOS/tvOS `DeviceSupport`, SwiftPM caches, and unavailable simulators. Designed for Apple Silicon Macs running modern Xcode (15+).
+<h1 align="center">Xcode Cleanup Shortcut</h1>
 
-> Typical reclaim on an active dev machine: **10–25 GB** per run.
+<p align="center">
+  A one-button macOS Shortcut that reclaims disk space Xcode silently hoards.<br>
+  <em>Typical reclaim on an active dev machine: <strong>10–25 GB</strong> per run.</em>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Xcode-15%2B-blue" alt="Xcode 15+">
+  <img src="https://img.shields.io/badge/built%20with-AppleScript-orange" alt="AppleScript">
+</p>
+
+---
+
+`DerivedData`, iOS/watchOS/tvOS `DeviceSupport`, SwiftPM caches, unavailable simulators, and `/tmp` orphans — gone in one click.
 
 ## What it does
 
@@ -98,6 +114,10 @@ The script is one self-contained AppleScript. Edit the `do shell script` paths t
 - [`HANDOFF.md`](./HANDOFF.md) — current state, what's in flight, next steps.
 - [`CHANGELOG.md`](./CHANGELOG.md) — version history.
 - [`assets/RECORDING.md`](./assets/RECORDING.md) — how to capture the README GIF.
+
+## Credits
+
+Icon: [Lucide](https://lucide.dev) `wand-sparkles` (ISC). See [`assets/ATTRIBUTION.md`](./assets/ATTRIBUTION.md).
 
 ## License
 
