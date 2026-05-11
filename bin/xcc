@@ -1,0 +1,50 @@
+#!/bin/bash
+# Xcode Cleanup CLI wrapper — invokes the AppleScript with env-flags from CLI args.
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve symlinks so this works whether xcc is symlinked into ~/.local/bin or run directly.
+if [ -L "${BASH_SOURCE[0]}" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}")")" && pwd)"
+fi
+SCRIPT="$SCRIPT_DIR/../xcode-cleanup.applescript"
+
+usage() {
+  cat <<USAGE
+Usage: xcc [flags]
+
+Reclaim Xcode disk space: DerivedData, iOS/watchOS/tvOS DeviceSupport,
+SwiftPM caches, unavailable simulators, and /tmp orphans.
+
+Flags:
+  --dry-run        Measure what would be freed; delete nothing
+  --demo           Simulate phases (for screen recording)
+  --force          Skip the 50 GB free threshold check
+  --auto-confirm   Skip the confirmation alert (use with --dry-run, etc.)
+  --patterns GLOB  Override /tmp orphan globs ("" skips phase 4 entirely)
+  --no-update-check  Skip the daily GitHub release check
+  --history        Print last 20 entries from the run log and exit
+  --report         Print sparkline of freed-GB across recent runs and exit
+  --version, -V    Print version and exit
+  --help, -h       This message
+USAGE
+}
+
+env_args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --help|-h) usage; exit 0 ;;
+    --version|-V) grep '^property kVersion' "$SCRIPT" | awk -F'"' '{print "xcc " $2}'; exit 0 ;;
+    --history) tail -20 ~/Library/Logs/xcode-cleanup.log 2>/dev/null || echo "No runs logged yet."; exit 0 ;;
+    --report) python3 "$SCRIPT_DIR/../scripts/report.py"; exit $? ;;
+    --dry-run) env_args+=("XCODE_CLEANUP_DRY_RUN=1"); shift ;;
+    --demo) env_args+=("XCODE_CLEANUP_DEMO=1"); shift ;;
+    --force) env_args+=("XCODE_CLEANUP_FORCE=1"); shift ;;
+    --auto-confirm) env_args+=("XCODE_CLEANUP_AUTO_CONFIRM=1"); shift ;;
+    --no-update-check) env_args+=("XCODE_CLEANUP_NO_UPDATE_CHECK=1"); shift ;;
+    --patterns) env_args+=("XCODE_CLEANUP_TMP_PATTERNS=$2"); shift 2 ;;
+    *) echo "Unknown flag: $1" >&2; usage >&2; exit 1 ;;
+  esac
+done
+
+exec env "${env_args[@]}" osascript "$SCRIPT"

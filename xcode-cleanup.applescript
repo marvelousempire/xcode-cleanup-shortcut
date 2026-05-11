@@ -11,8 +11,9 @@
 --   XCODE_CLEANUP_FORCE=1     Skip the >50 GB free threshold check.
 --   XCODE_CLEANUP_AUTO_CONFIRM=1  Skip the confirmation alert (for scripted recording).
 --   XCODE_CLEANUP_TMP_PATTERNS=...  Override /tmp orphan globs. Empty string skips phase 4.
+--   XCODE_CLEANUP_NO_UPDATE_CHECK=1  Skip the daily GitHub release check.
 
-property kVersion : "0.3"
+property kVersion : "0.4"
 
 -- Default /private/tmp orphan patterns. These are example patterns from
 -- the maintainer's project (Red-E Play); other users should override via
@@ -22,6 +23,13 @@ property kDefaultTmpPatterns : "/private/tmp/redeplay-* /private/tmp/RedEPlay-* 
 
 -- Run history log
 property kHistoryLog : "~/Library/Logs/xcode-cleanup.log"
+
+-- CSV log for analytics (consumed by scripts/report.py)
+property kCsvLog : "~/Library/Logs/xcode-cleanup-history.csv"
+
+-- GitHub repo for the update check
+property kRepo : "marvelousempire/xcode-cleanup-shortcut"
+property kVersionCache : "~/Library/Caches/xcode-cleanup-version-cache"
 
 on run
 	set dryRun to my isFlag("XCODE_CLEANUP_DRY_RUN")
@@ -110,6 +118,7 @@ on run
 		set newFree to my freeHuman()
 		display notification "Freed " & freedRounded & " GB · " & newFree & " free" with title "Xcode Cleanup" sound name "Glass"
 		my logRun("real", freedRounded, ((round (beforeGB * 10)) / 10), ((round (afterGB * 10)) / 10))
+		my checkForUpdate()
 		return "Freed " & freedRounded & " GB"
 	end if
 end run
@@ -128,9 +137,44 @@ on logRun(mode, freedOrMeasuredGB, beforeGB, afterGB)
 		set ts to do shell script "date '+%Y-%m-%d %H:%M:%S'"
 		set logLine to ts & " | mode: " & mode & " | freed: " & freedOrMeasuredGB & " GB | before: " & beforeGB & " GB | after: " & afterGB & " GB"
 		do shell script "mkdir -p \"$(dirname " & kHistoryLog & ")\" && echo " & quoted form of logLine & " >> " & kHistoryLog
+		set csvLine to ts & "," & mode & "," & freedOrMeasuredGB & "," & beforeGB & "," & afterGB
+		do shell script "echo " & quoted form of csvLine & " >> " & kCsvLog
 	on error
 	end try
 end logRun
+
+on checkForUpdate()
+	-- Skipped if user opted out
+	if my isFlag("XCODE_CLEANUP_NO_UPDATE_CHECK") then return
+	
+	-- Use a 24h cache so we don't hammer the GitHub API
+	set shouldFetch to true
+	try
+		do shell script "[ -f " & kVersionCache & " ] && find " & kVersionCache & " -mtime -1 | grep -q . && exit 0 || exit 1"
+		set shouldFetch to false
+	on error
+	end try
+	
+	if shouldFetch then
+		try
+			do shell script "mkdir -p \"$(dirname " & kVersionCache & ")\""
+			set latest to do shell script "curl -fsSL --max-time 3 'https://api.github.com/repos/" & kRepo & "/releases/latest' 2>/dev/null | awk -F'\"' '/tag_name/{print $4; exit}'"
+			if latest is not "" then
+				do shell script "echo " & quoted form of latest & " > " & kVersionCache
+			end if
+		on error
+			return
+		end try
+	end if
+	
+	try
+		set latest to do shell script "cat " & kVersionCache
+		if latest is not "" and latest is not ("v" & kVersion) then
+			display notification (latest & " available · github.com/" & kRepo & "/releases") with title "Xcode Cleanup update"
+		end if
+	on error
+	end try
+end checkForUpdate
 
 on isFlag(envName)
 	try

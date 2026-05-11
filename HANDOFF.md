@@ -4,13 +4,13 @@
 > Edit this in place. Don't append a new section per handoff — overwrite stale lines.
 
 **Last updated:** 2026-05-08
-**Updated by:** v0.3 ship
+**Updated by:** v0.4 ship
 
 ---
 
 ## TL;DR
 
-Repo is at v0.3, all 7 gaps from the post-v0.2 audit are closed. Shipped today: CI workflow on macOS runners, env-var override for `/tmp` orphan patterns (so the repo is useful to non-maintainer users), per-run history log + `make history`, retroactive version tags on v0.1/v0.2/v0.2.1/v0.3 with matching GitHub Releases, README hero with Lucide icon + 5 shields.io badges. Issue #2 (progress-bar GIF) remains open as a manual-only follow-up.
+Repo is at v0.4. All 7 gaps + all 8 elevations from the prior audits are closed. v0.4 shipped: `xcc` CLI (bin/), launchd hourly agent, SwiftBar menu-bar plugin, daily update check via GitHub API (cached), CSV history + sparkline report, auto-release Actions workflow (`vX.Y.Z:` prefix → tag + release), retroactive tags for all historical versions, `make package-shortcut` infrastructure. Issue #2 (progress-bar GIF) remains the only outstanding follow-up — interactive screen-recording task for the maintainer.
 
 ## Current status
 
@@ -39,6 +39,12 @@ Nothing.
 | 2026-05-08 | History log local-only at `~/Library/Logs/xcode-cleanup.log`, no upload | Privacy. Pure reflection tool, never phones home. |
 | 2026-05-08 | Lucide `wand-sparkles` icon over Apple/Xcode artwork | Apple icons are trademarked; Lucide is ISC. |
 | 2026-05-08 | CI on macOS-latest, single `make check` step | `osacompile` is macOS-only; AppleScript syntax is the only thing meaningful to validate. |
+| 2026-05-08 | `xcc` lives in `bin/` and uses `osascript` to invoke the AppleScript | One source of truth — CLI is a thin wrapper, no logic duplication. |
+| 2026-05-08 | launchd interval = 1 hour, not 30 min or 6 hours | Hourly + threshold gate is the right balance: low overhead, fast to catch a sudden disk-fill, never spammy. |
+| 2026-05-08 | SwiftBar plugin filename uses `.30m.` suffix | Half the launchd cadence — menu bar refreshes more often than the cleanup itself. |
+| 2026-05-08 | Update check cached for 24h at `~/Library/Caches/xcode-cleanup-version-cache` | One GitHub API call per day per user, max. Curl timeout 3s, failures silent. |
+| 2026-05-08 | CSV + pipe-delimited logs both kept | Pipe-delimited is human-readable in `tail`; CSV is structured for `report.py`. Different consumers, both small. |
+| 2026-05-08 | Auto-release workflow keys off `vX.Y.Z:` commit prefix | Lightweight convention; doesn't require separate version files or git tag pushes. |
 
 ## Blockers
 
@@ -51,11 +57,10 @@ None.
 
 ## Next steps (in priority order)
 
-1. **Capture progress-bar GIF** (issue #2) via `make record-demo` on a sanitized desktop. AUTO_CONFIRM + per-phase notifications make this an interactive ~5-minute task.
-2. **(v0.4)** `launchd` agent that triggers cleanup automatically when free space drops below threshold (elevation E from prior audit).
-3. **(v0.4)** `make report` target rendering an ASCII sparkline of freed-GB over time from the history log (elevation H).
-4. **(v0.4)** SwiftBar sibling repo for live menu-bar disk indicator (elevation G).
-5. **(v0.4)** `.shortcut` bundle packaging via `shortcuts sign --mode anyone`, attached to GitHub Releases (elevation B).
+1. **Capture progress-bar GIF** (issue #2) — only open task. Interactive ~5-minute screen-recording on a sanitized desktop.
+2. **(v0.5)** Event-driven disk-pressure trigger via `fs_usage` instead of interval-based launchd.
+3. **(v0.5)** `terminal-notifier` integration so the daily update banner can have a clickable "Open release" action button.
+4. **(v0.5)** `xcc completion` — bash/zsh/fish tab-completion generators.
 
 ## Key files
 
@@ -65,6 +70,12 @@ None.
 | `Makefile` | CLI targets: run/dry-run/demo/force/install-shortcut/uninstall-shortcut/shortcut-run/record-demo/check/size-report/history/help. |
 | `.github/workflows/check.yml` | CI — `make check` on every push/PR. |
 | `assets/icon-hero.svg` | Lucide wand-sparkles, 96×96, Apple-blue (#0A84FF). README hero. |
+| `bin/xcc` | CLI wrapper exposing flags as `--dry-run` / `--force` / `--patterns` etc. |
+| `launchd/com.marvelousempire.xcode-cleanup.plist` | LaunchAgent template (path substituted at install time). |
+| `swiftbar/xcode-cleanup.30m.sh` | SwiftBar plugin — menu-bar disk indicator + actions. |
+| `scripts/report.py` | Reads CSV history, renders sparkline. |
+| `.github/workflows/check.yml` | CI: `make check` on every push/PR. |
+| `.github/workflows/release.yml` | Auto-creates tag + release when commit msg starts with `vX.Y.Z:`. |
 | `assets/icon.svg` | Original 24×24 currentColor variant. |
 | `assets/ATTRIBUTION.md` | Lucide ISC attribution. |
 | `assets/RECORDING.md` | How to capture the README progress-bar GIF (issue #2). |

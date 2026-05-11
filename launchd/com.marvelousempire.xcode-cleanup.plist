@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.marvelousempire.xcode-cleanup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/osascript</string>
+        <string>__SCRIPT_PATH__</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>XCODE_CLEANUP_AUTO_CONFIRM</key>
+        <string>1</string>
+        <key>XCODE_CLEANUP_NO_UPDATE_CHECK</key>
+        <string>1</string>
+    </dict>
+
+    <!-- Run every hour. The script's >50 GB threshold gate means it
+         no-ops silently unless disk is actually under pressure. -->
+    <key>StartInterval</key>
+    <integer>3600</integer>
+
+    <!-- Don't fire immediately at session start. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/xcode-cleanup.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/xcode-cleanup.err.log</string>
+</dict>
+</plist>

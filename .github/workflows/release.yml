@@ -1,0 +1,50 @@
+name: release-on-version-bump
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect version in commit message
+        id: ver
+        run: |
+          msg=$(git log -1 --pretty=%s)
+          if [[ "$msg" =~ ^(v[0-9]+\.[0-9]+(\.[0-9]+)?): ]]; then
+            ver="${BASH_REMATCH[1]}"
+            if git rev-parse "$ver" >/dev/null 2>&1; then
+              echo "Tag $ver already exists, skipping"
+            else
+              echo "version=$ver" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "No version prefix in commit message, skipping"
+          fi
+      - name: Extract changelog section
+        if: steps.ver.outputs.version
+        id: notes
+        run: |
+          ver="${{ steps.ver.outputs.version }}"
+          awk -v v="^## $ver " '$0 ~ v {flag=1; next} /^## v[0-9]/{flag=0} flag' CHANGELOG.md > /tmp/notes.md
+          if [ ! -s /tmp/notes.md ]; then
+            echo "Auto-released by release-on-version-bump workflow." > /tmp/notes.md
+          fi
+      - name: Tag + release
+        if: steps.ver.outputs.version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ver="${{ steps.ver.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$ver"
+          git push origin "$ver"
+          gh release create "$ver" --title "$ver" --notes-file /tmp/notes.md --latest

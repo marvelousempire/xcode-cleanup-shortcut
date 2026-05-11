@@ -1,6 +1,6 @@
 # Xcode Cleanup Shortcut — PRD
 
-**Status:** Live (v0.3 shipped)
+**Status:** Live (v0.4 shipped)
 **Owner:** marvelousempire
 **Last updated:** 2026-05-08
 
@@ -60,6 +60,14 @@ This is friction that should be a button.
 | F17 | `XCODE_CLEANUP_AUTO_CONFIRM=1` skips the confirmation alert (for scripted recording). | ✅ v0.2.1 |
 | F18 | CI runs `make check` on every push and PR via `.github/workflows/check.yml` (macos-latest). | ✅ v0.3 |
 | F19 | `make history` prints the last 20 entries from the run log. | ✅ v0.3 |
+| F20 | `bin/xcc` CLI wrapper exposes the script as a first-class command (`xcc --dry-run`, `xcc --force`, etc.). Installable via `make install-cli`. | ✅ v0.4 |
+| F21 | `launchd/com.marvelousempire.xcode-cleanup.plist` runs the cleanup hourly in the background, passing `AUTO_CONFIRM=1` + `NO_UPDATE_CHECK=1`. Installable via `make install-launchd`. | ✅ v0.4 |
+| F22 | `swiftbar/xcode-cleanup.30m.sh` displays free disk space in the menu bar with click-to-cleanup actions. Installable via `make install-swiftbar`. | ✅ v0.4 |
+| F23 | Daily update check via GitHub Releases API. Caches result for 24h. Opt-out: `XCODE_CLEANUP_NO_UPDATE_CHECK=1`. | ✅ v0.4 |
+| F24 | CSV history log at `~/Library/Logs/xcode-cleanup-history.csv` for analytics. | ✅ v0.4 |
+| F25 | `scripts/report.py` and `make report` render a Unicode-block sparkline of freed-GB over time. | ✅ v0.4 |
+| F26 | Auto-release GitHub Actions workflow tags + creates a release when a commit message starts with `vX.Y.Z:`. | ✅ v0.4 |
+| F27 | `make package-shortcut` signs an exported `.shortcut` bundle in Anyone Mode for distribution. | ✅ v0.4 |
 
 ## Non-functional requirements
 
@@ -95,11 +103,11 @@ This is friction that should be a button.
 - Should the threshold be a percentage of disk size instead of absolute GB? Argument for: portable across drive sizes. Argument against: 50 GB is a reasonable absolute floor for an active dev machine regardless.
 - Should we ship a prebuilt `.shortcut` file? Argument for: zero-paste install. Argument against: `.shortcut` bundles are signed iCloud exports tied to the original creator; contributors can't easily edit them. Workaround: `make install-shortcut` puts the script on the clipboard and opens the editor.
 
-## Future work (v0.4+)
+## Future work (v0.5+)
 
 - **Per-phase opt-out toggles** as env vars (`XCODE_CLEANUP_SKIP_SIMS=1`, etc.).
 - **Homebrew/pnpm/npm cleanup phases** as optional extensions.
 - **SwiftBar plugin variant** for live menu-bar disk-free indicator.
-- **`launchd` agent** that triggers cleanup automatically when disk pressure crosses a threshold.
-- **`make report`** ASCII sparkline of freed-GB-over-time from the history log.
-- **`.shortcut` bundle** packaging in GitHub Releases (`shortcuts sign --mode anyone`).
+- **Disk-pressure trigger via `fs_usage`** — current launchd is interval-based; an event-driven trigger fires only when df % crosses a threshold.
+- **Notification action buttons** via `terminal-notifier` so the daily update banner can deep-link to GitHub Releases on click.
+- **`xcc completion`** — bash/zsh/fish tab-completion generation.

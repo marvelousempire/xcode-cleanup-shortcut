@@ -69,6 +69,65 @@ make help           # List all targets
 
 `make dry-run` is the fastest way to get a "how much could I save right now?" number without committing to a delete.
 
+## Install options (pick one or stack them)
+
+| Path | Best for | Setup |
+|---|---|---|
+| **Shortcut** (default) | One-button GUI invocation, scheduling, menu bar | `make install-shortcut`, then paste in Shortcuts.app |
+| **CLI** (`xcc`) | Terminal users; scripting; piping into other workflows | `make install-cli` — symlinks to `~/.local/bin/xcc` |
+| **launchd agent** | Hands-free hourly background cleanup | `make install-launchd` — runs every hour, no-ops when disk is healthy |
+| **SwiftBar plugin** | Live free-disk indicator in the menu bar + 1-click cleanup | `brew install --cask swiftbar` → `make install-swiftbar` |
+
+Each path uses the same underlying script. Mix and match — e.g. `install-cli` + `install-swiftbar` gives you terminal access *and* a live disk-pressure indicator.
+
+### `xcc` — CLI
+
+```sh
+make install-cli         # symlink to ~/.local/bin/xcc
+xcc --help               # see all flags
+xcc --dry-run            # measure freeable space
+xcc --force              # run even when disk is healthy
+xcc --history            # last 20 run-log entries
+xcc --report             # sparkline of freed GB over time
+xcc --patterns '/tmp/myproj-*'  # override /tmp orphan globs
+```
+
+### launchd — hourly background cleanup
+
+```sh
+make install-launchd     # runs every hour via ~/Library/LaunchAgents/com.marvelousempire.xcode-cleanup.plist
+make uninstall-launchd   # to disable
+```
+
+The launchd agent passes `XCODE_CLEANUP_AUTO_CONFIRM=1` so it never blocks on the safety alert, and `XCODE_CLEANUP_NO_UPDATE_CHECK=1` to skip the network call. The 50 GB threshold still gates real deletion — most hourly runs no-op silently.
+
+### SwiftBar — menu-bar indicator
+
+```sh
+brew install --cask swiftbar
+make install-swiftbar    # symlinks the plugin into ~/Library/Application Support/SwiftBar/Plugins/
+```
+
+The menu bar shows `🧹 12GB` (or `🚨` red under 20 GB, `✨` green over 50 GB). Click for dropdown: Run / Dry run / Force / Show history / Report.
+
+### Update check
+
+On every real-mode run, the script makes a single GitHub Releases API call (cached for 24h) and fires a `display notification` if a newer tag exists. Set `XCODE_CLEANUP_NO_UPDATE_CHECK=1` to opt out (the launchd agent does this by default).
+
+### Run history & sparkline report
+
+Every run appends a row to `~/Library/Logs/xcode-cleanup-history.csv`:
+
+```csv
+2026-05-08 12:13:57,real,18.3,12.0,30.3
+```
+
+```sh
+make history             # human-readable last 20 entries
+make report              # ▁▂▃▄▅▆▇ sparkline of freed GB
+xcc --report             # same, from CLI
+```
+
 ## Schedule it (optional)
 
 Shortcuts → Automation tab → **Create Personal Automation → Time of Day → 9:00 AM Daily** → Add action **Run Shortcut → Xcode Cleanup** → toggle **Run Immediately**.
@@ -97,6 +156,7 @@ The AppleScript reads three optional env vars:
 | `XCODE_CLEANUP_FORCE=1` | Skip the 50 GB free threshold check. |
 | `XCODE_CLEANUP_AUTO_CONFIRM=1` | Skip the confirmation alert. For scripted recording only — leave off for normal use. |
 | `XCODE_CLEANUP_TMP_PATTERNS=...` | Override the `/private/tmp` orphan globs. Empty string skips phase 4 entirely. |
+| `XCODE_CLEANUP_NO_UPDATE_CHECK=1` | Skip the once-daily GitHub release check. |
 
 Set them when invoking via `osascript` (the Makefile targets do this for you). They're not visible to the Shortcuts UI itself; the Shortcut always runs in normal mode.
 

@@ -2,7 +2,7 @@ SHORTCUT_NAME := Xcode Cleanup
 SCRIPT        := xcode-cleanup.applescript
 
 .DEFAULT_GOAL := help
-.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history
+.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report
 
 help: ## Show this help
 	@echo "Xcode Cleanup Shortcut — Make targets"
@@ -72,3 +72,63 @@ size-report: ## Print current size of every directory the cleanup would touch
 	@echo ""
 	@echo "Free on /:"
 	@df -h / | awk 'NR==2 {print "  " $$4 " free of " $$2}'
+
+install-cli: ## Install xcc CLI to ~/.local/bin (set PREFIX=/usr/local for system-wide)
+	@if [ -n "$(PREFIX)" ]; then dest="$(PREFIX)/bin/xcc"; else dest="$$HOME/.local/bin/xcc"; fi; \
+		mkdir -p "$$(dirname "$$dest")"; \
+		ln -sfn "$(CURDIR)/bin/xcc" "$$dest"; \
+		echo "✓ xcc installed at $$dest"; \
+		echo "  Run: xcc --help"; \
+		if ! command -v xcc >/dev/null 2>&1; then \
+			echo "  ⚠ $$(dirname "$$dest") not on PATH. Add: export PATH=\"$$(dirname "$$dest"):\$$PATH\""; \
+		fi
+
+uninstall-cli: ## Remove the xcc CLI symlink
+	@rm -f ~/.local/bin/xcc /usr/local/bin/xcc 2>/dev/null || true
+	@echo "✓ xcc removed"
+
+install-launchd: ## Install hourly background cleanup via launchd
+	@mkdir -p ~/Library/LaunchAgents
+	@sed "s|__SCRIPT_PATH__|$(CURDIR)/xcode-cleanup.applescript|" \
+		launchd/com.marvelousempire.xcode-cleanup.plist \
+		> ~/Library/LaunchAgents/com.marvelousempire.xcode-cleanup.plist
+	@launchctl unload ~/Library/LaunchAgents/com.marvelousempire.xcode-cleanup.plist 2>/dev/null || true
+	@launchctl load ~/Library/LaunchAgents/com.marvelousempire.xcode-cleanup.plist
+	@echo "✓ Launch agent installed — runs hourly."
+	@echo "  The 50 GB threshold check still applies; agent no-ops silently when disk is healthy."
+	@echo "  Logs: /tmp/xcode-cleanup.{out,err}.log"
+
+uninstall-launchd: ## Remove the launchd agent
+	@launchctl unload ~/Library/LaunchAgents/com.marvelousempire.xcode-cleanup.plist 2>/dev/null || true
+	@rm -f ~/Library/LaunchAgents/com.marvelousempire.xcode-cleanup.plist
+	@echo "✓ Launch agent removed"
+
+install-swiftbar: ## Install the SwiftBar menu-bar plugin
+	@plugins="$$HOME/Library/Application Support/SwiftBar/Plugins"; \
+		if [ ! -d "$$plugins" ]; then \
+			echo "✗ SwiftBar plugin folder not found at $$plugins"; \
+			echo "  Install SwiftBar first: brew install --cask swiftbar"; \
+			exit 1; \
+		fi; \
+		ln -sfn "$(CURDIR)/swiftbar/xcode-cleanup.30m.sh" "$$plugins/xcode-cleanup.30m.sh"; \
+		echo "✓ SwiftBar plugin installed (refreshes every 30 minutes)"
+
+uninstall-swiftbar: ## Remove the SwiftBar plugin
+	@rm -f "$$HOME/Library/Application Support/SwiftBar/Plugins/xcode-cleanup.30m.sh"
+	@echo "✓ SwiftBar plugin removed"
+
+package-shortcut: ## Sign an exported .shortcut bundle as 'Anyone Mode' for sharing
+	@if [ ! -f dist/source.shortcut ]; then \
+		echo "✗ dist/source.shortcut not found"; \
+		echo ""; \
+		echo "  To produce it: in Shortcuts.app, right-click the 'Xcode Cleanup' shortcut →"; \
+		echo "  Share → Save File → save to dist/source.shortcut in this repo."; \
+		exit 1; \
+	fi
+	@mkdir -p dist
+	@shortcuts sign --mode anyone --input dist/source.shortcut --output dist/xcode-cleanup.shortcut
+	@echo "✓ Signed bundle at dist/xcode-cleanup.shortcut"
+	@echo "  Attach to the next GitHub Release for one-click install."
+
+report: ## Sparkline of freed-GB across recent real cleanup runs
+	@python3 scripts/report.py
