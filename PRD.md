@@ -68,6 +68,8 @@ This is friction that should be a button.
 | F25 | `scripts/report.py` and `make report` render a Unicode-block sparkline of freed-GB over time. | ✅ v0.4 |
 | F26 | Auto-release GitHub Actions workflow tags + creates a release when a commit message starts with `vX.Y.Z:`. | ✅ v0.4 |
 | F27 | `make package-shortcut` signs an exported `.shortcut` bundle in Anyone Mode for distribution. | ✅ v0.4 |
+| F28 | `scripts/remote-cleanup.sh` pure-shell equivalent (no AppleScript, no UI) usable over SSH or in CI. | ✅ v0.4.1 |
+| F29 | `docs/SHORTCUTS.md` ships ready-to-paste blocks for Run Shell Script, Run AppleScript, and Run Script Over SSH actions with current macOS 26 / Shortcuts 12.4 parameter shapes documented. | ✅ v0.4.1 |
 
 ## Non-functional requirements
 

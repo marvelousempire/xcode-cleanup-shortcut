@@ -4,13 +4,13 @@
 > Edit this in place. Don't append a new section per handoff — overwrite stale lines.
 
 **Last updated:** 2026-05-08
-**Updated by:** v0.4 ship
+**Updated by:** v0.4.1 ship (Shortcuts docs + remote-cleanup.sh)
 
 ---
 
 ## TL;DR
 
-Repo is at v0.4. All 7 gaps + all 8 elevations from the prior audits are closed. v0.4 shipped: `xcc` CLI (bin/), launchd hourly agent, SwiftBar menu-bar plugin, daily update check via GitHub API (cached), CSV history + sparkline report, auto-release Actions workflow (`vX.Y.Z:` prefix → tag + release), retroactive tags for all historical versions, `make package-shortcut` infrastructure. Issue #2 (progress-bar GIF) remains the only outstanding follow-up — interactive screen-recording task for the maintainer.
+Repo is at v0.4.1. All 7 gaps + all 8 elevations from the prior audits are closed. v0.4 shipped: `xcc` CLI (bin/), launchd hourly agent, SwiftBar menu-bar plugin, daily update check via GitHub API (cached), CSV history + sparkline report, auto-release Actions workflow (`vX.Y.Z:` prefix → tag + release), retroactive tags for all historical versions, `make package-shortcut` infrastructure. v0.4.1 adds `scripts/remote-cleanup.sh` (pure-shell, no UI) and `docs/SHORTCUTS.md` (paste-ready blocks for Run Shell Script / Run AppleScript / Run Script Over SSH, validated against Shortcuts 12.4 / macOS 26). Issue #2 (progress-bar GIF) remains the only outstanding follow-up.
 
 ## Current status
 
@@ -45,6 +45,8 @@ Nothing.
 | 2026-05-08 | Update check cached for 24h at `~/Library/Caches/xcode-cleanup-version-cache` | One GitHub API call per day per user, max. Curl timeout 3s, failures silent. |
 | 2026-05-08 | CSV + pipe-delimited logs both kept | Pipe-delimited is human-readable in `tail`; CSV is structured for `report.py`. Different consumers, both small. |
 | 2026-05-08 | Auto-release workflow keys off `vX.Y.Z:` commit prefix | Lightweight convention; doesn't require separate version files or git tag pushes. |
+| 2026-05-08 | Ship `remote-cleanup.sh` as a sibling, not a replacement | AppleScript version stays the rich UX (progress bar, alert, notifications). Shell version is the SSH-safe headless variant. Both kept in sync. |
+| 2026-05-08 | Shortcuts SSH blocks default to `bash <(curl …)` against `main` | Self-updating; one set of blocks works forever even as the script evolves. Inline fallback documented for air-gapped remotes. |
 
 ## Blockers
 
@@ -74,6 +76,8 @@ None.
 | `launchd/com.marvelousempire.xcode-cleanup.plist` | LaunchAgent template (path substituted at install time). |
 | `swiftbar/xcode-cleanup.30m.sh` | SwiftBar plugin — menu-bar disk indicator + actions. |
 | `scripts/report.py` | Reads CSV history, renders sparkline. |
+| `scripts/remote-cleanup.sh` | Pure-shell cleanup for SSH / headless / CI. |
+| `docs/SHORTCUTS.md` | Paste-ready Shortcuts blocks (Run Shell Script + Run Script Over SSH + Run AppleScript). |
 | `.github/workflows/check.yml` | CI: `make check` on every push/PR. |
 | `.github/workflows/release.yml` | Auto-creates tag + release when commit msg starts with `vX.Y.Z:`. |
 | `assets/icon.svg` | Original 24×24 currentColor variant. |

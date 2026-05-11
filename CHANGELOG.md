@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.1 — 2026-05-08
+
+### Added
+- **`scripts/remote-cleanup.sh`** — pure-shell cleanup that doesn't depend on AppleScript, `osascript`, or a UI session. Safe to run over SSH, in CI, or anywhere headless. Honors `--dry-run` / `--force` flags + `XCODE_CLEANUP_*` env vars; appends a `real-ssh` row to the CSV history when not in dry-run.
+- **`docs/SHORTCUTS.md`** — paste-ready blocks for Apple Shortcuts' Run Shell Script and Run Script Over SSH actions, with field-by-field parameter values for macOS 26 / Shortcuts 12.4, four script variants per action (self-updating, repo-pinned, CLI-via-xcc, fully inline), gotchas table, and three suggested whole-Shortcut compositions ("Clean all my Macs", "Babysit the build server", "Pre-flight before TestFlight upload").
+
+### Changed
+- README links to `docs/SHORTCUTS.md` from the install section.
+
 ## v0.4 — 2026-05-08
 
 Closes all 7 remaining elevations from the post-v0.2 gap-audit.

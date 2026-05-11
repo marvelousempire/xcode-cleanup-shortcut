@@ -53,6 +53,8 @@
 
 > **Faster install:** `make install-shortcut` copies the script to your clipboard and opens Shortcuts.app, ready to paste.
 
+> **Want paste-ready blocks for Run Shell Script + Run Script Over SSH?** See [`docs/SHORTCUTS.md`](./docs/SHORTCUTS.md) — covers local Mac, remote Mac via SSH, AppleScript variant, common gotchas, and 3 suggested whole-workflow compositions.
+
 ## Use without a Shortcut (Makefile)
 
 If you want to skip the GUI entirely, the script runs standalone via osascript:
