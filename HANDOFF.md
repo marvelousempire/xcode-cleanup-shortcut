@@ -72,6 +72,10 @@ For copy / UX work, the chain is typically:
 For design work specifically:
 **`ui-ux-pro-max`** (system-level decisions: palette, typography, spacing) → **`emil-design-eng`** (component-level polish: transitions, micro-interactions, opinionated details).
 
+External design references the next session should treat as authoritative:
+- **Motion ([motion.dev](https://motion.dev), formerly Framer Motion)** — animation library. GitHub: [`motiondivision/motion`](https://github.com/motiondivision/motion). Use the vanilla-JS API via CDN (preserves zero-deps) or `motion/react` if migrating to React. Spring physics + layout animations + `AnimatePresence` + gestures are the primitives.
+- **[21st.dev/community/components/s/hero](https://21st.dev/community/components/s/hero)** — 284 hero patterns. Mine for design inspiration; pick 2–3 that fit the positioning in `.agents/product-marketing-context.md`.
+
 ---
 
 ## Operating rules (compiled into this repo's `.cursor/rules/` and `.claude/rules/`)

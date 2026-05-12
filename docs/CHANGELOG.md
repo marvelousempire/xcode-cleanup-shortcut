@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.10.1] — 2026-05-12 12:20:57 Eastern · *expressed intent on Motion (motion.dev) + 21st.dev hero patterns*
+
+### Added
+- **`docs/Redesign-Brief.md` — new "Explicit external references" section** before "What's working — preserve these". Names two external resources the next session must treat as authoritative for the redesign:
+  - **[Motion (motion.dev)](https://motion.dev)** — formerly Framer Motion, repo at [`motiondivision/motion`](https://github.com/motiondivision/motion). Install paths for React (`motion/react`), vanilla JS (`motion`), and Vue (`motion-v`) documented. Hello-world examples included verbatim from the README.
+  - **[21st.dev/community/components/s/hero](https://21st.dev/community/components/s/hero)** — 284 hero components for React/Tailwind. Used as inspiration; pick 2–3 patterns that align with the locked positioning.
+- **Architectural decision the next session must make** — Path A (Motion via CDN, stay vanilla, zero-deps preserved) vs Path B (full React/Vite/Tailwind/Motion migration). Default recommendation: Path A. Both spelled out with trade-offs.
+- **Concrete animation use-case table** — 8 elements of the dashboard (hero count-up, progress-bar spring fill, tab switch, confirm modal, SSE console reveal, cost banner, success pulse, per-path stagger) mapped to specific Motion primitives.
+- **emil-design-eng tone reminder** — every animation must be subtle. If a user *notices* an animation, it's wrong. Signal is the data, not the choreography.
+
+### Changed
+- `HANDOFF.md` skill toolkit section now lists Motion + 21st.dev as authoritative external references alongside the `ui-ux-pro-max` + `emil-design-eng` skills.
+
+### Why
+User: "be sure to express intent on https://21st.dev/community/components/s/hero and https://motion.dev of whatever the github for framer motion we have says to do." The Redesign Brief now names these explicitly so the next session uses them by default instead of re-deriving an animation strategy.
+
 ## [0.10.0] — 2026-05-12 12:17:14 Eastern · *fresh-session handoff — HANDOFF rewrite + Redesign Brief*
 
 Targeted at the next phase: a fresh Claude Code session that needs to redesign the app cold using the full skill toolkit and ai-skills-library rules.
