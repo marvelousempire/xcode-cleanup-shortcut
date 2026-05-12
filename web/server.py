@@ -167,6 +167,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             cid    = query.get("category", [""])[0]
             action = query.get("action",   [""])[0]
             return self._stream_action(cid, action)
+        if path == "/api/clean-path":
+            cid  = query.get("category", [""])[0]
+            tgt  = query.get("path",     [""])[0]
+            return self._stream_clean_path(cid, tgt)
+        if path == "/api/clean-all-safe":
+            cid = query.get("category", [""])[0]
+            tier = query.get("tier", ["safe"])[0]   # safe | probably_safe
+            return self._stream_clean_all(cid, tier)
 
         self.send_error(404)
 
@@ -190,6 +198,99 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
+
+    def _stream_clean_path(self, category_id: str, target_path: str):
+        """Clean a single path — validates path is in the category's safe/probably_safe groups."""
+        cat = cleaners.CATEGORIES.get(category_id)
+        if not cat:
+            return self.send_error(404, "unknown category")
+
+        cleanable_paths = set()
+        for group_name in ("safe", "probably_safe"):
+            for _label, path in cat["groups"].get(group_name, []):
+                cleanable_paths.add(path)
+
+        if target_path not in cleanable_paths:
+            return self.send_error(400, "path not in safe/probably-safe groups for this category")
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self.end_headers()
+
+        before = get_status()
+        self._send_sse({"event": "status", "data": before})
+        self._send_sse({"event": "line", "data": f"▶ Clean: {target_path}"})
+
+        expanded = os.path.expanduser(target_path)
+        # Quote properly for shell; trailing /* deletes contents
+        import shlex
+        cmd = ["bash", "-c", f"rm -rf {shlex.quote(expanded)}/* 2>&1; true"]
+
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
+            for line in proc.stdout:
+                self._send_sse({"event": "line", "data": line.rstrip()})
+            proc.wait()
+            after = get_status()
+            freed = round(after["free_gb"] - before["free_gb"], 1)
+            self._send_sse({
+                "event": "done",
+                "data": {"code": proc.returncode, "before_gb": before["free_gb"],
+                         "after_gb": after["free_gb"], "freed_gb": freed},
+            })
+            self._log_run(category_id, f"clean-path:{target_path}", freed, before["free_gb"], after["free_gb"])
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def _stream_clean_all(self, category_id: str, tier: str):
+        """Clean every path in the given tier (safe or probably_safe) for the category."""
+        cat = cleaners.CATEGORIES.get(category_id)
+        if not cat or tier not in ("safe", "probably_safe"):
+            return self.send_error(404, "bad category or tier")
+
+        items = cat["groups"].get(tier, [])
+        if not items:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.end_headers()
+            self._send_sse({"event": "line", "data": f"(no {tier} paths in {category_id})"})
+            self._send_sse({"event": "done", "data": {"code": 0, "freed_gb": 0}})
+            return
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self.end_headers()
+
+        before = get_status()
+        self._send_sse({"event": "status", "data": before})
+        self._send_sse({"event": "line", "data": f"▶ Clean all {tier} paths in {cat['label']} ({len(items)} paths)"})
+
+        import shlex
+        for label, path in items:
+            expanded = os.path.expanduser(path)
+            self._send_sse({"event": "line", "data": f"  cleaning: {label}"})
+            try:
+                subprocess.run(
+                    ["bash", "-c", f"rm -rf {shlex.quote(expanded)}/* 2>/dev/null; true"],
+                    timeout=60,
+                )
+            except subprocess.TimeoutExpired:
+                self._send_sse({"event": "line", "data": f"    (timeout — skipped)"})
+
+        after = get_status()
+        freed = round(after["free_gb"] - before["free_gb"], 1)
+        self._send_sse({
+            "event": "done",
+            "data": {"code": 0, "before_gb": before["free_gb"],
+                     "after_gb": after["free_gb"], "freed_gb": freed},
+        })
+        self._log_run(category_id, f"clean-all-{tier}", freed, before["free_gb"], after["free_gb"])
 
     def _stream_action(self, category_id: str, action_id: str):
         cat = cleaners.CATEGORIES.get(category_id)

@@ -262,6 +262,41 @@
   .action-card.informational button { background: var(--text-dim); }
   .action-card.informational button:hover { background: var(--text); }
 
+  .top-actions {
+    display: flex; gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .top-btn {
+    appearance: none; border: 1px solid var(--border);
+    background: var(--bg-3); color: var(--text);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    padding: 8px 14px; border-radius: 8px;
+    cursor: pointer; transition: all 0.15s ease;
+    flex: 1; min-width: 0;
+  }
+  .top-btn:hover:not(:disabled) { border-color: var(--accent); }
+  .top-btn:active:not(:disabled) { transform: scale(0.97); }
+  .top-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .top-btn.primary {
+    background: var(--accent); color: white; border-color: transparent;
+  }
+  .top-btn.primary:hover:not(:disabled) { background: #006FE6; }
+
+  button.path-clean {
+    appearance: none; border: 1px solid var(--border);
+    background: var(--bg-2); color: var(--text);
+    font-family: inherit; font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 5px;
+    cursor: pointer; transition: all 0.15s ease;
+    margin-left: 8px;
+  }
+  button.path-clean:hover:not(:disabled) {
+    border-color: var(--red); color: var(--red);
+  }
+  button.path-clean:disabled { opacity: 0.3; cursor: not-allowed; }
+  .path-clean-placeholder { display: inline-block; min-width: 52px; }
+
   .scan-btn {
     appearance: none; border: 1px solid var(--border);
     background: var(--bg-2); color: var(--text);
@@ -449,17 +484,75 @@ async function renderCategoryInto(catId, container) {
     <div class="panel-header">
       <h2 id="hdr-${catId}">${catId}</h2>
       <div class="tagline" id="tagline-${catId}">Loading…</div>
+      <div class="top-actions" id="top-actions-${catId}">
+        <button class="top-btn primary" data-scan="${catId}">Scan</button>
+        <button class="top-btn" data-clean-all="${catId}" data-tier="safe" disabled>Clean all safe</button>
+        <button class="top-btn" data-clean-all="${catId}" data-tier="probably_safe" disabled>Clean opt-in</button>
+      </div>
       <div class="totals" id="totals-${catId}"></div>
     </div>
-    <div class="scan-section" id="scan-${catId}">
-      <button class="scan-btn" data-scan="${catId}">Scan ${catId}</button>
-    </div>
+    <div class="scan-section" id="scan-${catId}"></div>
     <div class="actions-section" id="actions-${catId}" hidden>
-      <h3>Actions</h3>
+      <h3>Predefined actions</h3>
       <div id="action-list-${catId}"></div>
     </div>
   </div>`;
   container.querySelector(`button[data-scan="${catId}"]`).addEventListener("click", () => scanAndRender(catId));
+  container.querySelectorAll(`button[data-clean-all]`).forEach(btn => {
+    btn.addEventListener("click", () => cleanAllInCategory(btn.dataset.cleanAll, btn.dataset.tier));
+  });
+}
+
+async function cleanAllInCategory(catId, tier) {
+  const tierLabel = tier === "safe" ? "all safe" : "all opt-in";
+  if (!confirm(`Clean ${tierLabel} paths in ${catId}?\n\nReview the cost note for each below before confirming.`)) return;
+  disableAllButtons(true);
+  const out = $("#output");
+  out.innerHTML = ""; out.classList.add("visible");
+  appendLine(`→ Clean ${tierLabel} in ${catId}`, "dim");
+  const es = new EventSource(`/api/clean-all-safe?category=${encodeURIComponent(catId)}&tier=${encodeURIComponent(tier)}`);
+  es.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.event === "line") {
+      const line = msg.data;
+      const cls = line.startsWith("▶") ? "ok" : line.startsWith("  cleaning:") ? "dim" : "";
+      appendLine(line, cls);
+    } else if (msg.event === "done") {
+      es.close();
+      appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB.`, "ok");
+      disableAllButtons(false);
+      loadStatus();
+      scanAndRender(catId);
+    }
+  };
+  es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
+}
+
+async function cleanSinglePath(catId, path, label) {
+  if (!confirm(`Clean "${label}"?\n\nPath: ${path}\n\nDeletes the contents (rm -rf <path>/*). Cannot be undone.`)) return;
+  disableAllButtons(true);
+  const out = $("#output");
+  out.innerHTML = ""; out.classList.add("visible");
+  appendLine(`→ Clean: ${label} (${path})`, "dim");
+  const es = new EventSource(`/api/clean-path?category=${encodeURIComponent(catId)}&path=${encodeURIComponent(path)}`);
+  es.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.event === "line") {
+      const line = msg.data;
+      appendLine(line, line.startsWith("▶") ? "ok" : "");
+    } else if (msg.event === "done") {
+      es.close();
+      appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB.`, "ok");
+      disableAllButtons(false);
+      loadStatus();
+      scanAndRender(catId);
+    }
+  };
+  es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
+}
+
+function disableAllButtons(disabled) {
+  $$("button[data-action], button[data-scan], button[data-clean-all], button.path-clean").forEach(b => b.disabled = disabled);
 }
 
 async function scanAndRender(catId) {
@@ -493,15 +586,39 @@ async function scanAndRender(catId) {
                        : p.size_kb >= 1024 ? `${Math.round(p.size_kb/1024)} MB`
                        : p.size_kb > 0     ? `${p.size_kb} KB`
                        :                     "—";
+      const cleanable = (groupName === "safe" || groupName === "probably_safe") && p.exists && p.size_kb > 0;
+      const cleanBtn = cleanable
+        ? `<button class="path-clean" data-cat="${catId}" data-path="${encodeURIComponent(p.path)}" data-label="${p.label.replace(/"/g, '&quot;')}" title="Delete contents of this path">Clean</button>`
+        : `<span class="path-clean-placeholder"></span>`;
       scanHtml += `<div class="path-row${!p.exists ? ' missing' : ''}">
         <div class="name"><strong>${p.label}</strong><code>${p.path}</code></div>
         <div class="value">${sizeLabel}</div>
+        ${cleanBtn}
       </div>`;
     }
   }
-  scanHtml += `<button class="scan-btn" style="margin-top: 14px" data-scan="${catId}">Re-scan</button>`;
   $(`#scan-${catId}`).innerHTML = scanHtml;
-  $(`#scan-${catId}`).querySelector(`button[data-scan="${catId}"]`).addEventListener("click", () => scanAndRender(catId));
+  // Wire per-path inline clean buttons
+  $(`#scan-${catId}`).querySelectorAll(`button.path-clean`).forEach(btn => {
+    btn.addEventListener("click", () => {
+      const path = decodeURIComponent(btn.dataset.path);
+      cleanSinglePath(btn.dataset.cat, path, btn.dataset.label);
+    });
+  });
+  // Update top buttons with sizes + enable
+  const safeBtn  = document.querySelector(`button[data-clean-all="${catId}"][data-tier="safe"]`);
+  const optInBtn = document.querySelector(`button[data-clean-all="${catId}"][data-tier="probably_safe"]`);
+  if (safeBtn) {
+    safeBtn.textContent = `Clean all safe · ${fmt(scan.totals.safe || 0)} GB`;
+    safeBtn.disabled = (scan.totals.safe || 0) < 0.001;
+  }
+  if (optInBtn) {
+    optInBtn.textContent = `Clean opt-in · ${fmt(scan.totals.probably_safe || 0)} GB`;
+    optInBtn.disabled = (scan.totals.probably_safe || 0) < 0.001;
+  }
+  // Update Scan button to "Re-scan"
+  const scanBtn = document.querySelector(`button[data-scan="${catId}"]`);
+  if (scanBtn) { scanBtn.textContent = "Re-scan"; scanBtn.disabled = false; }
 
   let actionsHtml = "";
   for (const a of actions.actions) {

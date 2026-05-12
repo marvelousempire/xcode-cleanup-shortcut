@@ -4,13 +4,13 @@
 > Edit this in place. Don't append a new section per handoff — overwrite stale lines.
 
 **Last updated:** 2026-05-08
-**Updated by:** v0.7.0 ship (multi-category Cleanup Hub)
+**Updated by:** v0.8.0 ship (per-path clean buttons + top action bar)
 
 ---
 
 ## TL;DR
 
-Repo is at v0.7.0. Web UI moved from one Xcode-only page to four tabs (Xcode / LLMs / Apps / System), with LLMs having sub-tabs for Claude, Cursor, ChatGPT. Total ~70 paths across 6 categories. Every action ships a cost annotation. README now positions the product as a broader cleanup hub, not Xcode-only. All 7 gaps + all 8 elevations from the prior audits are closed. v0.4 shipped: `xcc` CLI (bin/), launchd hourly agent, SwiftBar menu-bar plugin, daily update check via GitHub API (cached), CSV history + sparkline report, auto-release Actions workflow (`vX.Y.Z:` prefix → tag + release), retroactive tags for all historical versions, `make package-shortcut` infrastructure. v0.4.1 adds `scripts/remote-cleanup.sh` (pure-shell, no UI) and `docs/SHORTCUTS.md` (paste-ready blocks for Run Shell Script / Run AppleScript / Run Script Over SSH, validated against Shortcuts 12.4 / macOS 26). Issue #2 (progress-bar GIF) remains the only outstanding follow-up.
+Repo is at v0.8.0. Web UI moved from one Xcode-only page to four tabs (Xcode / LLMs / Apps / System), with LLMs having sub-tabs for Claude, Cursor, ChatGPT. Total ~70 paths across 6 categories. Every action ships a cost annotation. README now positions the product as a broader cleanup hub, not Xcode-only. All 7 gaps + all 8 elevations from the prior audits are closed. v0.4 shipped: `xcc` CLI (bin/), launchd hourly agent, SwiftBar menu-bar plugin, daily update check via GitHub API (cached), CSV history + sparkline report, auto-release Actions workflow (`vX.Y.Z:` prefix → tag + release), retroactive tags for all historical versions, `make package-shortcut` infrastructure. v0.4.1 adds `scripts/remote-cleanup.sh` (pure-shell, no UI) and `docs/SHORTCUTS.md` (paste-ready blocks for Run Shell Script / Run AppleScript / Run Script Over SSH, validated against Shortcuts 12.4 / macOS 26). Issue #2 (progress-bar GIF) remains the only outstanding follow-up.
 
 ## Current status
 
@@ -56,6 +56,8 @@ Nothing.
 | 2026-05-12 | 3 safety tiers (safe / probably_safe / caution) | Codifies the "factory-fresh without losing data" goal. Caution paths are NEVER auto-deleted, only surfaced. |
 | 2026-05-12 | LLMs has sub-tabs (Claude/Cursor/ChatGPT), not separate top tabs | Top-level tabs stay readable; sub-tabs keep each LLM tool's actions grouped without page-flipping. |
 | 2026-05-12 | reset-claude-desktop is opt-in with explicit cost | Claude Desktop app state can be 10+ GB. Auto-deleting would sign people out unexpectedly. Surface as opt-in with strong cost copy. |
+| 2026-05-12 | Per-path inline clean buttons + top action bar | User: "we have little buttons that we could activate or deploy any one of those steps just by pressing the button next to it." Granular control beats predefined batches when the user is exploring what to delete. |
+| 2026-05-12 | /api/clean-path validates path against config | Security: a URL-injected path like /etc/passwd shouldn't be deletable. Server only honors paths that appear in CATEGORIES[cat]\'s safe or probably_safe groups. |
 
 ## Blockers
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.8.0 — 2026-05-12
+
+### Added
+- **Per-path inline `[Clean]` button** on every scan result row (for paths in the safe + probably-safe tiers, only if non-empty). Click the button next to a path to wipe just that path — no need to run a predefined action that batches multiple paths together.
+- **Top-of-tab action bar** with three buttons:
+  - `Scan` / `Re-scan` (primary) — refreshes the scan
+  - `Clean all safe · X.X GB` — wipes every safe-tier path in this category at once
+  - `Clean opt-in · X.X GB` — wipes every probably-safe path in this category at once
+  Both clean buttons display the freed-GB potential in their label and are disabled when there's nothing to clean.
+- **`/api/clean-path`** server endpoint — streams the cleanup of a single path via SSE. Validates the path against the category's safe/probably-safe groups (security: rejects arbitrary path injection).
+- **`/api/clean-all-safe?tier={safe,probably_safe}`** server endpoint — iterates every path in the chosen tier of a category, streams progress per path.
+
+### Changed
+- Predefined-action cards moved below the scan results (was: above). Per-tab top-action-bar is now the primary surface; predefined actions are for special cases (`xcrun simctl erase all`, `brew cleanup -s`, etc.) that aren't simple `rm -rf`.
+- "Re-scan" button removed from the bottom of the scan list (it's at the top now, replacing the original "Scan" button after first run).
+
+### Why
+User feedback: "where you ask what would be cleaned right there, we have little buttons that we could activate or deploy any one of those steps just by pressing the button next to it. Put the deep scan button at the top next to the other buttons." This change makes every individual cache reachable with one click, and moves the scan action to the top where you'd expect it next to the clean-all buttons.
+
 ## v0.7.0 — 2026-05-12
 
 ### Major: from one tool to four tabs
