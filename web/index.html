@@ -365,6 +365,80 @@
   .output .err  { color: #FF453A; }
   .output .dim  { color: #98989d; }
 
+  .badge-btn {
+    appearance: none; border: 1px solid transparent;
+    background: transparent; color: inherit;
+    font-family: inherit; font-size: 12px; font-variant-numeric: tabular-nums;
+    padding: 4px 10px; border-radius: 6px;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .badge-btn:hover { background: var(--bg-3); border-color: var(--border); }
+
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  .modal-backdrop[hidden] { display: none; }
+  .modal-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    width: 90vw; max-width: 720px;
+    max-height: 85vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-header h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .modal-close {
+    appearance: none; border: none;
+    background: transparent; color: var(--text-dim);
+    font-size: 24px; line-height: 1;
+    padding: 0 8px; cursor: pointer;
+    border-radius: 6px;
+  }
+  .modal-close:hover { background: var(--bg-3); color: var(--text); }
+  .modal-body {
+    padding: 20px 24px 28px;
+    overflow-y: auto;
+    line-height: 1.55;
+    font-size: 13px;
+  }
+  .modal-body h2 {
+    font-size: 17px; font-weight: 700;
+    margin: 28px 0 4px;
+    color: var(--accent);
+  }
+  .modal-body h2:first-child { margin-top: 0; }
+  .modal-body h3 {
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin: 14px 0 6px;
+  }
+  .modal-body p { margin: 6px 0; }
+  .modal-body ul { margin: 6px 0; padding-left: 22px; }
+  .modal-body li { margin: 4px 0; }
+  .modal-body code {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--bg-3);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .modal-body strong { font-weight: 600; }
+  .modal-body em { color: var(--text-dim); }
+
   footer {
     margin-top: 48px;
     text-align: center;
@@ -391,7 +465,7 @@
       <path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>
     </svg>
     <h1>Cleanup Hub</h1>
-    <span class="badge" id="version">…</span>
+    <button class="badge badge-btn" id="version" title="Click to view changelog">…</button>
   </header>
 
   <div class="card hero">
@@ -416,8 +490,18 @@
   <div class="output" id="output"></div>
 
   <footer>
-    <a href="https://github.com/marvelousempire/marvelousempire/xcode-cleanup-shortcut" target="_blank">marvelousempire/xcode-cleanup-shortcut</a> · MIT · localhost-only · factory-fresh without losing your stuff
+    <a href="https://github.com/marvelousempire/xcode-cleanup-shortcut" target="_blank">marvelousempire/xcode-cleanup-shortcut</a> · MIT · <a href="#" id="footer-changelog">Changelog</a> · localhost-only · factory-fresh without losing your stuff
   </footer>
+
+  <div class="modal-backdrop" id="changelog-modal" hidden>
+    <div class="modal-card">
+      <header class="modal-header">
+        <h2>Changelog</h2>
+        <button class="modal-close" id="changelog-close" aria-label="Close">×</button>
+      </header>
+      <div class="modal-body" id="changelog-body">Loading…</div>
+    </div>
+  </div>
 
 </div>
 
@@ -809,6 +893,49 @@ async function cleanEverything(tier) {
   };
   es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
 }
+
+// ── Changelog modal ─────────────────────────────────────────
+function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function renderInline(s) {
+  return escapeHtml(s)
+    .replace(/`([^`]+)`/g,  "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g,    "<em>$1</em>");
+}
+function renderMarkdown(md) {
+  const lines = md.split("\n");
+  let html = "", inUl = false;
+  const closeUl = () => { if (inUl) { html += "</ul>"; inUl = false; } };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (line.startsWith("# ")) { closeUl(); continue; }
+    if (line.startsWith("## ")) { closeUl(); html += `<h2>${escapeHtml(line.slice(3))}</h2>`; }
+    else if (line.startsWith("### ")) { closeUl(); html += `<h3>${escapeHtml(line.slice(4))}</h3>`; }
+    else if (line.startsWith("- ")) { if (!inUl) { html += "<ul>"; inUl = true; } html += `<li>${renderInline(line.slice(2))}</li>`; }
+    else if (line === "") { closeUl(); }
+    else { closeUl(); html += `<p>${renderInline(line)}</p>`; }
+  }
+  if (inUl) html += "</ul>";
+  return html;
+}
+async function openChangelog() {
+  $("#changelog-modal").hidden = false;
+  $("#changelog-body").textContent = "Loading…";
+  try {
+    const r = await fetch("/api/changelog");
+    const md = await r.text();
+    $("#changelog-body").innerHTML = renderMarkdown(md);
+    $("#changelog-body").scrollTop = 0;
+  } catch (e) {
+    $("#changelog-body").textContent = "Failed to load changelog.";
+  }
+}
+function closeChangelog() { $("#changelog-modal").hidden = true; }
+$("#version").addEventListener("click", openChangelog);
+$("#changelog-close").addEventListener("click", closeChangelog);
+$("#changelog-modal").addEventListener("click", (ev) => { if (ev.target.id === "changelog-modal") closeChangelog(); });
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !$("#changelog-modal").hidden) closeChangelog(); });
+$("#footer-changelog")?.addEventListener("click", (ev) => { ev.preventDefault(); openChangelog(); });
 
 $("#btn-scan-all").addEventListener("click", scanEverything);
 $("#btn-clean-all-safe").addEventListener("click", () => cleanEverything("safe"));

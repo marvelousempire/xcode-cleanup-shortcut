@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.8.6 — 2026-05-12
+
+### Added
+- **In-app changelog modal** — click the version badge in the top-right (or "Changelog" in the footer) to open the full changelog in a frosted-glass modal. Renders the markdown headings, bullets, `inline code`, **bold**, and *italic* with Apple-style spacing. Closes on ✕, Esc, or backdrop click.
+- **`/api/changelog`** endpoint — serves `CHANGELOG.md` raw as `text/markdown`.
+- **Version badge is now a `<button>`** with hover affordance, signaling it's interactive.
+
+### Fixed
+- **Backfilled missing CHANGELOG entries:**
+  - **v0.4.3** — `.agents/product-marketing-context.md` (shipped 2026-05-08, never documented)
+  - **v0.8.2** — duplicate `scanBtn` const hotfix (shipped earlier today, never documented)
+- **Footer GitHub link** — was `https://github.com/marvelousempire/marvelousempire/xcode-cleanup-shortcut` (double org). Fixed to the correct URL.
+
+### Verified
+- Every git tag (`v0.1` … `v0.8.6`) now has a matching `## vX.Y.Z` heading in `CHANGELOG.md`. From now on, this should be true — the dashboard's version badge reads from the CHANGELOG, so it'll be visibly wrong if I ship a version without updating the changelog.
+
 ## v0.8.5 — 2026-05-12
 
 ### Fixed
@@ -34,6 +50,14 @@ User: "can we make it so the port is dynamically assigned in case that port is b
 
 ### Why
 User: "why does it take so long to load stats from each one?" — answer: the original implementation ran every `du -sk` sequentially. Threading was the fix.
+
+## v0.8.2 — 2026-05-12
+
+### Fixed
+- **`SyntaxError: Cannot declare a const variable twice: scanBtn`** on page load. A leftover `const scanBtn` declaration from the v0.8.0 refactor killed the entire `<script>` block, leaving the UI stuck on "Checking disk…". The duplicate is removed; the existing `scanBtn` from the top of `scanAndRender()` is reused.
+
+### Added
+- **Per-category scan progress** during "⚡ Scan everything" — the hint line now updates `1/6 → 2/6 → … → 6/6` as each parallel scan resolves, so the user sees forward motion instead of a static "Scanning…" string.
 
 ## v0.8.1 — 2026-05-12
 
@@ -139,6 +163,11 @@ User feedback: "I ran it and only 4 things were checked... nothing came back as 
   - Metrics tracking template
   - Product Hunt deferred to v1.0 (low ROI for a dev utility at launch)
   - Pointers into the next marketing-skill chain (`customer-research`, `page-cro`, `programmatic-seo`, `email-sequence`)
+
+## v0.4.3 — 2026-05-08
+
+### Added
+- **`.agents/product-marketing-context.md`** — 230-line product positioning document auto-drafted via the `product-marketing-context` skill from coreyhaines31/marketingskills. Captures product overview, target audience (solo iOS founders + indie devs + small-team mobile engineers + build-server maintainers), JTBD, problems/pain, competitive landscape, differentiation, objections, switching dynamics (JTBD Four Forces), customer language (verbatim from real conversations), brand voice, proof points, and goals. Every future marketing-skill call (copywriting, page-cro, aso-audit, launch-strategy, customer-research, …) reads this first instead of guessing.
 
 ## v0.4.2 — 2026-05-08
 

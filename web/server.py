@@ -207,6 +207,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._serve_json({"tabs": cleaners.TABS})
         if path == "/api/report":
             return self._serve_json(get_report())
+        if path == "/api/changelog":
+            body = (REPO_DIR / "CHANGELOG.md").read_bytes() if (REPO_DIR / "CHANGELOG.md").exists() else b"(missing CHANGELOG.md)"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/markdown; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+            return
 
         # /api/category/<id>/scan or /actions
         if path.startswith("/api/category/"):
