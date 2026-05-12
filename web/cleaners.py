@@ -806,8 +806,11 @@ CATEGORIES = {
 
 }
 
-# Tab structure — top-level navigation
+# Tab structure — top-level navigation.
+# `meta: True` entries are UI-only (no cleaners.py category). The dashboard
+# treats them as special tabs (Overview aggregates everything across categories).
 TABS = [
+    {"id": "overview", "label": "Overview", "meta": True},
     {"id": "xcode",    "label": "Xcode",    "category": "xcode"},
     {"id": "llms",     "label": "LLMs",     "subcategories": ["llms-claude", "llms-cursor", "llms-chatgpt"]},
     {"id": "docker",   "label": "Docker",   "category": "docker"},

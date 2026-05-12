@@ -65,6 +65,10 @@
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Layout */
+    --sidebar-w-left: 220px;
+    --sidebar-w-right: 220px;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -111,7 +115,7 @@
     background-image:
       radial-gradient(at 20% 0%,   rgba(15,118,110,0.07) 0, transparent 50%),
       radial-gradient(at 80% 100%, rgba(22,163,74,0.05)  0, transparent 50%);
-    padding: 40px 24px 96px;
+    padding: 28px 24px 96px;
   }
   @media (prefers-color-scheme: dark) {
     body {
@@ -120,7 +124,7 @@
         radial-gradient(at 80% 100%, rgba(34,197,94,0.05)  0, transparent 50%);
     }
   }
-  .container { max-width: 760px; margin: 0 auto; }
+  .app-shell { max-width: 1280px; margin: 0 auto; }
 
   ::selection { background: var(--accent-soft); color: var(--accent-strong); }
   *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
@@ -128,7 +132,8 @@
   /* ── Header ──────────────────────────────────────────────── */
   header.app-header {
     display: flex; align-items: center; gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+    padding: 0 4px;
   }
   header.app-header .logo {
     width: 26px; height: 26px;
@@ -148,6 +153,23 @@
     font-feature-settings: "tnum" 1;
   }
 
+  /* ── Three-column grid ──────────────────────────────────── */
+  .app-grid {
+    display: grid;
+    grid-template-columns: var(--sidebar-w-left) 1fr var(--sidebar-w-right);
+    gap: 18px;
+    align-items: start;
+  }
+  .app-grid.no-right {
+    grid-template-columns: var(--sidebar-w-left) 1fr;
+  }
+  .sidebar-left, .sidebar-right {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+  }
+  .viewport { min-width: 0; }
+
   /* ── Card ───────────────────────────────────────────────── */
   .card {
     background: var(--bg-2);
@@ -160,14 +182,78 @@
   }
   .card.elevated { box-shadow: var(--shadow-md); }
 
-  /* ── Hero ───────────────────────────────────────────────── */
-  .hero {
-    padding: 44px 32px 32px;
+  /* ── Vertical tab nav (left + right sidebars) ───────────── */
+  .vnav {
+    background: var(--bg-2);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 6px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .vnav .vnav-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    padding: 8px 12px 4px;
+  }
+  .vnav .vtab {
+    appearance: none;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    padding: 9px 12px 9px 11px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: background var(--d-quick) var(--ease-out),
+                color var(--d-quick) var(--ease-out),
+                border-left-color var(--d-quick) var(--ease-out);
+    display: flex; align-items: center; gap: 10px;
+    white-space: nowrap;
+  }
+  .vnav .vtab svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-faint); transition: color var(--d-quick) var(--ease-out); }
+  .vnav .vtab:hover { color: var(--text); background: var(--bg-3); }
+  .vnav .vtab.active {
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    border-left-color: var(--accent);
+  }
+  .vnav .vtab.active svg { color: var(--accent); }
+  .vnav .vtab .vtab-stat {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .vnav .vtab.active .vtab-stat { color: var(--accent); }
+
+  /* Compact variant for right sub-nav */
+  .sidebar-right .vnav .vtab { font-size: 12px; padding: 8px 12px 8px 11px; }
+  .sidebar-right .vnav .vtab svg { width: 14px; height: 14px; }
+
+  /* ── Panel framework ────────────────────────────────────── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .sub-panel { display: none; }
+  .sub-panel.active { display: block; }
+
+  /* ── Overview tab ───────────────────────────────────────── */
+  .overview-hero {
+    padding: 36px 32px 26px;
     text-align: center;
     margin-bottom: 14px;
   }
-  .hero .free {
-    font-size: 80px;
+  .overview-hero .free {
+    font-size: 72px;
     font-weight: 700;
     letter-spacing: -0.04em;
     line-height: 1;
@@ -176,28 +262,28 @@
     transition: color var(--d-normal) var(--ease-out);
     will-change: transform;
   }
-  .hero .free .unit { font-size: 30px; font-weight: 500; color: var(--text-dim); margin-left: 6px; letter-spacing: -0.01em; }
-  .hero .free.good   { color: var(--safe); }
-  .hero .free.warn   { color: var(--warn); }
-  .hero .free.danger { color: var(--danger); }
-  .hero .label {
+  .overview-hero .free .unit { font-size: 26px; font-weight: 500; color: var(--text-dim); margin-left: 6px; letter-spacing: -0.01em; }
+  .overview-hero .free.good   { color: var(--safe); }
+  .overview-hero .free.warn   { color: var(--warn); }
+  .overview-hero .free.danger { color: var(--danger); }
+  .overview-hero .label {
     margin-top: 12px;
     font-size: 13px;
     color: var(--text-dim);
     font-variant-numeric: tabular-nums;
   }
-  .hero .progress-track {
-    margin-top: 22px;
+  .overview-hero .progress-track {
+    margin-top: 20px;
     height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
   }
-  .hero .progress-fill {
+  .overview-hero .progress-fill {
     height: 100%;
     background: var(--accent);
     transition: width var(--d-slow) var(--ease-out), background var(--d-normal) var(--ease-out);
   }
-  .hero .progress-fill.warn   { background: var(--warn); }
-  .hero .progress-fill.danger { background: var(--danger); }
-  .hero .promise {
+  .overview-hero .progress-fill.warn   { background: var(--warn); }
+  .overview-hero .progress-fill.danger { background: var(--danger); }
+  .overview-hero .promise {
     margin-top: 18px;
     font-size: 11px;
     color: var(--text-faint);
@@ -205,9 +291,8 @@
     text-transform: uppercase;
     display: inline-flex; align-items: center; gap: 6px;
   }
-  .hero .promise svg { width: 12px; height: 12px; color: var(--safe); }
+  .overview-hero .promise svg { width: 12px; height: 12px; color: var(--safe); }
 
-  /* History strip — sits between hero and CTA. Promoted from the footer. */
   .history-strip {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     padding: 10px 16px;
@@ -223,102 +308,125 @@
   .history-strip svg { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
   .history-strip[hidden] { display: none !important; }
 
-  /* ── First-run CTA ──────────────────────────────────────── */
-  .first-run {
-    padding: 28px 24px;
+  .global-actions {
+    padding: 16px 20px;
     margin-bottom: 16px;
-    text-align: center;
   }
-  .first-run .pretitle {
-    font-size: 11px;
-    color: var(--text-faint);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 8px;
+  .ga-row {
+    display: flex; gap: 10px;
+    flex-wrap: wrap;
   }
-  .first-run h2 {
-    margin: 0 0 8px;
-    font-size: 22px; font-weight: 600;
-    letter-spacing: -0.015em;
-  }
-  .first-run p {
-    margin: 0 auto 20px;
-    max-width: 460px;
-    font-size: 13px;
-    color: var(--text-dim);
-    line-height: 1.55;
-  }
-  .first-run .cta-row {
-    display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;
-  }
-  .first-run .cta-primary {
-    appearance: none; border: none;
-    background: var(--accent); color: white;
-    font-family: inherit; font-size: 14px; font-weight: 600;
-    padding: 12px 22px; border-radius: var(--r-md);
+  .ga-btn {
+    appearance: none; border: 1px solid var(--border);
+    background: var(--bg-3); color: var(--text);
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 11px 16px; border-radius: var(--r-md);
     cursor: pointer;
-    transition: background var(--d-quick) var(--ease-out), transform var(--d-instant) var(--ease-out);
-    box-shadow: 0 2px 8px rgba(15,118,110,0.20);
-  }
-  .first-run .cta-primary:hover:not(:disabled) { background: var(--accent-strong); }
-  .first-run .cta-primary:active:not(:disabled) { transform: scale(0.97); }
-  .first-run .cta-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .first-run .cta-secondary {
-    appearance: none;
-    background: transparent;
-    border: none;
-    color: var(--text-dim);
-    font-family: inherit; font-size: 13px; font-weight: 500;
-    padding: 12px 14px; border-radius: var(--r-md);
-    cursor: pointer;
-    transition: color var(--d-quick) var(--ease-out);
-  }
-  .first-run .cta-secondary:hover { color: var(--text); }
-  .first-run[hidden] { display: none !important; }
-
-  /* ── Tabs ───────────────────────────────────────────────── */
-  nav.tabs {
-    display: flex; gap: 4px;
-    padding: 4px;
-    background: var(--bg-3);
-    border-radius: var(--r-lg);
-    margin-bottom: 16px;
-    overflow-x: auto;
-    border: 1px solid var(--border-2);
-  }
-  nav.tabs button {
-    flex: 1;
-    appearance: none;
-    background: transparent;
-    border: none;
-    color: var(--text-dim);
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 9px 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background var(--d-quick) var(--ease-out), color var(--d-quick) var(--ease-out);
-    white-space: nowrap;
+    transition: border-color var(--d-quick) var(--ease-out),
+                background var(--d-quick) var(--ease-out),
+                transform var(--d-instant) var(--ease-out);
+    flex: 1; min-width: 0;
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   }
-  nav.tabs button svg { width: 14px; height: 14px; flex-shrink: 0; }
-  nav.tabs button:hover { color: var(--text); }
-  nav.tabs button.active {
-    background: var(--bg-2);
-    color: var(--text);
-    box-shadow: 0 1px 2px rgba(11,11,12,0.06);
+  .ga-btn svg { width: 14px; height: 14px; }
+  .ga-btn:hover:not(:disabled) { border-color: var(--accent); }
+  .ga-btn:active:not(:disabled) { transform: scale(0.98); }
+  .ga-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .ga-btn.primary {
+    background: var(--accent);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(15,118,110,0.20);
   }
-  nav.tabs button.active svg { color: var(--accent); }
+  .ga-btn.primary:hover:not(:disabled) {
+    background: var(--accent-strong);
+    box-shadow: 0 4px 14px rgba(15,118,110,0.30);
+  }
+  .ga-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums;
+  }
+  .ga-hint strong { color: var(--text); font-weight: 600; }
 
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .panel-cards { display: flex; flex-direction: column; gap: 12px; }
+  /* Overview summary grid */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .overview-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: border-color var(--d-quick) var(--ease-out),
+                transform var(--d-instant) var(--ease-out);
+    text-align: left;
+    appearance: none;
+    font-family: inherit;
+    color: inherit;
+    width: 100%;
+    box-shadow: var(--shadow-sm);
+  }
+  .overview-card:hover { border-color: var(--accent); }
+  .overview-card:active { transform: scale(0.99); }
+  .overview-card .head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .overview-card .head svg { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; }
+  .overview-card .head .name { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+  .overview-card .total {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 4px;
+  }
+  .overview-card .total .unit { font-size: 14px; font-weight: 500; color: var(--text-dim); margin-left: 4px; }
+  .overview-card .total.zero { color: var(--text-faint); }
+  .overview-card .total.has-value { color: var(--accent); }
+  .overview-card .tagline {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .overview-card .tier-row {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dim);
+  }
+  .overview-card .tier-row .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .overview-card .tier-row .pill::before {
+    content: "";
+    width: 6px; height: 6px; border-radius: 999px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  .overview-card .tier-row .pill.safe   { color: var(--safe); }
+  .overview-card .tier-row .pill.warn   { color: var(--warn); }
+  .overview-card .tier-row .pill.danger { color: var(--danger); }
+  .overview-card .tier-row strong { color: var(--text); font-weight: 600; }
+  .overview-card .open-hint {
+    display: flex; justify-content: flex-end; align-items: center; gap: 4px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-faint);
+    transition: color var(--d-quick) var(--ease-out);
+  }
+  .overview-card:hover .open-hint { color: var(--accent); }
+  .overview-card .open-hint svg { width: 12px; height: 12px; }
 
-  /* LLM sub-card label (when multiple categories share a panel) */
-  .panel-cards > .card + .card { margin-top: 0; }
-
-  /* ── Panel header ───────────────────────────────────────── */
+  /* ── Panel header (per-category) ────────────────────────── */
   .panel-header {
     padding: 20px 24px 18px;
     border-bottom: 1px solid var(--border-2);
@@ -363,8 +471,7 @@
   .panel-header .totals .pill.accent::before { background: var(--accent); opacity: 1; }
   .panel-header .totals strong { font-weight: 600; color: var(--text); }
 
-  /* Category callout — surfaces a single high-signal stat in the panel header.
-     Currently used by Docker to highlight Docker.raw size; future categories can opt in. */
+  /* Category callout — high-signal stat in the panel header */
   .panel-header .callout {
     margin-top: 12px;
     display: flex; align-items: center; gap: 10px;
@@ -472,7 +579,7 @@
   }
   .action-card:hover { border-color: var(--border-strong); }
 
-  /* Cost banner — LIFTED to the top of the card. The distinctive UX feature. */
+  /* Cost banner — LIFTED to the top of the card */
   .action-card .cost {
     display: flex; gap: 10px; align-items: flex-start;
     font-size: 12px;
@@ -536,53 +643,6 @@
   .action-card.informational button { background: transparent; color: var(--text); border: 1px solid var(--border-strong); }
   .action-card.informational button:hover:not(:disabled) { background: var(--bg-3); }
 
-  /* ── Global actions (returning user) ────────────────────── */
-  .global-actions {
-    padding: 18px 22px;
-    margin-bottom: 16px;
-  }
-  .global-actions[hidden] { display: none !important; }
-  .ga-row {
-    display: flex; gap: 10px;
-    flex-wrap: wrap;
-  }
-  .ga-btn {
-    appearance: none; border: 1px solid var(--border);
-    background: var(--bg-3); color: var(--text);
-    font-family: inherit; font-size: 13px; font-weight: 600;
-    padding: 11px 16px; border-radius: var(--r-md);
-    cursor: pointer;
-    transition: border-color var(--d-quick) var(--ease-out),
-                background var(--d-quick) var(--ease-out),
-                transform var(--d-instant) var(--ease-out);
-    flex: 1; min-width: 0;
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  }
-  .ga-btn svg { width: 14px; height: 14px; }
-  .ga-btn:hover:not(:disabled) { border-color: var(--accent); }
-  .ga-btn:active:not(:disabled) { transform: scale(0.98); }
-  .ga-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .ga-btn.primary {
-    background: var(--accent);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 2px 8px rgba(15,118,110,0.20);
-  }
-  .ga-btn.primary:hover:not(:disabled) {
-    background: var(--accent-strong);
-    box-shadow: 0 4px 14px rgba(15,118,110,0.30);
-  }
-  .ga-hint {
-    margin-top: 12px;
-    font-size: 12px;
-    color: var(--text-dim);
-    line-height: 1.55;
-    font-variant-numeric: tabular-nums;
-  }
-  .ga-hint strong { color: var(--text); font-weight: 600; }
-  .ga-hint .breakdown-item { display: inline-block; margin-right: 14px; white-space: nowrap; }
-  .ga-hint .breakdown-item svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 3px; color: var(--accent); }
-
   /* ── Top actions (per-category) ─────────────────────────── */
   .top-actions {
     display: flex; gap: 8px;
@@ -609,7 +669,6 @@
   }
   .top-btn.primary:hover:not(:disabled) { background: var(--accent-strong); }
 
-  /* Per-path clean button */
   button.path-clean {
     appearance: none; border: 1px solid var(--border);
     background: var(--bg-2); color: var(--text-dim);
@@ -631,7 +690,7 @@
 
   /* ── Output console ─────────────────────────────────────── */
   .output {
-    margin-top: 24px;
+    margin-top: 18px;
     background: rgba(11,11,12,0.92);
     color: #F4F4F2;
     border-radius: var(--r-lg);
@@ -790,7 +849,7 @@
   .confirm-actions .confirm.danger:hover { background: #991B1B; }
 
   footer {
-    margin-top: 48px;
+    margin-top: 36px;
     text-align: center;
     font-size: 12px;
     color: var(--text-dim);
@@ -803,22 +862,58 @@
   }
   footer a:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
-  @media (max-width: 600px) {
-    body { padding: 24px 14px 64px; }
-    .container { max-width: 100%; }
-    nav.tabs button { font-size: 12px; padding: 8px 10px; }
-    nav.tabs button span.tab-label { display: none; }
-    .hero { padding: 32px 20px 24px; }
-    .hero .free { font-size: 56px; }
-    .hero .free .unit { font-size: 22px; }
-    .first-run { padding: 22px 18px; }
-    .first-run h2 { font-size: 19px; }
-    .ga-row { flex-direction: column; }
-    .panel-header { padding: 16px 18px 14px; }
-    .scan-section, .actions-section { padding-left: 18px; padding-right: 18px; }
+  /* ── Responsive ─────────────────────────────────────────── */
+  @media (max-width: 1024px) {
+    :root { --sidebar-w-left: 180px; --sidebar-w-right: 180px; }
+    .app-grid { grid-template-columns: var(--sidebar-w-left) 1fr; gap: 14px; }
+    .app-grid .sidebar-right { display: none; }
+    .app-grid.has-sub .sub-mobile-bar { display: flex; }
+  }
+  .sub-mobile-bar {
+    display: none;
+    gap: 6px; flex-wrap: wrap;
+    padding: 8px;
+    margin-bottom: 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+  }
+  .sub-mobile-bar button {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all var(--d-quick) var(--ease-out);
+  }
+  .sub-mobile-bar button.active {
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    border-color: var(--accent);
   }
 
-  /* ── Reduced motion ─────────────────────────────────────── */
+  @media (max-width: 720px) {
+    body { padding: 18px 14px 64px; }
+    .app-grid { grid-template-columns: 1fr; }
+    .sidebar-left { position: static; top: auto; }
+    .vnav { flex-direction: row; overflow-x: auto; padding: 6px; }
+    .vnav .vnav-title { display: none; }
+    .vnav .vtab { border-left: none; border-bottom: 3px solid transparent; flex-shrink: 0; padding: 8px 12px; }
+    .vnav .vtab.active { border-left-color: transparent; border-bottom-color: var(--accent); }
+    .vnav .vtab .vtab-stat { display: none; }
+    .overview-hero { padding: 28px 18px 22px; }
+    .overview-hero .free { font-size: 56px; }
+    .overview-hero .free .unit { font-size: 20px; }
+    .panel-header { padding: 16px 18px 14px; }
+    .scan-section, .actions-section { padding-left: 18px; padding-right: 18px; }
+    .ga-row { flex-direction: column; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.001ms !important;
@@ -830,7 +925,7 @@
 </style>
 </head>
 <body>
-<div class="container">
+<div class="app-shell">
 
   <header class="app-header">
     <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -842,59 +937,24 @@
     <button class="badge badge-btn" id="version" title="Click to view changelog">…</button>
   </header>
 
-  <div class="card elevated hero">
-    <div class="free" id="free-gb">— <span class="unit">GB free</span></div>
-    <div class="label" id="free-label">Checking disk…</div>
-    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-    <div class="promise">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        <path d="m9 12 2 2 4-4"/>
-      </svg>
-      Factory-fresh without losing your stuff
-    </div>
+  <div class="app-grid" id="app-grid">
+
+    <aside class="sidebar-left">
+      <nav class="vnav" id="vtabs"></nav>
+    </aside>
+
+    <main class="viewport" id="viewport">
+      <div id="panels"></div>
+    </main>
+
+    <aside class="sidebar-right" id="sidebar-right" hidden>
+      <nav class="vnav" id="vsubs">
+        <div class="vnav-title" id="vsubs-title">Tools</div>
+        <div id="vsubs-list"></div>
+      </nav>
+    </aside>
+
   </div>
-
-  <div class="history-strip" id="history-strip" hidden>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/>
-    </svg>
-    <span id="history-text">…</span>
-  </div>
-
-  <!-- First-run progressive disclosure: shown to brand-new visitors -->
-  <div class="card first-run" id="first-run" hidden>
-    <div class="pretitle">Welcome</div>
-    <h2>Show me what's worth cleaning.</h2>
-    <p>Scan every category at once. Nothing is deleted. You'll see exactly what's there, the cost of removing each piece, and decide.</p>
-    <div class="cta-row">
-      <button class="cta-primary" id="first-run-scan">Scan every category</button>
-      <button class="cta-secondary" id="first-run-skip">Skip the tour</button>
-    </div>
-  </div>
-
-  <!-- Returning-user power-mode -->
-  <div class="card global-actions" id="global-actions" hidden>
-    <div class="ga-row">
-      <button class="ga-btn" id="btn-scan-all">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
-        Scan everything
-      </button>
-      <button class="ga-btn primary" id="btn-clean-all-safe" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-        Clean ALL safe · scan first
-      </button>
-      <button class="ga-btn" id="btn-clean-all-optin" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4"/><path d="M12 17h.01"/></svg>
-        Clean ALL opt-in · scan first
-      </button>
-    </div>
-    <div class="ga-hint" id="ga-hint">Scan every tab at once, then click Clean ALL safe to factory-fresh your Mac across Xcode, LLMs, Apps, and System — without touching anything in the caution tier.</div>
-  </div>
-
-  <nav class="tabs" id="tabs"></nav>
-
-  <div id="panels"></div>
 
   <div class="output" id="output"></div>
 
@@ -912,7 +972,6 @@
     </div>
   </div>
 
-  <!-- Custom confirm modal (replaces window.confirm) -->
   <div class="modal-backdrop" id="confirm-modal" hidden>
     <div class="modal-card confirm">
       <header class="modal-header">
@@ -942,8 +1001,6 @@
 </div>
 
 <script type="module">
-// Motion via CDN — keeps the zero-deps server-side promise.
-// Graceful degradation: every call is wrapped, and a fallback no-op stands in if the import fails.
 let M = null;
 try {
   M = await import("https://cdn.jsdelivr.net/npm/motion@11.18.0/+esm");
@@ -957,15 +1014,10 @@ const safeAnimate = (target, keyframes, options) => {
   try { return M.animate(target, keyframes, options); } catch (e) { return null; }
 };
 const safeStagger = (delay) => (M && !PRM) ? M.stagger(delay) : 0;
-const safeInView  = (target, cb, opts) => {
-  if (!M || PRM) { try { cb(); } catch(e){} return () => {}; }
-  try { return M.inView(target, cb, opts); } catch(e) { try { cb(); } catch{} return () => {}; }
-};
 
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = (n, d=1) => Number(n).toFixed(d);
-const FR_KEY = "cleanupHub.hasVisited";
 
 const CATEGORY_LABELS = {
   safe:          { label: "Safe to delete",
@@ -976,9 +1028,8 @@ const CATEGORY_LABELS = {
                    note: "Never auto-deleted. Surfaces sizes so you can review and act in Finder/Terminal yourself." },
 };
 
-// Tab-icon map — drops emoji from the tab bar in favor of Lucide SVGs.
-// Server returns labels with leading emoji glyphs; we strip them and render the SVG.
 const TAB_ICONS = {
+  "overview": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
   "xcode":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 12 5-5-3-3-5 5"/><path d="m9 17-1.5-1.5"/><path d="m15.5 6.5 2 2"/><path d="M16.5 14.5 22 20l-2 2-5.5-5.5"/><path d="M14 8 8 14l1 2-5 5 2 2 5-5 2 1 6-6"/></svg>',
   "llms":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
   "docker":   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7.7c0-.6-.4-1.2-.8-1.5-.5-.3-1.1-.5-1.7-.5-.6 0-1.3.2-1.7.5-.4.3-.8.9-.8 1.5 0 .6.4 1.2.8 1.5.4.3 1.1.5 1.7.5.6 0 1.3-.2 1.7-.5.4-.3.8-.9.8-1.5z"/><path d="M2 12V8h4v4H2z"/><path d="M6 12V8h4v4H6z"/><path d="M10 12V8h4v4h-4z"/><path d="M14 12V8h4v4h-4z"/><path d="M6 16V12h4v4H6z"/><path d="M10 16V12h4v4h-4z"/><path d="M14 16V12h4v4h-4z"/><path d="M2 16h20v2a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-2z"/></svg>',
@@ -986,7 +1037,6 @@ const TAB_ICONS = {
   "creative": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',
   "system":   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg>',
 };
-// Display names for sub-categories before their scan resolves the canonical label.
 const SUB_LABELS = {
   "llms-claude":       "Claude",
   "llms-cursor":       "Cursor",
@@ -999,46 +1049,25 @@ const SUB_LABELS = {
   "creative-obs":      "OBS Studio",
 };
 function iconFor(tabId) { return TAB_ICONS[tabId] || ""; }
-// Strip leading non-word/space characters (emoji, etc.) from a server-supplied label.
 function stripLeadingGlyph(label) { return (label || "").replace(/^[\p{Extended_Pictographic}\p{Emoji}☀-➿]+\s*/u, "").trim() || label; }
 
+let tabsState = {
+  current: null,          // top-level tab id
+  currentSub: {},         // tabId -> active sub-category id
+  scans: {},              // catId -> last scan result
+  allCategories: [],      // every real category id from /api/tabs
+  tabsManifest: [],       // the raw /api/tabs response
+  diskStatus: null,       // last /api/status
+  history: null,          // last /api/report
+  overviewAutoScanned: false,
+};
+
+// ── Status, history, hero ───────────────────────────────────
 async function loadStatus() {
   const r = await fetch("/api/status"); const d = await r.json();
-  const free = $("#free-gb"), fill = $("#progress-fill");
-
-  const oldVal = parseFloat(free.firstChild.nodeValue);
-  const newVal = d.free_gb;
-  tweenHeroNumber(free, isNaN(oldVal) ? 0 : oldVal, newVal);
-
-  free.classList.toggle("good",   d.free_gb >= 50);
-  free.classList.toggle("warn",   d.free_gb >= 20 && d.free_gb < 50);
-  free.classList.toggle("danger", d.free_gb < 20);
-
-  safeAnimate(fill, { width: d.used_pct + "%" }, { duration: 0.6, easing: [0.22, 1, 0.36, 1] })
-    || (fill.style.width = d.used_pct + "%");
-
-  fill.classList.toggle("warn",   d.used_pct >= 75 && d.used_pct < 90);
-  fill.classList.toggle("danger", d.used_pct >= 90);
-  $("#free-label").textContent = `${fmt(d.used_gb,0)} GB used of ${fmt(d.total_gb,0)} GB · ${fmt(d.used_pct,0)}%`;
+  tabsState.diskStatus = d;
   if (d.version) $("#version").textContent = `${d.version} · localhost`;
-}
-
-// Smooth count-down/up of the hero number. Falls back to a snap when motion is off.
-function tweenHeroNumber(el, from, to) {
-  if (!M || PRM || !isFinite(from) || !isFinite(to)) {
-    el.firstChild.nodeValue = fmt(to);
-    return;
-  }
-  const start = performance.now();
-  const dur = 600;
-  const ease = t => 1 - Math.pow(1 - t, 3); // cubic ease-out
-  function frame(now) {
-    const t = Math.min(1, (now - start) / dur);
-    const v = from + (to - from) * ease(t);
-    el.firstChild.nodeValue = fmt(v);
-    if (t < 1) requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
+  paintHero();
 }
 
 async function loadHistory() {
@@ -1046,74 +1075,342 @@ async function loadHistory() {
     const r = await fetch("/api/report");
     if (!r.ok) return;
     const d = await r.json();
-    if (!d || !d.real_runs) return;
-    const strip = $("#history-strip");
-    const text = $("#history-text");
-    text.innerHTML = `You've freed <strong>${fmt(d.total_freed_gb)} GB</strong> across <strong>${d.real_runs}</strong> run${d.real_runs === 1 ? "" : "s"}.`;
-    strip.hidden = false;
+    tabsState.history = d;
+    paintHistoryStrip();
   } catch (e) { /* no history yet */ }
 }
 
-let tabsState = { current: null, scans: {}, allCategories: [] };
+function paintHero() {
+  const free = $("#free-gb"), fill = $("#progress-fill"), label = $("#free-label");
+  const d = tabsState.diskStatus;
+  if (!free || !d) return;
+  const oldVal = parseFloat(free.firstChild?.nodeValue || "");
+  const newVal = d.free_gb;
+  tweenHeroNumber(free, isNaN(oldVal) ? 0 : oldVal, newVal);
+  free.classList.toggle("good",   d.free_gb >= 50);
+  free.classList.toggle("warn",   d.free_gb >= 20 && d.free_gb < 50);
+  free.classList.toggle("danger", d.free_gb < 20);
+  safeAnimate(fill, { width: d.used_pct + "%" }, { duration: 0.6, easing: [0.22, 1, 0.36, 1] })
+    || (fill.style.width = d.used_pct + "%");
+  fill.classList.toggle("warn",   d.used_pct >= 75 && d.used_pct < 90);
+  fill.classList.toggle("danger", d.used_pct >= 90);
+  if (label) label.textContent = `${fmt(d.used_gb,0)} GB used of ${fmt(d.total_gb,0)} GB · ${fmt(d.used_pct,0)}%`;
+}
 
+function paintHistoryStrip() {
+  const strip = $("#history-strip");
+  const text  = $("#history-text");
+  const d = tabsState.history;
+  if (!strip || !text) return;
+  if (!d || !d.real_runs) { strip.hidden = true; return; }
+  text.innerHTML = `You've freed <strong>${fmt(d.total_freed_gb)} GB</strong> across <strong>${d.real_runs}</strong> run${d.real_runs === 1 ? "" : "s"}.`;
+  strip.hidden = false;
+}
+
+function tweenHeroNumber(el, from, to) {
+  if (!el?.firstChild || !isFinite(to)) return;
+  // Always snap-set so the value is correct even if rAF gets throttled
+  // (e.g. background tabs, headless browsers). Only animate when there's
+  // meaningful interpolation distance and motion isn't disabled.
+  if (!M || PRM || !isFinite(from) || Math.abs(to - from) < 0.05) {
+    el.firstChild.nodeValue = fmt(to);
+    return;
+  }
+  el.firstChild.nodeValue = fmt(to);  // snap as a baseline
+  const start = performance.now();
+  const dur = 600;
+  const ease = t => 1 - Math.pow(1 - t, 3);
+  function frame(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const v = from + (to - from) * ease(t);
+    el.firstChild.nodeValue = fmt(v);
+    if (t < 1) requestAnimationFrame(frame);
+    else el.firstChild.nodeValue = fmt(to);  // pin final value
+  }
+  requestAnimationFrame(frame);
+}
+
+// ── Tabs ────────────────────────────────────────────────────
 async function loadTabs() {
-  const r = await fetch("/api/tabs"); const { tabs } = await r.json();
-  const tabBar = $("#tabs");
-  const panels = $("#panels");
-  tabBar.innerHTML = "";
-  panels.innerHTML = "";
+  const r = await fetch("/api/tabs");
+  const { tabs } = await r.json();
+  tabsState.tabsManifest = tabs;
 
-  // Derive the canonical list of all category IDs from the server response (no hardcoding).
+  // Derive the canonical category list (real categories only, no meta).
   const allCats = [];
   for (const t of tabs) {
+    if (t.meta) continue;
     if (t.subcategories) allCats.push(...t.subcategories);
     else if (t.category) allCats.push(t.category);
   }
   tabsState.allCategories = allCats;
 
-  tabs.forEach((tab, idx) => {
+  // Render the left vertical nav.
+  const nav = $("#vtabs");
+  nav.innerHTML = `<div class="vnav-title">Categories</div>`;
+  tabs.forEach((tab) => {
     const btn = document.createElement("button");
+    btn.className = "vtab";
     btn.dataset.tab = tab.id;
-    btn.innerHTML = `${iconFor(tab.id)}<span class="tab-label">${stripLeadingGlyph(tab.label)}</span>`;
-    if (idx === 0) btn.classList.add("active");
+    const label = stripLeadingGlyph(tab.label);
+    btn.innerHTML = `${iconFor(tab.id)}<span class="vtab-text">${label}</span><span class="vtab-stat" id="vtab-stat-${tab.id}"></span>`;
     btn.addEventListener("click", () => switchTab(tab.id));
-    tabBar.appendChild(btn);
+    nav.appendChild(btn);
+  });
 
+  // Render the panels container.
+  const panels = $("#panels");
+  panels.innerHTML = "";
+  tabs.forEach((tab) => {
     const panel = document.createElement("div");
-    panel.className = "panel" + (idx === 0 ? " active" : "");
+    panel.className = "panel";
     panel.dataset.panel = tab.id;
     panels.appendChild(panel);
 
-    if (tab.subcategories) {
-      // Phase-2 change: LLM providers render as stacked cards in a single panel — no sub-tabs.
-      const stack = document.createElement("div");
-      stack.className = "panel-cards";
-      panel.appendChild(stack);
-      tab.subcategories.forEach((sub) => {
-        const subCard = document.createElement("div");
-        subCard.dataset.subCategory = sub;
-        stack.appendChild(subCard);
-        renderCategoryInto(sub, subCard, { providerLabel: SUB_LABELS[sub] || sub });
+    if (tab.meta && tab.id === "overview") {
+      panel.appendChild(buildOverviewPanel());
+    } else if (tab.subcategories) {
+      // One sub-panel per subcategory, only one active at a time.
+      const subPanels = document.createElement("div");
+      subPanels.className = "panel-subs";
+      // Optional mobile-bar (visible when right sidebar collapses on tablet/mobile).
+      const mobileBar = document.createElement("div");
+      mobileBar.className = "sub-mobile-bar";
+      mobileBar.dataset.tabId = tab.id;
+      tab.subcategories.forEach((sub, idx) => {
+        const mbtn = document.createElement("button");
+        mbtn.textContent = SUB_LABELS[sub] || sub;
+        mbtn.dataset.sub = sub;
+        if (idx === 0) mbtn.classList.add("active");
+        mbtn.addEventListener("click", () => switchSubItem(tab.id, sub));
+        mobileBar.appendChild(mbtn);
       });
-    } else {
+      panel.appendChild(mobileBar);
+
+      tab.subcategories.forEach((sub, idx) => {
+        const sp = document.createElement("div");
+        sp.className = "sub-panel" + (idx === 0 ? " active" : "");
+        sp.dataset.subPanel = sub;
+        subPanels.appendChild(sp);
+        renderCategoryInto(sub, sp, { providerLabel: SUB_LABELS[sub] || sub });
+        if (idx === 0) tabsState.currentSub[tab.id] = sub;
+      });
+      panel.appendChild(subPanels);
+    } else if (tab.category) {
       renderCategoryInto(tab.category, panel);
     }
-
-    if (idx === 0) tabsState.current = tab.id;
   });
+
+  // Default to the Overview tab.
+  switchTab("overview");
 }
 
 function switchTab(tabId) {
-  if (tabsState.current === tabId) return;
-  $$("nav.tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
-  $$(".panel").forEach(p => p.classList.toggle("active", p.dataset.panel === tabId));
+  const tab = tabsState.tabsManifest.find(t => t.id === tabId);
+  if (!tab) return;
   tabsState.current = tabId;
+
+  $$("#vtabs .vtab").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
+  $$(".panel").forEach(p => p.classList.toggle("active", p.dataset.panel === tabId));
+
+  // Right sidebar: populate when the active tab has subcategories.
+  const right = $("#sidebar-right");
+  const grid  = $("#app-grid");
+  if (tab.subcategories && tab.subcategories.length) {
+    populateSubNav(tab);
+    right.hidden = false;
+    grid.classList.add("has-sub");
+    grid.classList.remove("no-right");
+  } else {
+    right.hidden = true;
+    grid.classList.remove("has-sub");
+    grid.classList.add("no-right");
+  }
+
   const entering = $(`.panel[data-panel="${tabId}"]`);
+  if (entering) {
+    safeAnimate(entering, { opacity: [0, 1], x: [6, 0] }, { duration: 0.22, easing: [0.22, 1, 0.36, 1] });
+  }
+
+  // Overview special: auto-scan everything on first activation.
+  if (tabId === "overview" && !tabsState.overviewAutoScanned) {
+    tabsState.overviewAutoScanned = true;
+    scanEverything({ silent: true });
+  }
+}
+
+function populateSubNav(tab) {
+  const title = $("#vsubs-title");
+  const list = $("#vsubs-list");
+  title.textContent = stripLeadingGlyph(tab.label);
+  list.innerHTML = "";
+  const activeSub = tabsState.currentSub[tab.id] || tab.subcategories[0];
+  tab.subcategories.forEach((sub) => {
+    const btn = document.createElement("button");
+    btn.className = "vtab" + (sub === activeSub ? " active" : "");
+    btn.dataset.sub = sub;
+    const cleanable = (tabsState.scans[sub]?.total_cleanable_gb || 0);
+    btn.innerHTML = `<span class="vtab-text">${SUB_LABELS[sub] || sub}</span><span class="vtab-stat">${cleanable >= 0.01 ? fmt(cleanable) + ' GB' : ''}</span>`;
+    btn.addEventListener("click", () => switchSubItem(tab.id, sub));
+    list.appendChild(btn);
+  });
+}
+
+function switchSubItem(tabId, subId) {
+  tabsState.currentSub[tabId] = subId;
+  const panel = $(`.panel[data-panel="${tabId}"]`);
+  if (!panel) return;
+  panel.querySelectorAll(".sub-panel").forEach(p => p.classList.toggle("active", p.dataset.subPanel === subId));
+  panel.querySelectorAll(".sub-mobile-bar button").forEach(b => b.classList.toggle("active", b.dataset.sub === subId));
+  $$("#vsubs-list .vtab").forEach(b => b.classList.toggle("active", b.dataset.sub === subId));
+  const entering = panel.querySelector(`.sub-panel[data-sub-panel="${subId}"]`);
   if (entering) {
     safeAnimate(entering, { opacity: [0, 1], x: [6, 0] }, { duration: 0.22, easing: [0.22, 1, 0.36, 1] });
   }
 }
 
+// ── Overview panel ──────────────────────────────────────────
+function buildOverviewPanel() {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div class="card elevated overview-hero">
+      <div class="free" id="free-gb">— <span class="unit">GB free</span></div>
+      <div class="label" id="free-label">Checking disk…</div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="promise">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+        Factory-fresh without losing your stuff
+      </div>
+    </div>
+
+    <div class="history-strip" id="history-strip" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/>
+      </svg>
+      <span id="history-text">…</span>
+    </div>
+
+    <div class="card global-actions">
+      <div class="ga-row">
+        <button class="ga-btn" id="btn-scan-all">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
+          Scan everything
+        </button>
+        <button class="ga-btn primary" id="btn-clean-all-safe" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          Clean ALL safe · scan first
+        </button>
+        <button class="ga-btn" id="btn-clean-all-optin" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4"/><path d="M12 17h.01"/></svg>
+          Clean ALL opt-in · scan first
+        </button>
+      </div>
+      <div class="ga-hint" id="ga-hint">Scanning every category in parallel — this is your at-a-glance status. Each card below opens its own tab for details.</div>
+    </div>
+
+    <div class="overview-grid" id="overview-grid"></div>
+  `;
+
+  // Wire up after the DOM exists in the container (panel attaches later).
+  queueMicrotask(() => {
+    $("#btn-scan-all")?.addEventListener("click", () => scanEverything());
+    $("#btn-clean-all-safe")?.addEventListener("click", () => cleanEverything("safe"));
+    $("#btn-clean-all-optin")?.addEventListener("click", () => cleanEverything("probably_safe"));
+    // The hero + history strip live inside this panel — repaint them now that the DOM exists.
+    if (tabsState.diskStatus) paintHero();
+    if (tabsState.history) paintHistoryStrip();
+    renderOverviewGrid();
+  });
+
+  return wrap;
+}
+
+function renderOverviewGrid() {
+  const grid = $("#overview-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+
+  // Build one card per top-level tab (skip the meta Overview itself).
+  for (const tab of tabsState.tabsManifest) {
+    if (tab.meta) continue;
+
+    let cleanable = 0, safe = 0, optin = 0, caution = 0;
+    let tagline = "";
+    let scanned = false;
+
+    if (tab.subcategories) {
+      for (const sub of tab.subcategories) {
+        const s = tabsState.scans[sub];
+        if (s) {
+          scanned = true;
+          cleanable += s.total_cleanable_gb || 0;
+          safe      += s.totals.safe || 0;
+          optin     += s.totals.probably_safe || 0;
+          caution   += s.totals.caution || 0;
+        }
+      }
+      tagline = `${tab.subcategories.length} sub-tools`;
+    } else if (tab.category) {
+      const s = tabsState.scans[tab.category];
+      if (s) {
+        scanned = true;
+        cleanable = s.total_cleanable_gb || 0;
+        safe = s.totals.safe || 0;
+        optin = s.totals.probably_safe || 0;
+        caution = s.totals.caution || 0;
+        tagline = stripLeadingGlyph(s.tagline || "");
+      }
+    }
+
+    const totalValue = cleanable >= 0.01
+      ? `${fmt(cleanable)} <span class="unit">GB cleanable</span>`
+      : (scanned ? `<span class="unit">nothing to clean</span>` : `<span class="unit">scanning…</span>`);
+    const totalCls = cleanable >= 0.01 ? "has-value" : "zero";
+
+    const card = document.createElement("button");
+    card.className = "overview-card";
+    card.dataset.openTab = tab.id;
+    card.innerHTML = `
+      <div class="head">${iconFor(tab.id)}<span class="name">${stripLeadingGlyph(tab.label)}</span></div>
+      <div class="total ${totalCls}">${totalValue}</div>
+      <div class="tagline">${tagline || "—"}</div>
+      <div class="tier-row">
+        <span class="pill safe">safe <strong>${fmt(safe)}</strong></span>
+        <span class="pill warn">opt-in <strong>${fmt(optin)}</strong></span>
+        <span class="pill danger">caution <strong>${fmt(caution)}</strong></span>
+      </div>
+      <div class="open-hint">Open <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></div>
+    `;
+    card.addEventListener("click", () => switchTab(tab.id));
+    grid.appendChild(card);
+  }
+}
+
+function updateVtabStats() {
+  // Per-tab cleanable-GB shown next to the left-nav label.
+  for (const tab of tabsState.tabsManifest) {
+    if (tab.meta) continue;
+    const el = $(`#vtab-stat-${tab.id}`);
+    if (!el) continue;
+    let cleanable = 0;
+    if (tab.subcategories) {
+      for (const sub of tab.subcategories) {
+        const s = tabsState.scans[sub]; if (s) cleanable += s.total_cleanable_gb || 0;
+      }
+    } else if (tab.category) {
+      const s = tabsState.scans[tab.category]; if (s) cleanable = s.total_cleanable_gb || 0;
+    }
+    el.textContent = cleanable >= 0.01 ? `${fmt(cleanable)} GB` : "";
+  }
+  // Also refresh the right-sub-nav stats if it's open.
+  const cur = tabsState.tabsManifest.find(t => t.id === tabsState.current);
+  if (cur?.subcategories) populateSubNav(cur);
+}
+
+// ── Render a category panel ────────────────────────────────
 async function renderCategoryInto(catId, container, opts = {}) {
   const labelOverride = opts.providerLabel;
   container.innerHTML = `<div class="card">
@@ -1140,83 +1437,7 @@ async function renderCategoryInto(catId, container, opts = {}) {
   });
 }
 
-async function cleanAllInCategory(catId, tier) {
-  const tierLabel = tier === "safe" ? "all safe" : "all opt-in";
-  const scan = tabsState.scans[catId];
-  const gb = scan ? (scan.totals[tier] || 0) : 0;
-  const tierName = tier === "safe" ? "safe-tier" : "opt-in-tier";
-  const okPress = await openConfirm({
-    title: "Confirm cleanup",
-    what: `Clean ${tierLabel} paths in ${scan ? scan.label : catId}?`,
-    detail: `Frees ~${fmt(gb)} GB. Runs the same rm -rf each per-path button runs.`,
-    costText: tier === "safe"
-      ? "First build after this regenerates the affected caches (typically ~30s extra)."
-      : "Opt-in caches you've selectively trusted — re-fetched on next use. Reviewable below before you confirm.",
-    danger: true,
-    okLabel: `Clean ${tierName}`,
-  });
-  if (!okPress) return;
-  disableAllButtons(true);
-  const out = $("#output");
-  out.innerHTML = ""; out.classList.add("visible");
-  appendLine(`→ Clean ${tierLabel} in ${catId}`, "dim");
-  const es = new EventSource(`/api/clean-all-safe?category=${encodeURIComponent(catId)}&tier=${encodeURIComponent(tier)}`);
-  es.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
-    if (msg.event === "line") {
-      const line = msg.data;
-      const cls = line.startsWith("▶") ? "ok" : line.startsWith("  cleaning:") ? "dim" : "";
-      appendLine(line, cls);
-    } else if (msg.event === "done") {
-      es.close();
-      appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB.`, "ok");
-      successPulse(msg.data.freed_gb);
-      disableAllButtons(false);
-      loadStatus();
-      loadHistory();
-      scanAndRender(catId);
-    }
-  };
-  es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
-}
-
-async function cleanSinglePath(catId, path, label) {
-  const okPress = await openConfirm({
-    title: "Confirm cleanup",
-    what: `Clean "${label}"?`,
-    detail: path,
-    costText: "Deletes the contents of this path (rm -rf <path>/*). Cannot be undone — but only safe-tier and opt-in paths are surfaced for one-click cleaning, so the worst case is a re-cache.",
-    danger: true,
-    okLabel: "Clean this path",
-  });
-  if (!okPress) return;
-  disableAllButtons(true);
-  const out = $("#output");
-  out.innerHTML = ""; out.classList.add("visible");
-  appendLine(`→ Clean: ${label} (${path})`, "dim");
-  const es = new EventSource(`/api/clean-path?category=${encodeURIComponent(catId)}&path=${encodeURIComponent(path)}`);
-  es.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
-    if (msg.event === "line") {
-      const line = msg.data;
-      appendLine(line, line.startsWith("▶") ? "ok" : "");
-    } else if (msg.event === "done") {
-      es.close();
-      appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB.`, "ok");
-      successPulse(msg.data.freed_gb);
-      disableAllButtons(false);
-      loadStatus();
-      loadHistory();
-      scanAndRender(catId);
-    }
-  };
-  es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
-}
-
-function disableAllButtons(disabled) {
-  $$("button[data-action], button[data-scan], button[data-clean-all], button.path-clean, #btn-scan-all, #btn-clean-all-safe, #btn-clean-all-optin, #first-run-scan").forEach(b => b.disabled = disabled);
-}
-
+// ── Scan a single category ─────────────────────────────────
 async function scanAndRender(catId) {
   const scanBtn = document.querySelector(`button[data-scan="${catId}"]`);
   if (scanBtn) { scanBtn.textContent = "Scanning…"; scanBtn.disabled = true; }
@@ -1229,7 +1450,8 @@ async function scanAndRender(catId) {
 
   const hdr = $(`#hdr-${catId}`);
   if (hdr) hdr.textContent = stripLeadingGlyph(scan.label) || scan.label;
-  $(`#tagline-${catId}`).textContent = scan.tagline || "";
+  const tag = $(`#tagline-${catId}`);
+  if (tag) tag.textContent = scan.tagline || "";
   $(`#totals-${catId}`).innerHTML = `
     <span class="pill safe">safe <strong>${fmt(scan.totals.safe || 0)} GB</strong></span>
     <span class="pill warn">opt-in <strong>${fmt(scan.totals.probably_safe || 0)} GB</strong></span>
@@ -1263,19 +1485,16 @@ async function scanAndRender(catId) {
   }
   $(`#scan-${catId}`).innerHTML = scanHtml;
   applyCategoryCallouts(catId, scan);
-  // Stagger row entrance
   const rows = $(`#scan-${catId}`).querySelectorAll(".path-row");
   if (rows.length && M && !PRM) {
     safeAnimate(rows, { opacity: [0, 1], y: [4, 0] }, { duration: 0.28, delay: safeStagger(0.025), easing: [0.22, 1, 0.36, 1] });
   }
-  // Wire per-path inline clean buttons
   $(`#scan-${catId}`).querySelectorAll(`button.path-clean`).forEach(btn => {
     btn.addEventListener("click", () => {
       const path = decodeURIComponent(btn.dataset.path);
       cleanSinglePath(btn.dataset.cat, path, btn.dataset.label);
     });
   });
-  // Update top buttons with sizes + enable
   const safeBtn  = document.querySelector(`button[data-clean-all="${catId}"][data-tier="safe"]`);
   const optInBtn = document.querySelector(`button[data-clean-all="${catId}"][data-tier="probably_safe"]`);
   if (safeBtn) {
@@ -1313,6 +1532,108 @@ async function scanAndRender(catId) {
   $(`#actions-${catId}`).querySelectorAll("button[data-action]").forEach(btn => {
     btn.addEventListener("click", () => runAction(btn.dataset.category, btn.dataset.action, btn.parentElement.querySelector(".label").textContent, btn.dataset.cost));
   });
+
+  // After every scan, refresh the Overview grid + left-nav stats.
+  renderOverviewGrid();
+  updateVtabStats();
+}
+
+function applyCategoryCallouts(catId, scan) {
+  const el = $(`#callout-${catId}`);
+  if (!el) return;
+  el.hidden = true;
+  el.innerHTML = "";
+
+  if (catId === "docker") {
+    const cautionPaths = (scan.groups?.caution?.paths || [])
+      .filter(p => p.path.includes("Docker.raw") && p.exists && p.size_kb > 0)
+      .sort((a, b) => b.size_kb - a.size_kb);
+    if (cautionPaths.length) {
+      const top = cautionPaths[0];
+      const sizeLabel = top.size_gb >= 0.01 ? `${fmt(top.size_gb)} GB`
+                       : top.size_kb >= 1024 ? `${Math.round(top.size_kb / 1024)} MB`
+                       : `${top.size_kb} KB`;
+      el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>` +
+        `<div><strong>Docker.raw is ${sizeLabel}.</strong> Pruning shrinks what's INSIDE the VM, not the .raw file on disk. See <em>How to actually shrink Docker.raw</em> below for the reset path. <code>${top.path}</code></div>`;
+      el.hidden = false;
+    }
+  }
+}
+
+// ── Clean a single path / all-tier / aggregate ─────────────
+async function cleanAllInCategory(catId, tier) {
+  const tierLabel = tier === "safe" ? "all safe" : "all opt-in";
+  const scan = tabsState.scans[catId];
+  const gb = scan ? (scan.totals[tier] || 0) : 0;
+  const tierName = tier === "safe" ? "safe-tier" : "opt-in-tier";
+  const okPress = await openConfirm({
+    title: "Confirm cleanup",
+    what: `Clean ${tierLabel} paths in ${scan ? scan.label : catId}?`,
+    detail: `Frees ~${fmt(gb)} GB. Runs the same rm -rf each per-path button runs.`,
+    costText: tier === "safe"
+      ? "First build after this regenerates the affected caches (typically ~30s extra)."
+      : "Opt-in caches you've selectively trusted — re-fetched on next use. Reviewable below before you confirm.",
+    danger: true,
+    okLabel: `Clean ${tierName}`,
+  });
+  if (!okPress) return;
+  disableAllButtons(true);
+  const out = $("#output");
+  out.innerHTML = ""; out.classList.add("visible");
+  appendLine(`→ Clean ${tierLabel} in ${catId}`, "dim");
+  const es = new EventSource(`/api/clean-all-safe?category=${encodeURIComponent(catId)}&tier=${encodeURIComponent(tier)}`);
+  es.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.event === "line") {
+      const line = msg.data;
+      const cls = line.startsWith("▶") ? "ok" : line.startsWith("  cleaning:") ? "dim" : "";
+      appendLine(line, cls);
+    } else if (msg.event === "done") {
+      es.close();
+      appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB.`, "ok");
+      successPulse(msg.data.freed_gb);
+      disableAllButtons(false);
+      loadStatus(); loadHistory();
+      scanAndRender(catId);
+    }
+  };
+  es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
+}
+
+async function cleanSinglePath(catId, path, label) {
+  const okPress = await openConfirm({
+    title: "Confirm cleanup",
+    what: `Clean "${label}"?`,
+    detail: path,
+    costText: "Deletes the contents of this path (rm -rf <path>/*). Cannot be undone — but only safe-tier and opt-in paths are surfaced for one-click cleaning, so the worst case is a re-cache.",
+    danger: true,
+    okLabel: "Clean this path",
+  });
+  if (!okPress) return;
+  disableAllButtons(true);
+  const out = $("#output");
+  out.innerHTML = ""; out.classList.add("visible");
+  appendLine(`→ Clean: ${label} (${path})`, "dim");
+  const es = new EventSource(`/api/clean-path?category=${encodeURIComponent(catId)}&path=${encodeURIComponent(path)}`);
+  es.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.event === "line") {
+      const line = msg.data;
+      appendLine(line, line.startsWith("▶") ? "ok" : "");
+    } else if (msg.event === "done") {
+      es.close();
+      appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB.`, "ok");
+      successPulse(msg.data.freed_gb);
+      disableAllButtons(false);
+      loadStatus(); loadHistory();
+      scanAndRender(catId);
+    }
+  };
+  es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
+}
+
+function disableAllButtons(disabled) {
+  $$("button[data-action], button[data-scan], button[data-clean-all], button.path-clean, #btn-scan-all, #btn-clean-all-safe, #btn-clean-all-optin").forEach(b => b.disabled = disabled);
 }
 
 async function runAction(catId, actionId, label, costText) {
@@ -1348,8 +1669,7 @@ async function runAction(catId, actionId, label, costText) {
       if (freed > 0) successPulse(freed);
       $$("button[data-action]").forEach(b => b.disabled = false);
       $$("button[data-scan]").forEach(b => b.disabled = false);
-      loadStatus();
-      loadHistory();
+      loadStatus(); loadHistory();
       scanAndRender(catId);
     }
   };
@@ -1372,94 +1692,66 @@ function appendLine(text, cls = "") {
   out.scrollTop = out.scrollHeight;
 }
 
-// Category-specific post-scan augmentation. Surfaces a single high-signal stat in the
-// panel header when one is worth calling out — currently Docker.raw for the docker tab.
-function applyCategoryCallouts(catId, scan) {
-  const el = $(`#callout-${catId}`);
-  if (!el) return;
-  el.hidden = true;
-  el.innerHTML = "";
-
-  if (catId === "docker") {
-    // Find the biggest Docker.raw row in the caution group.
-    const cautionPaths = (scan.groups?.caution?.paths || [])
-      .filter(p => p.path.includes("Docker.raw") && p.exists && p.size_kb > 0)
-      .sort((a, b) => b.size_kb - a.size_kb);
-    if (cautionPaths.length) {
-      const top = cautionPaths[0];
-      const sizeLabel = top.size_gb >= 0.01 ? `${fmt(top.size_gb)} GB`
-                       : top.size_kb >= 1024 ? `${Math.round(top.size_kb / 1024)} MB`
-                       : `${top.size_kb} KB`;
-      el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>` +
-        `<div><strong>Docker.raw is ${sizeLabel}.</strong> Pruning shrinks what's INSIDE the VM, not the .raw file on disk. See <em>How to actually shrink Docker.raw</em> below for the reset path. <code>${top.path}</code></div>`;
-      el.hidden = false;
-    }
-  }
-}
-
-// Brief green pulse on the hero number after a successful clean — Emil-tier subtle.
 function successPulse(freedGb) {
   if (!M || PRM || !freedGb || freedGb <= 0) return;
   const free = $("#free-gb");
-  safeAnimate(free, { scale: [1, 1.05, 1] }, { duration: 0.5, easing: [0.22, 1, 0.36, 1] });
+  if (free) safeAnimate(free, { scale: [1, 1.05, 1] }, { duration: 0.5, easing: [0.22, 1, 0.36, 1] });
 }
 
-async function scanEverything() {
+// ── Aggregate scan + clean ─────────────────────────────────
+async function scanEverything(opts = {}) {
   const btn = $("#btn-scan-all");
-  const frBtn = $("#first-run-scan");
-  if (btn) { btn.disabled = true; btn.querySelector("svg")?.setAttribute("class", ""); }
-  if (frBtn) { frBtn.disabled = true; frBtn.textContent = "Scanning…"; }
-  $("#btn-clean-all-safe").disabled = true;
-  $("#btn-clean-all-optin").disabled = true;
-  $("#ga-hint").innerHTML = "Scanning all categories in parallel…";
+  if (btn && !opts.silent) { btn.disabled = true; }
+  $("#btn-clean-all-safe") && ($("#btn-clean-all-safe").disabled = true);
+  $("#btn-clean-all-optin") && ($("#btn-clean-all-optin").disabled = true);
+  const hint = $("#ga-hint");
+  if (hint) hint.innerHTML = "Scanning every category in parallel…";
 
-  const allCats = tabsState.allCategories.length ? tabsState.allCategories : ["xcode", "llms-claude", "llms-cursor", "llms-chatgpt", "apps", "system"];
+  const allCats = tabsState.allCategories.length ? tabsState.allCategories : ["xcode", "llms-claude", "llms-cursor", "llms-chatgpt", "docker", "apps", "creative-adobe", "creative-davinci", "creative-finalcut", "creative-logic", "creative-blender", "creative-obs", "system"];
   let completed = 0;
-  const progressLine = () => `Scanning all ${allCats.length} categories… <strong>${completed}/${allCats.length}</strong>`;
-  $("#ga-hint").innerHTML = progressLine();
+  const progress = () => `Scanning ${allCats.length} categories… <strong>${completed}/${allCats.length}</strong>`;
+  if (hint) hint.innerHTML = progress();
   await Promise.all(allCats.map(c =>
     scanAndRender(c)
-      .catch(e => null)
-      .finally(() => { completed++; $("#ga-hint").innerHTML = progressLine(); })
+      .catch(() => null)
+      .finally(() => {
+        completed++;
+        if (hint) hint.innerHTML = progress();
+        renderOverviewGrid();
+        updateVtabStats();
+      })
   ));
 
   let totalSafe = 0, totalOptIn = 0;
   for (const c of allCats) {
-    const s = tabsState.scans[c];
-    if (!s) continue;
+    const s = tabsState.scans[c]; if (!s) continue;
     totalSafe  += s.totals.safe || 0;
     totalOptIn += s.totals.probably_safe || 0;
   }
-
-  $("#btn-clean-all-safe").innerHTML  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Clean ALL safe · ${fmt(totalSafe)} GB`;
-  $("#btn-clean-all-optin").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4"/><path d="M12 17h.01"/></svg>Clean ALL opt-in · ${fmt(totalOptIn)} GB`;
-  $("#btn-clean-all-safe").disabled  = totalSafe  < 0.001;
-  $("#btn-clean-all-optin").disabled = totalOptIn < 0.001;
-
-  // Per-tab breakdown — collapsed, one row.
-  let breakdown = "<strong>Per category:</strong> ";
-  for (const c of allCats) {
-    const s = tabsState.scans[c];
-    if (!s) continue;
-    const t = (s.totals.safe || 0) + (s.totals.probably_safe || 0);
-    const lbl = stripLeadingGlyph(s.label);
-    breakdown += `<span class="breakdown-item">${lbl} <strong>${fmt(t)} GB</strong></span>`;
+  const safeBtn = $("#btn-clean-all-safe"), optBtn = $("#btn-clean-all-optin");
+  if (safeBtn) {
+    safeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Clean ALL safe · ${fmt(totalSafe)} GB`;
+    safeBtn.disabled = totalSafe < 0.001;
   }
-  $("#ga-hint").innerHTML = breakdown;
-
+  if (optBtn) {
+    optBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4"/><path d="M12 17h.01"/></svg>Clean ALL opt-in · ${fmt(totalOptIn)} GB`;
+    optBtn.disabled = totalOptIn < 0.001;
+  }
+  if (hint) {
+    if (totalSafe + totalOptIn < 0.01) {
+      hint.innerHTML = `<strong>You're clean.</strong> Nothing to reclaim across all ${allCats.length} categories.`;
+    } else {
+      hint.innerHTML = `<strong>${fmt(totalSafe + totalOptIn)} GB cleanable</strong> across ${allCats.length} categories. Click a card below to drill in, or use the buttons above.`;
+    }
+  }
   if (btn) { btn.disabled = false; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>Re-scan everything`; }
-  if (frBtn) { frBtn.disabled = false; }
-
-  // First-run handoff: once a scan completes, swap to returning-user mode.
-  markVisited();
 }
 
 async function cleanEverything(tier) {
   const label = tier === "safe" ? "ALL safe" : "ALL opt-in";
   let total = 0;
   for (const c of tabsState.allCategories) {
-    const s = tabsState.scans[c];
-    if (!s) continue;
+    const s = tabsState.scans[c]; if (!s) continue;
     total += s.totals[tier] || 0;
   }
   const okPress = await openConfirm({
@@ -1494,26 +1786,11 @@ async function cleanEverything(tier) {
       appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB across all categories.`, "ok");
       successPulse(msg.data.freed_gb);
       disableAllButtons(false);
-      loadStatus();
-      loadHistory();
-      scanEverything();
+      loadStatus(); loadHistory();
+      scanEverything({ silent: true });
     }
   };
   es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
-}
-
-// ── First-run flow ──────────────────────────────────────────
-function applyFirstRunState() {
-  const hasVisited = localStorage.getItem(FR_KEY) === "1";
-  $("#first-run").hidden = hasVisited;
-  $("#global-actions").hidden = !hasVisited;
-}
-function markVisited() {
-  if (localStorage.getItem(FR_KEY) === "1") return;
-  localStorage.setItem(FR_KEY, "1");
-  $("#first-run").hidden = true;
-  $("#global-actions").hidden = false;
-  safeAnimate($("#global-actions"), { opacity: [0, 1], y: [4, 0] }, { duration: 0.3, easing: [0.22, 1, 0.36, 1] });
 }
 
 // ── Confirm modal (replaces window.confirm) ────────────────
@@ -1601,14 +1878,6 @@ $("#changelog-modal").addEventListener("click", (ev) => { if (ev.target.id === "
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !$("#changelog-modal").hidden) closeChangelog(); });
 $("#footer-changelog")?.addEventListener("click", (ev) => { ev.preventDefault(); openChangelog(); });
 
-$("#btn-scan-all").addEventListener("click", scanEverything);
-$("#btn-clean-all-safe").addEventListener("click", () => cleanEverything("safe"));
-$("#btn-clean-all-optin").addEventListener("click", () => cleanEverything("probably_safe"));
-
-$("#first-run-scan").addEventListener("click", scanEverything);
-$("#first-run-skip").addEventListener("click", () => markVisited());
-
-applyFirstRunState();
 loadStatus();
 loadHistory();
 loadTabs();

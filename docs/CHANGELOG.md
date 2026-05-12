@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.14.0] — 2026-05-12 13:47:59 Eastern · *Overview tab + three-column shell — sidebar nav, sub-nav, focused viewport*
+
+The shell redesign the maintainer asked for. Tabs migrate to a left sidebar; sub-items (LLMs + Creative) move to a right sidebar; the center becomes a dedicated focus viewport for the active panel. A new **Overview** tab is the default landing — it pre-scans every category and renders a per-category summary grid + the hero + the global mega-buttons.
+
+### Added
+- **`Overview` tab** as the new default landing. Auto-runs `scanEverything()` on first activation, populating six per-category summary cards in parallel. Each card shows: icon + name + cleanable GB + tagline + per-tier breakdown (safe / opt-in / caution) + click-to-open hint. Clicking a card switches to that tab. The hero (free GB + promise lockup) + history strip live inside Overview, not floating above.
+- **Left sidebar — vertical tab nav.** Seven tabs (Overview · Xcode · LLMs · Docker · Apps · Creative · System) as a sticky vertical column. Each tab shows its Lucide icon + label + a live cleanable-GB stat that updates as scans complete. Active tab gets a teal background + teal left-border + teal icon.
+- **Right sidebar — vertical sub-nav.** Appears only when the active tab has subcategories (LLMs · Creative). Lists each sub-tool with its own cleanable-GB stat. Clicking a sub-tool switches the center viewport. Hidden otherwise; the center expands to fill.
+- **Single-pane sub-panel pattern.** Subcategories no longer render as stacked cards — only one sub-panel is active at a time, driven by the right sidebar selection. Way less scroll, way more focus on the data you actually care about.
+- **`overview` entry in `cleaners.py`'s `TABS`** marked `meta: True` (no real cleanup category — UI-only). Server passes it through; dashboard renders the special Overview panel.
+- **`updateVtabStats()`** keeps the left-nav stats live during scans (each tab's cleanable-GB updates as data lands).
+- **Responsive breakpoints.** Desktop (>1024px): three columns. Tablet (720–1024px): two columns (sub-items become an inline pill bar at top of viewport). Mobile (<720px): single column, left nav becomes a horizontal scroll strip.
+
+### Changed
+- **`web/index.html` shell completely restructured.** The container is now `app-shell` with `app-grid` (CSS grid: 220px / 1fr / 220px). Header sits above; output console + footer sit below.
+- **Hero card moved into Overview.** It used to be always-visible above the tabs; now it lives inside the Overview panel as part of the welcome experience. The other tabs (Xcode / Docker / Apps / System) skip straight to their own data — no hero distracting from the focus content.
+- **First-run gate removed.** With Overview being a scanning home by default, the "Show me what's worth cleaning" CTA was redundant. The `cleanupHub.hasVisited` localStorage flag is no longer read or set.
+- **`tweenHeroNumber` snap-baseline.** The hero count-up now snap-sets the target value immediately, then animates on top. Fixes a class of edge cases where `requestAnimationFrame` is throttled (background tabs, headless browsers) and the animated frames never fire — the value stays correct regardless.
+- **`loadStatus()` split** into `loadStatus` (data fetch) + `paintHero` (DOM render). Lets the Overview panel re-paint the hero on mount even when status data has already loaded before the DOM was built.
+
+### Preserved
+- Six cleanup categories + 13 actual sub-categories (Overview is purely meta). 122 paths, 35+ cost-annotated actions.
+- All install surfaces (Web UI · Shortcut · CLI · launchd · SwiftBar · SSH).
+- Three safety tiers (safe / probably_safe / caution).
+- 127.0.0.1 localhost binding, zero pip/npm server-side deps.
+- Real-time SSE console, in-app changelog modal, live version pill.
+- Custom cost-modal with the cost annotation as the visual centerpiece.
+- Docker.raw size callout in the Docker panel header.
+- All v0.13 hardening: pre-flight volume check, buildx split, per-catalog Lightroom preview cleanup, dual CacheClip locations, Final Cut + Logic + Blender + OBS support.
+
+### Why
+Maintainer: *"we actually need an overview tab that pre-scans everything and displays everything on that first launch and we also need those tabs to go on the side left and then if they have any sub items, the sub items will come up in a sub menu on the right side bar to make the center information and focus view port for the content and displays. being generated."*
+
 ## [0.13.0] — 2026-05-12 13:11:52 Eastern · *full gap-audit + elevation pass — closes every open follow-up from v0.11+v0.12*
 
 The maintainer asked for everything in the audit list — gaps + elevations — and got it.
