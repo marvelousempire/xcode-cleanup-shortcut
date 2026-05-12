@@ -2132,7 +2132,18 @@ function updateVtabStats() {
         caution = s.totals.caution || 0;
       }
     }
-    el.textContent = cleanable >= 0.01 ? `${fmt(cleanable)} GB` : "";
+    // v0.17.1: show every tab's total recoverable footprint (safe + opt-in +
+    // caution). Previously this displayed only `total_cleanable_gb` (safe +
+    // opt-in), which blanked tabs like Docker / Browsers / Apps / Downloads /
+    // Creative / Temp / Archives whenever their safe-tier reclaim was zero —
+    // even when they had multi-GB caution-tier candidates (Docker.raw etc).
+    // Show a number once the tab has been scanned, even if it's "0.0 GB", so
+    // every row in the sidebar has a number column.
+    const total = safe + optin + caution;
+    const scanned = !!(tab.subcategories
+      ? tab.subcategories.some((sub) => tabsState.scans[sub])
+      : tab.category && tabsState.scans[tab.category]);
+    el.textContent = scanned ? `${fmt(total)} GB` : "";
     paintVtabMiniDonut(tab.id, safe, optin, caution);
   }
   // Also refresh the right-sub-nav stats if it's open.

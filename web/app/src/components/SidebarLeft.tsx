@@ -9,15 +9,33 @@ function stripGlyph(s: string) {
 export function SidebarLeft() {
   const { tabs, activeTab, setActiveTab, scans } = useDashboard();
 
-  // Aggregate cleanable GB per tab.
+  // v0.17.1: show total recoverable footprint per tab (safe + opt-in + caution).
+  // Previously this returned only `total_cleanable_gb` (safe + opt-in), which
+  // blanked the sidebar number for any tab whose safe-tier reclaim was zero
+  // even when caution-tier was multi-GB (Docker.raw, ~/Downloads, Trash, etc).
   const statFor = (tabId: string): number => {
     const tab = tabs.find((t) => t.id === tabId);
     if (!tab) return 0;
+    const sumOne = (catId: string): number => {
+      const s = scans[catId]?.scan;
+      if (!s) return 0;
+      return (s.totals.safe || 0) + (s.totals.probably_safe || 0) + (s.totals.caution || 0);
+    };
     if (tab.subcategories) {
-      return tab.subcategories.reduce((sum, sub) => sum + (scans[sub]?.scan.total_cleanable_gb ?? 0), 0);
+      return tab.subcategories.reduce((sum, sub) => sum + sumOne(sub), 0);
     }
-    if (tab.category) return scans[tab.category]?.scan.total_cleanable_gb ?? 0;
+    if (tab.category) return sumOne(tab.category);
     return 0;
+  };
+
+  // Has this tab been scanned at all? Drives whether we render the GB value
+  // (even if 0.0 GB) or leave the slot blank waiting for data.
+  const scannedFor = (tabId: string): boolean => {
+    const tab = tabs.find((t) => t.id === tabId);
+    if (!tab) return false;
+    if (tab.subcategories) return tab.subcategories.some((sub) => !!scans[sub]);
+    if (tab.category) return !!scans[tab.category];
+    return false;
   };
 
   // Per-tier sums for the mini-donut next to each tab (elevation H).
@@ -54,6 +72,7 @@ export function SidebarLeft() {
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
           const gb = tab.meta ? 0 : statFor(tab.id);
+          const scanned = !tab.meta && scannedFor(tab.id);
           return (
             <button
               key={tab.id}
@@ -72,7 +91,10 @@ export function SidebarLeft() {
                 className={cn("h-4 w-4 flex-shrink-0", active ? "text-accent" : "text-fg-faint")}
               />
               <span className="flex-1 truncate">{stripGlyph(tab.label)}</span>
-              {!tab.meta && gb >= 0.01 && (
+              {/* v0.17.1: show the GB stat as soon as the tab has been scanned,
+                  even when it's 0.0 GB — every row in the sidebar gets a number
+                  column instead of half the rows going blank. */}
+              {scanned && (
                 <span className={cn("text-[11px] font-medium tabular", active ? "text-accent" : "text-fg-faint")}>
                   {fmt(gb)} GB
                 </span>

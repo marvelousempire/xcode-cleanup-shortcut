@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.17.1] — 2026-05-12 16:55:02 Eastern · *every sidebar tab shows a number now*
+
+### Fixed
+- **Sidebar GB stat is now total footprint, not just cleanable.** Previously the left-nav showed `total_cleanable_gb` (safe + opt-in only). Any tab whose safe + opt-in tiers were zero — Docker, Apps, Browsers, Downloads, Creative, Temp files, Archives — went blank, even when caution-tier was multi-GB (Docker.raw is 14.6 GB on a typical dev Mac). Now every tab shows `safe + opt-in + caution`. Docker → **14.6 GB**, the others → **0.0 GB** (instead of going blank).
+- **The number renders as soon as the tab has been scanned**, even if it's `0.0 GB`. No more half-blank sidebar column — every row gets a number once data lands.
+
+### Why
+Maintainer: *"on the sidebar we need numbers for all of those items. For example Docker is missing the numbers collectively browsers are missing it downloads, creative temp files archives. They only need to be represented by the numbers that they have that can be recovered."*
+
+"What they have that can be recovered" = the full footprint we've surfaced (safe + opt-in + caution). Caution-tier items aren't auto-cleaned, but they're still recoverable manually — Docker.raw via the in-app reset, Trash via Empty Trash, etc. The sidebar number now reflects that total.
+
+Touches `web/index.html`'s `updateVtabStats()` and `web/app/src/components/SidebarLeft.tsx`'s `statFor()` so both UIs stay in sync.
+
 ## [0.17.0] — 2026-05-12 16:42:16 Eastern · *four new categories — Browsers · Downloads · Temp files · Archives — plus a largest-files filter + asc/desc sort toggle*
 
 ### Added — four new top-level categories
