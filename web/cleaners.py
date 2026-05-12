@@ -804,18 +804,252 @@ CATEGORIES = {
         },
     },
 
+    # ─── Browsers ─────────────────────────────────────────────────────
+    # Combined cache/history reclaim across the macOS browsers the user is most
+    # likely to have on a working machine. Caches are safe (browser re-fetches).
+    # Cookies + history live in caution-tier because removing them logs you out
+    # of sites and loses session state.
+    "browsers": {
+        "label": "Browsers",
+        "icon":  "🌐",
+        "tagline": "Reclaim 2–20 GB across Chrome / Safari / Firefox / Edge / Brave / Arc.",
+        "groups": {
+            "safe": [
+                ("Chrome cache",                "~/Library/Caches/Google/Chrome"),
+                ("Chrome Code Cache",           "~/Library/Application Support/Google/Chrome/Default/Code Cache"),
+                ("Chrome GPU cache",            "~/Library/Application Support/Google/Chrome/Default/GPUCache"),
+                ("Chrome service-worker cache", "~/Library/Application Support/Google/Chrome/Default/Service Worker/CacheStorage"),
+                ("Safari cache",                "~/Library/Caches/com.apple.Safari"),
+                ("Safari WebKit cache",         "~/Library/Caches/com.apple.WebKit.WebContent"),
+                ("Firefox cache",               "~/Library/Caches/Firefox"),
+                ("Firefox profile caches",      "~/Library/Application Support/Firefox/Profiles"),
+                ("Edge cache",                  "~/Library/Caches/Microsoft Edge"),
+                ("Edge Code Cache",             "~/Library/Application Support/Microsoft Edge/Default/Code Cache"),
+                ("Brave cache",                 "~/Library/Caches/BraveSoftware/Brave-Browser"),
+                ("Brave service-worker cache",  "~/Library/Application Support/BraveSoftware/Brave-Browser/Default/Service Worker/CacheStorage"),
+                ("Arc cache",                   "~/Library/Caches/Company Browser, Inc."),
+                ("Arc service-worker cache",    "~/Library/Application Support/Arc/User Data/Default/Service Worker/CacheStorage"),
+                ("Vivaldi cache",               "~/Library/Caches/Vivaldi"),
+            ],
+            "probably_safe": [
+                ("Chrome history (sites + autocomplete)",      "~/Library/Application Support/Google/Chrome/Default/History"),
+                ("Chrome download history",                    "~/Library/Application Support/Google/Chrome/Default/Network/Network Persistent State"),
+                ("Safari downloads.plist (history only — not the files)", "~/Library/Safari/Downloads.plist"),
+                ("Firefox cache2",                              "~/Library/Application Support/Firefox/Profiles"),
+                ("Edge history",                                "~/Library/Application Support/Microsoft Edge/Default/History"),
+                ("Brave history",                               "~/Library/Application Support/BraveSoftware/Brave-Browser/Default/History"),
+                ("Arc history",                                 "~/Library/Application Support/Arc/User Data/Default/History"),
+            ],
+            "caution": [
+                ("Chrome cookies (logs you out)",        "~/Library/Application Support/Google/Chrome/Default/Cookies"),
+                ("Chrome login data (saved passwords)",  "~/Library/Application Support/Google/Chrome/Default/Login Data"),
+                ("Safari cookies",                       "~/Library/Cookies"),
+                ("Safari local storage",                 "~/Library/Safari/LocalStorage"),
+                ("Firefox cookies + login data",         "~/Library/Application Support/Firefox/Profiles"),
+                ("Edge cookies",                         "~/Library/Application Support/Microsoft Edge/Default/Cookies"),
+                ("Brave cookies",                        "~/Library/Application Support/BraveSoftware/Brave-Browser/Default/Cookies"),
+                ("Arc cookies",                          "~/Library/Application Support/Arc/User Data/Default/Cookies"),
+            ],
+        },
+        "actions": {
+            "clean-all-browser-caches": {
+                "label": "Clean every browser's cache",
+                "desc":  "rm -rf the safe-tier cache folders across all installed browsers in one shot.",
+                "cost":  "First page-load on each site re-fetches assets (~1–3s extra per site). No logins lost, no history lost — only image/JS/CSS caches.",
+                "shell": "rm -rf "
+                         "~/Library/Caches/Google/Chrome/* "
+                         "~/Library/Application\\ Support/Google/Chrome/Default/Code\\ Cache/* "
+                         "~/Library/Application\\ Support/Google/Chrome/Default/GPUCache/* "
+                         "~/Library/Application\\ Support/Google/Chrome/Default/Service\\ Worker/CacheStorage/* "
+                         "~/Library/Caches/com.apple.Safari/* "
+                         "~/Library/Caches/com.apple.WebKit.WebContent/* "
+                         "~/Library/Caches/Firefox/* "
+                         "~/Library/Caches/Microsoft\\ Edge/* "
+                         "~/Library/Application\\ Support/Microsoft\\ Edge/Default/Code\\ Cache/* "
+                         "~/Library/Caches/BraveSoftware/Brave-Browser/* "
+                         "~/Library/Application\\ Support/BraveSoftware/Brave-Browser/Default/Service\\ Worker/CacheStorage/* "
+                         "~/Library/Caches/Company\\ Browser,\\ Inc./* "
+                         "~/Library/Application\\ Support/Arc/User\\ Data/Default/Service\\ Worker/CacheStorage/* "
+                         "~/Library/Caches/Vivaldi/* 2>/dev/null; true",
+            },
+            "list-browser-sizes": {
+                "label": "Show per-browser disk usage",
+                "desc":  "Informational. Runs `du -sh` on each browser's profile root so you can see who's hoarding the most.",
+                "cost":  "Read-only — no files touched.",
+                "shell": "for p in "
+                         "~/Library/Application\\ Support/Google/Chrome "
+                         "~/Library/Application\\ Support/Firefox "
+                         "~/Library/Safari "
+                         "~/Library/Application\\ Support/Microsoft\\ Edge "
+                         "~/Library/Application\\ Support/BraveSoftware/Brave-Browser "
+                         "~/Library/Application\\ Support/Arc; do "
+                         "  if [ -d \"$p\" ]; then du -sh \"$p\" 2>/dev/null; fi; "
+                         "done",
+                "informational": True,
+            },
+        },
+    },
+
+    # ─── Downloads ────────────────────────────────────────────────────
+    # ~/Downloads accumulates installers, screenshots, DMGs, ZIP exports, video
+    # exports. Even though the folder itself is user-owned, the actions here
+    # surface candidates for cleanup rather than deleting blindly.
+    "downloads": {
+        "label": "Downloads",
+        "icon":  "📥",
+        "tagline": "Surface installers, DMGs, and old exports cluttering ~/Downloads.",
+        "groups": {
+            "safe": [],
+            "probably_safe": [],
+            "caution": [
+                ("~/Downloads (user files — review individually)", "~/Downloads"),
+            ],
+        },
+        "actions": {
+            "list-old-downloads": {
+                "label": "List Downloads older than 30 days (sorted by size)",
+                "desc":  "Surfaces what's been sitting in ~/Downloads for over a month. Read-only — does not delete.",
+                "cost":  "Read-only — no files touched. Run the dedicated clean action below if you want to remove them.",
+                "shell": "find ~/Downloads -maxdepth 2 -type f -mtime +30 -size +1M 2>/dev/null "
+                         "| while read f; do du -sh \"$f\" 2>/dev/null; done | sort -rh | head -50",
+                "informational": True,
+            },
+            "list-installer-dmgs": {
+                "label": "List .dmg / .pkg installers in Downloads",
+                "desc":  "Most installers are one-shot — once you've used them, they're disposable. Lists candidates with their sizes.",
+                "cost":  "Read-only — surfaces what's there. Re-download from the vendor if you need it again.",
+                "shell": "find ~/Downloads -maxdepth 2 -type f \\( -iname '*.dmg' -o -iname '*.pkg' \\) 2>/dev/null "
+                         "| while read f; do du -sh \"$f\" 2>/dev/null; done | sort -rh",
+                "informational": True,
+            },
+            "clean-old-installers": {
+                "label": "Delete .dmg / .pkg installers in ~/Downloads",
+                "desc":  "Removes every .dmg and .pkg in ~/Downloads. Run the 'List …' action first to see what's about to go.",
+                "cost":  "Re-download from the vendor if you need a specific installer again. Doesn't touch the apps themselves — only the installer files.",
+                "shell": "find ~/Downloads -maxdepth 2 -type f \\( -iname '*.dmg' -o -iname '*.pkg' \\) -print -delete 2>/dev/null; true",
+            },
+            "list-big-downloads": {
+                "label": "List the 25 biggest files in ~/Downloads",
+                "desc":  "Top 25 by size. Useful for finding that 12 GB video export you forgot about.",
+                "cost":  "Read-only.",
+                "shell": "find ~/Downloads -maxdepth 3 -type f -size +50M 2>/dev/null "
+                         "| while read f; do du -sh \"$f\" 2>/dev/null; done | sort -rh | head -25",
+                "informational": True,
+            },
+        },
+    },
+
+    # ─── Temporary files ──────────────────────────────────────────────
+    # Per-user + per-system temp directories. macOS rotates /var/folders/*/T
+    # on reboot but it can balloon during long uptimes. /private/tmp is shared
+    # across processes — third-party tools sometimes leak orphans there.
+    "temp": {
+        "label": "Temp files",
+        "icon":  "🧹",
+        "tagline": "Sweep /tmp orphans + per-user temp dirs + the Trash.",
+        "groups": {
+            "safe": [
+                ("/private/tmp orphans (older than 1 day)", "/private/tmp"),
+                ("TemporaryItems cache",                    "~/Library/Caches/TemporaryItems"),
+                ("Per-user system caches",                  "~/Library/Caches/com.apple.bird"),
+            ],
+            "probably_safe": [
+                ("Per-user /var/folders temp",              "/var/folders"),
+                ("Quick Look thumbnails",                   "~/Library/Caches/com.apple.QuickLook.thumbnailcache"),
+                ("Spotlight indexing temp",                 "~/Library/Caches/com.apple.spotlight"),
+            ],
+            "caution": [
+                ("~/.Trash (NOT auto-emptied — review first)", "~/.Trash"),
+                ("Volume .Trashes (other volumes' trash)",     "/.Trashes"),
+            ],
+        },
+        "actions": {
+            "clean-tmp-orphans-old": {
+                "label": "Clean /private/tmp orphans older than 1 day",
+                "desc":  "Walks /private/tmp removing files + directories not touched in the last 24 hours. Skips anything actively in use.",
+                "cost":  "If a running tool was holding a temp file we removed (rare — most tools recreate on demand), it may fail and need a restart.",
+                "shell": "find /private/tmp -mindepth 1 -mtime +1 -print -delete 2>/dev/null; true",
+            },
+            "empty-trash": {
+                "label": "Empty the Trash",
+                "desc":  "Wipes ~/.Trash. Same as Finder → Empty Trash.",
+                "cost":  "Files in the Trash are gone permanently — restore anything you need first.",
+                "shell": "rm -rf ~/.Trash/* 2>/dev/null; rm -rf ~/.Trash/.* 2>/dev/null; true",
+            },
+            "list-quicklook-thumbs": {
+                "label": "Show QuickLook thumbnail cache size",
+                "desc":  "Informational — `du -sh` on the QuickLook thumbnailcache so you know how much regenerates on the next preview.",
+                "cost":  "Read-only.",
+                "shell": "du -sh ~/Library/Caches/com.apple.QuickLook.thumbnailcache 2>/dev/null || echo '(not present)'",
+                "informational": True,
+            },
+            "clear-quicklook-thumbs": {
+                "label": "Clear QuickLook thumbnails",
+                "desc":  "Removes the QuickLook thumbnail cache. Finder regenerates thumbnails on the next preview.",
+                "cost":  "First Finder preview of each file type takes ~100ms longer until the thumbnail is regenerated.",
+                "shell": "rm -rf ~/Library/Caches/com.apple.QuickLook.thumbnailcache/* 2>/dev/null; true",
+            },
+        },
+    },
+
+    # ─── Archives ─────────────────────────────────────────────────────
+    # Surface large archive files (.zip, .tar.gz, .dmg, .iso, .7z, .rar) so the
+    # user can see what's eating disk and decide. All actions are informational
+    # except the targeted "Delete archives older than X days" which is opt-in.
+    "archives": {
+        "label": "Archives",
+        "icon":  "📦",
+        "tagline": "Find old .zip / .dmg / .iso / .tar.gz files lurking on disk.",
+        "groups": {
+            "safe": [],
+            "probably_safe": [],
+            "caution": [],
+        },
+        "actions": {
+            "list-archives-everywhere": {
+                "label": "Find all archives larger than 100 MB",
+                "desc":  "Walks ~/Downloads, ~/Desktop, ~/Documents, and ~/Movies for .zip/.dmg/.iso/.tar/.tgz/.7z/.rar files over 100 MB. Sorted biggest-first.",
+                "cost":  "Read-only — surfaces candidates; nothing is touched.",
+                "shell": "find ~/Downloads ~/Desktop ~/Documents ~/Movies -maxdepth 4 -type f -size +100M "
+                         "\\( -iname '*.zip' -o -iname '*.dmg' -o -iname '*.iso' -o -iname '*.tar' "
+                         "-o -iname '*.tar.gz' -o -iname '*.tgz' -o -iname '*.7z' -o -iname '*.rar' "
+                         "-o -iname '*.bz2' -o -iname '*.xz' \\) 2>/dev/null "
+                         "| while read f; do du -sh \"$f\" 2>/dev/null; done | sort -rh",
+                "informational": True,
+            },
+            "list-archives-by-age": {
+                "label": "Find archives untouched for 90+ days",
+                "desc":  "Same archive types as above, but filtered to files you haven't opened in three months. Read-only.",
+                "cost":  "Read-only.",
+                "shell": "find ~/Downloads ~/Desktop ~/Documents -maxdepth 4 -type f -atime +90 "
+                         "\\( -iname '*.zip' -o -iname '*.dmg' -o -iname '*.iso' -o -iname '*.tar' "
+                         "-o -iname '*.tar.gz' -o -iname '*.tgz' -o -iname '*.7z' -o -iname '*.rar' \\) 2>/dev/null "
+                         "| while read f; do du -sh \"$f\" 2>/dev/null; done | sort -rh | head -50",
+                "informational": True,
+            },
+            "delete-dmgs-everywhere": {
+                "label": "Delete all .dmg files in ~/Downloads + ~/Desktop",
+                "desc":  "Removes every .dmg in ~/Downloads and ~/Desktop. DMGs are install images — rarely needed after the first run.",
+                "cost":  "Re-download the installer from the vendor if you need it again.",
+                "shell": "find ~/Downloads ~/Desktop -maxdepth 3 -type f -iname '*.dmg' -print -delete 2>/dev/null; true",
+            },
+        },
+    },
+
 }
 
 # Tab structure — top-level navigation.
 # `meta: True` entries are UI-only (no cleaners.py category). The dashboard
 # treats them as special tabs (Overview aggregates everything across categories).
 TABS = [
-    {"id": "overview", "label": "Overview", "meta": True},
-    {"id": "xcode",    "label": "Xcode",    "category": "xcode"},
-    {"id": "llms",     "label": "LLMs",     "subcategories": ["llms-claude", "llms-cursor", "llms-chatgpt"]},
-    {"id": "docker",   "label": "Docker",   "category": "docker"},
-    {"id": "apps",     "label": "Apps",     "category": "apps"},
-    {"id": "creative", "label": "Creative", "subcategories": [
+    {"id": "overview",  "label": "Overview",  "meta": True},
+    {"id": "xcode",     "label": "Xcode",     "category": "xcode"},
+    {"id": "llms",      "label": "LLMs",      "subcategories": ["llms-claude", "llms-cursor", "llms-chatgpt"]},
+    {"id": "docker",    "label": "Docker",    "category": "docker"},
+    {"id": "apps",      "label": "Apps",      "category": "apps"},
+    {"id": "browsers",  "label": "Browsers",  "category": "browsers"},
+    {"id": "downloads", "label": "Downloads", "category": "downloads"},
+    {"id": "creative",  "label": "Creative",  "subcategories": [
         "creative-adobe",
         "creative-davinci",
         "creative-finalcut",
@@ -823,5 +1057,7 @@ TABS = [
         "creative-blender",
         "creative-obs",
     ]},
-    {"id": "system",   "label": "System",   "category": "system"},
+    {"id": "temp",      "label": "Temp files","category": "temp"},
+    {"id": "archives",  "label": "Archives",  "category": "archives"},
+    {"id": "system",    "label": "System",    "category": "system"},
 ]

@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.17.0] — 2026-05-12 16:42:16 Eastern · *four new categories — Browsers · Downloads · Temp files · Archives — plus a largest-files filter + asc/desc sort toggle*
+
+### Added — four new top-level categories
+- **Browsers** (`browsers` · emerald). Combined cache/history reclaim across **Chrome / Safari / Firefox / Edge / Brave / Arc / Vivaldi**.
+  - *Safe tier*: every browser's cache folder + Code Cache + GPU cache + service-worker CacheStorage (16 paths). Re-fetched on next page load.
+  - *Opt-in tier*: history files (sites + autocomplete + download history). Removing keeps you logged in but wipes "did I visit this site?" memory.
+  - *Caution tier*: cookies + login data per browser — never auto-deleted. Surfaces sizes so you can review and act manually if you want to log out everywhere.
+  - Two predefined actions: **Clean every browser's cache** (one click, wipes the safe tier across all installed browsers) and **Show per-browser disk usage** (informational `du -sh` so you know who's hoarding).
+
+- **Downloads** (`downloads` · orange). Surfaces what's accumulated in `~/Downloads`.
+  - Single caution-tier path: `~/Downloads` itself — never auto-deleted (it's your stuff).
+  - Four actions: **List Downloads older than 30 days** (read-only, sorted biggest-first), **List .dmg / .pkg installers** (the classic disposable installer scan), **Delete .dmg / .pkg installers** (opt-in), **List 25 biggest files** (top-25 by `du -sh`).
+
+- **Temp files** (`temp` · neutral gray). System + user temp directories that bloat during long uptimes.
+  - *Safe tier*: `/private/tmp` orphans, `~/Library/Caches/TemporaryItems`, the bird cache.
+  - *Opt-in tier*: `/var/folders/*/T` (per-user system temp), QuickLook thumbnails, Spotlight indexing temp.
+  - *Caution tier*: `~/.Trash` and `/.Trashes` on other volumes — surfaced but never auto-emptied.
+  - Four actions: **Clean /private/tmp orphans older than 1 day**, **Empty the Trash**, **Show QuickLook thumbnail cache size**, **Clear QuickLook thumbnails**.
+
+- **Archives** (`archives` · brown). Surface large archive files lurking on disk.
+  - No static paths — this category is action-driven (the user reviews + decides).
+  - Three actions: **Find all archives >100 MB** (walks `~/Downloads`, `~/Desktop`, `~/Documents`, `~/Movies` for .zip/.dmg/.iso/.tar.gz/.tgz/.7z/.rar/.bz2/.xz — sorted biggest-first), **Find archives untouched for 90+ days** (filtered by `atime`), **Delete all .dmg files in `~/Downloads + ~/Desktop`** (opt-in nuke).
+
+### Added — largest-files filter + asc/desc sort toggle
+- **Per-category row toolbar** sits above the path table on every category panel. Two control groups:
+  - **Min size** (filter): pill row — *All · ≥1 MB · ≥100 MB · ≥1 GB · ≥5 GB*. Hides rows below the threshold (visually filters — no rescan needed). The selected pill highlights teal.
+  - **Sort**: *Size · Name · ↓/↑*. Toggle button flips between ascending and descending; defaults to descending by size (the v0.14+ behavior). Sort works inside each tier (safe / opt-in / caution) so safe items stay grouped at the top.
+- **State persists across rescans** (vanilla stores in `tabsState.tableState[catId]`, React uses local component state — both work the same way to the user).
+- **Empty-state message** when the filter excludes everything: *"No paths match the ≥X filter. Lower the threshold to see more."*
+
+### Added — UI plumbing
+- **`TAB_ICONS` entries** for `browsers` (globe), `downloads` (down-arrow tray), `temp` (trash can), `archives` (sealed box). Vanilla uses inline SVGs; React uses Lucide's `Globe`, `Download`, `Trash`, `Archive`.
+- **`PIE_COLORS` palette** extended from 6 to 10 entries — emerald (browsers), orange (downloads), neutral gray (temp), brown (archives). Same hue in both implementations for parity.
+- **`RunningWidget`'s `CAT_COLORS` map** updated to match so the per-category dots in the header chip line up with the pie slices.
+
+### Server (`cleaners.py`)
+- Four new `CATEGORIES` entries, slotted alphabetically-ish into the existing structure.
+- `TABS` reordered to: Overview · Xcode · LLMs · Docker · Apps · **Browsers · Downloads** · Creative · **Temp files · Archives** · System. The new tabs sit next to the conceptually-adjacent existing ones (browsers next to apps, downloads next to browsers, temp+archives next to system).
+- Total categories: 13 → 17.
+
+### Why
+Maintainer: *"add Browsers stuff, add Downloads stuff and temporary files stuff and archives and largest files filter and acending ot decending view too then commit and merge and push it all."* Done.
+
+Verified end-to-end at 1280x1100 — React + vanilla. All four new tabs render in the sidebar with icons + GB stats + mini-donuts. Pie chart legend shows 10 categories. Cards grid shows 9 per-category cards (was 6). Browsers panel populates with 16 safe-tier rows; toolbar's `≥1 MB` filter correctly hides every empty row, leaving just the predefined actions visible.
+
 ## [0.16.0] — 2026-05-12 16:26:13 Eastern · *Phase 4 — React app is now the canonical UI (vanilla available behind `/legacy`)*
 
 Closes the last item on the v0.14.2 audit list: gap 6 + elevation J. The React + Vite + Tailwind UI scaffolded across v0.15.0-WIP commits is now built and served by the Python server. Vanilla `web/index.html` lives on as the rollback escape hatch.

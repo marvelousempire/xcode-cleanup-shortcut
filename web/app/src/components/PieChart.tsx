@@ -5,12 +5,16 @@ import { fmt } from "../lib/utils";
 
 // Per-category color palette — matches the vanilla v0.15.0 PIE_COLORS map.
 const PIE_COLORS: Record<string, string> = {
-  xcode: "#0F766E",    // teal — same as accent
-  llms: "#7C3AED",     // violet
-  docker: "#0EA5E9",   // sky
-  apps: "#F59E0B",     // amber
-  creative: "#EC4899", // pink
-  system: "#64748B",   // slate
+  xcode: "#0F766E",     // teal — same as accent
+  llms: "#7C3AED",      // violet
+  docker: "#0EA5E9",    // sky
+  apps: "#F59E0B",      // amber
+  browsers: "#10B981",  // emerald (v0.17.0)
+  downloads: "#F97316", // orange (v0.17.0)
+  creative: "#EC4899",  // pink
+  temp: "#A3A3A3",      // neutral (v0.17.0)
+  archives: "#92400E",  // brown (v0.17.0)
+  system: "#64748B",    // slate
 };
 
 function stripGlyph(s: string) {

@@ -1,10 +1,22 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../state/DashboardContext";
 import type { Tier } from "../lib/types";
 import { PathRow } from "./PathRow";
 import { ActionCard } from "./ActionCard";
-import { TabIcon, Info } from "./icons";
+import { TabIcon, Info, ArrowUp, ArrowDown } from "./icons";
 import { cn, fmt } from "../lib/utils";
+
+// Row-table filter + sort state (v0.17.0). Kept locally per CategoryPanel
+// instance so each tab remembers its own preference while mounted.
+type SortBy = "size" | "name";
+type SortDir = "asc" | "desc";
+const MIN_SIZE_OPTIONS: { label: string; mb: number }[] = [
+  { label: "All",      mb: 0 },
+  { label: "≥1 MB",    mb: 1 },
+  { label: "≥100 MB",  mb: 100 },
+  { label: "≥1 GB",    mb: 1024 },
+  { label: "≥5 GB",    mb: 5120 },
+];
 
 const TIER_META: Record<Tier, { label: string; note: string }> = {
   safe: {
@@ -35,6 +47,11 @@ export function CategoryPanel({ catId, displayLabel }: Props) {
   const cached = scans[catId];
   const scan = cached?.scan;
   const actions = cached?.actions ?? [];
+
+  // Filter + sort state (v0.17.0). Defaults: show everything, sort by size desc.
+  const [minMB, setMinMB] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<SortBy>("size");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   // Auto-scan on first mount if no cache.
   useEffect(() => {
@@ -108,10 +125,80 @@ export function CategoryPanel({ catId, displayLabel }: Props) {
 
       {scan && (
         <div className="px-6 pt-3.5 pb-1">
+          {/* Largest-files filter + sort toolbar (v0.17.0). Shared across all
+              tiers in this category — hides individual rows under the threshold
+              and re-sorts in place. */}
+          <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border border-border/15 bg-bg-2 px-3 py-2 text-[11px] tabular">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">Min size</span>
+            <div className="flex flex-wrap gap-1">
+              {MIN_SIZE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.mb}
+                  type="button"
+                  onClick={() => setMinMB(opt.mb)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 transition-colors",
+                    minMB === opt.mb
+                      ? "border-accent text-accent"
+                      : "border-border/20 text-fg-dim hover:border-border hover:text-fg",
+                  )}
+                  style={minMB === opt.mb ? { background: "hsl(var(--accent) / 0.10)" } : undefined}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <span className="ml-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">Sort</span>
+            <div className="flex flex-wrap gap-1">
+              <button
+                type="button"
+                onClick={() => setSortBy("size")}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 transition-colors",
+                  sortBy === "size"
+                    ? "border-accent text-accent"
+                    : "border-border/20 text-fg-dim hover:border-border hover:text-fg",
+                )}
+                style={sortBy === "size" ? { background: "hsl(var(--accent) / 0.10)" } : undefined}
+              >
+                Size
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortBy("name")}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 transition-colors",
+                  sortBy === "name"
+                    ? "border-accent text-accent"
+                    : "border-border/20 text-fg-dim hover:border-border hover:text-fg",
+                )}
+                style={sortBy === "name" ? { background: "hsl(var(--accent) / 0.10)" } : undefined}
+              >
+                Name
+              </button>
+              <button
+                type="button"
+                title={sortDir === "asc" ? "Ascending — switch to descending" : "Descending — switch to ascending"}
+                onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                className="inline-flex items-center rounded-full border border-border/20 px-2.5 py-0.5 text-fg transition-colors hover:border-border"
+              >
+                {sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+              </button>
+            </div>
+          </div>
+
           {(Object.keys(TIER_META) as Tier[]).map((tier) => {
             const group = scan.groups[tier];
             if (!group?.paths?.length) return null;
-            const sorted = [...group.paths].sort((a, b) => b.size_gb - a.size_gb);
+            const minKB = minMB * 1024;
+            const filtered = (group.paths || []).filter((p) => minMB === 0 || p.size_kb >= minKB);
+            const sorted = [...filtered].sort((a, b) => {
+              let cmp: number;
+              if (sortBy === "name") cmp = (a.label || "").localeCompare(b.label || "");
+              else cmp = (a.size_gb || 0) - (b.size_gb || 0);
+              return sortDir === "asc" ? cmp : -cmp;
+            });
+            if (sorted.length === 0) return null;
             const meta = TIER_META[tier];
             return (
               <div key={tier}>

@@ -16,6 +16,13 @@ import {
   RefreshCw,
   Trash2,
   Info,
+  Globe,
+  Download,
+  Trash,
+  Archive,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 
 // Tab-icon map keyed by tab id. Mirrors TAB_ICONS in the legacy vanilla UI.
@@ -25,7 +32,11 @@ export const TAB_ICONS: Record<string, React.ElementType> = {
   llms: Bot,
   docker: Container,
   apps: AppWindow,
+  browsers: Globe,
+  downloads: Download,
   creative: Palette,
+  temp: Trash,
+  archives: Archive,
   system: HardDrive,
 };
 
@@ -45,4 +56,7 @@ export {
   RefreshCw,
   Trash2,
   Info,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 };
