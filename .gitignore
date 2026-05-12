@@ -4,3 +4,6 @@
 
 # package-shortcut outputs (signed bundles attached to releases, not committed)
 dist/
+
+# Claude Code local helper config (preview launch.json, etc.)
+.claude/

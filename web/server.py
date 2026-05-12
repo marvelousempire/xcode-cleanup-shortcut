@@ -60,12 +60,19 @@ def find_open_port(preferred: int, tries: int = PORT_RANGE) -> int:
 
 
 def get_version() -> str:
-    """Read the most recent version from CHANGELOG.md. Returns 'v?.?.?' on failure."""
+    """Read the most recent version from docs/CHANGELOG.md. Handles both header formats.
+
+    New canonical (since v0.9.0):  ## [0.9.0] — 2026-05-12 11:57:12 Eastern · *tagline*
+    Old (pre v0.9.0):              ## v0.8.5 — 2026-05-12
+    """
+    import re
     try:
-        for line in (REPO_DIR / "CHANGELOG.md").read_text().splitlines():
-            if line.startswith("## v"):
-                # "## v0.8.4 — 2026-05-12" → "v0.8.4"
-                return line.split()[1]
+        for line in (REPO_DIR / "docs" / "CHANGELOG.md").read_text().splitlines():
+            # Match either format and extract the version string
+            m = re.match(r"^## \[([0-9.]+)\]", line)  # canonical
+            if m: return f"v{m.group(1)}"
+            m = re.match(r"^## v([0-9.]+)", line)        # legacy
+            if m: return f"v{m.group(1)}"
     except Exception:
         pass
     return "v?.?.?"
@@ -208,7 +215,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/api/report":
             return self._serve_json(get_report())
         if path == "/api/changelog":
-            body = (REPO_DIR / "CHANGELOG.md").read_bytes() if (REPO_DIR / "CHANGELOG.md").exists() else b"(missing CHANGELOG.md)"
+            body = (REPO_DIR / "docs" / "CHANGELOG.md").read_bytes() if (REPO_DIR / "docs" / "CHANGELOG.md").exists() else b"(missing CHANGELOG.md)"
             self.send_response(200)
             self.send_header("Content-Type", "text/markdown; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
