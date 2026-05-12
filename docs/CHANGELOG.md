@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.1] — 2026-05-12 19:11:26 Eastern · *Changelog modal — centered + typography*
+
+### Fixed
+- **Modal now reliably centered.** The React `ChangelogModal` previously positioned itself via `fixed left-1/2 top-1/2` + `translate(-50%,-50%)` directly on `Dialog.Content`. That works in isolation but drifts whenever Radix's own transform stack lands on top of it. Refactored so the `Dialog.Overlay` is itself a `flex items-center justify-center` container and the content auto-centers inside it. Verified: viewport 1280×900 → modal renders at x=280 / y=67.5 / w=720 / h=765 (exact horizontal *and* vertical center).
+- **Modal body is now actually readable.** The rendered markdown was hitting browser defaults — no header/body/list/code typography because nothing targeted `.changelog-body`. Added the full type system the vanilla `.modal-body` already had: accent-colored `h2` titles per version, small uppercase-caps `h3` section labels (`ADDED`, `FIXED`, `CHANGED`, etc), tighter paragraph rhythm, disc-style bullet lists with faint markers, monospace `code` chips on `var(--bg-3)`, and an explicit `em { font-style: normal }` so the `*…*` "Why" callouts read as emphasis, not italics.
+- The Overlay container is now `overflow-y-auto` so very long changelogs (we're up to 18 versions now) can scroll the page underneath if a user pushes the window short — instead of being clipped at viewport bottom.
+
+### Why
+Maintainer: *"the modal changelog is not centered in the screen and the changelog is not easy to read"* — both. Centered, and readable.
+
+Only `apps/web` (the canonical Vite UI) needed the fix; the vanilla `web/index.html` modal styles were already complete.
+
 ## [0.18.0] — 2026-05-12 18:13:18 Eastern · *pnpm workspace + Turbo + a Next.js app — three frontends, one Python backend*
 
 Maintainer: *"pnpm turbo next"* — done.

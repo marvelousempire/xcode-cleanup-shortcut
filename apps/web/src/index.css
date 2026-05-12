@@ -150,6 +150,67 @@
   }
 }
 
+/* v0.18.1 — Changelog modal body typography. Mirrors the vanilla `.modal-body`
+   styles in web/index.html so the rendered markdown is actually readable
+   instead of falling back to browser defaults. Each version block now reads
+   like: accent-colored title, uppercase-caps subheads, comfortable paragraph
+   spacing, monospace inline-code chips. */
+.changelog-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: hsl(var(--fg));
+}
+.changelog-body h2 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 28px 0 4px;
+  color: hsl(var(--accent));
+  letter-spacing: -0.005em;
+}
+.changelog-body h2:first-child { margin-top: 0; }
+.changelog-body h3 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(var(--fg-dim));
+  margin: 16px 0 6px;
+}
+.changelog-body p {
+  margin: 6px 0;
+  color: hsl(var(--fg));
+}
+.changelog-body ul {
+  margin: 6px 0 10px;
+  padding-left: 22px;
+  list-style: disc;
+}
+.changelog-body li {
+  margin: 4px 0;
+  color: hsl(var(--fg));
+}
+.changelog-body li::marker { color: hsl(var(--fg-faint)); }
+.changelog-body code {
+  font-family: var(--mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 11.5px;
+  background: hsl(var(--bg-3));
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: hsl(var(--fg));
+}
+.changelog-body strong { font-weight: 600; color: hsl(var(--fg)); }
+.changelog-body em {
+  color: hsl(var(--fg-dim));
+  font-style: normal; /* the markdown uses *…* for "why" callouts, not italics */
+}
+.changelog-body a {
+  color: hsl(var(--accent));
+  text-decoration: none;
+  border-bottom: 1px solid hsl(var(--accent) / 0.35);
+  transition: border-color 0.15s ease;
+}
+.changelog-body a:hover { border-bottom-color: hsl(var(--accent)); }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
