@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.1] — 2026-05-12 14:44:02 Eastern · *fix: Overview card totals now match the "Clean ALL" buttons*
+
+### Fixed
+- **Overview cards no longer conflate tiers.** Each card now shows two prominent numbers stacked — **`X GB safe`** (green) and **`Y GB opt-in`** (amber) — instead of a single ambiguous "cleanable" headline that combined the two. Caution-tier moves to a smaller informational line below ("X GB caution (surface only)") since the dashboard never auto-cleans that tier.
+
+  **Why it matters:** the math is now obvious at a glance. Sum the green numbers down the card column → that's what the `Clean ALL safe` button will free. Sum the amber numbers → that's what `Clean ALL opt-in` will free. Before this change the card said "5.1 GB cleanable" while the button said "0.0 GB", and the user reasonably assumed the button was undercounting. Both numbers were correct; they were just measuring different tiers. The fix removes the conflation.
+
+### Why
+Maintainer: "I see each category Xcode LLM's Docker they all have the amount of gigabytes that are cleanable. If I add all of those boxes up together, the button clean all safe should be the total amount of all those claimable cleanable." Math now works: card sums per tier equal the corresponding button GB total.
+
 ## [0.14.0] — 2026-05-12 13:47:59 Eastern · *Overview tab + three-column shell — sidebar nav, sub-nav, focused viewport*
 
 The shell redesign the maintainer asked for. Tabs migrate to a left sidebar; sub-items (LLMs + Creative) move to a right sidebar; the center becomes a dedicated focus viewport for the active panel. A new **Overview** tab is the default landing — it pre-scans every category and renders a per-category summary grid + the hero + the global mega-buttons.
