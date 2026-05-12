@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.10.0] — 2026-05-12 12:17:14 Eastern · *fresh-session handoff — HANDOFF rewrite + Redesign Brief*
+
+Targeted at the next phase: a fresh Claude Code session that needs to redesign the app cold using the full skill toolkit and ai-skills-library rules.
+
+### Added
+- **`docs/Redesign-Brief.md`** — 195-line action document for the next session. Covers: what to preserve vs reconsider, the design-skill chain (`ui-ux-pro-max` → `emil-design-eng`), the marketing-skill chain (`page-cro` → `copywriting`), a suggested 60-minute starting workflow, "done" + "done well" success criteria, and open questions to surface vs decide on the spot.
+
+### Changed
+- **`HANDOFF.md` fully rewritten** as a true bridge document for fresh-session bootstrapping:
+  - TL;DR + 60-second read order
+  - Current pipeline state per `dev-discipline` rule
+  - The 58-skill toolkit inventory with use-cases per family
+  - Operating-rules reference (links to `marvelousempire/ai-skills-library/rules/library`)
+  - File-by-file map of the repo
+  - Outstanding work numbered for traceability
+  - "How to ship from here" and "How to redesign from here" pointers
+
+### Why
+User: "I'm gonna start a new session and then I expect it to know everything so it needs to be kind of like a handoff sheet because I'm gonna get that new session to redesign this entire app based on that knowledge, skills and tools set." These two docs are designed to make that next-session bootstrap take 60 seconds, with the design + marketing skill chain explicitly laid out so the new session doesn't re-derive anything.
+
 ## [0.9.0] — 2026-05-12 11:57:12 Eastern · *rules compliance — canonical CHANGELOG, Feature Ledger, Issue Log*
 
 Brings this repo into compliance with the design rules at `marvelousempire/ai-skills-library/rules/` (`dev-discipline`, `changelog-and-versioning`, `go-live-path`).
