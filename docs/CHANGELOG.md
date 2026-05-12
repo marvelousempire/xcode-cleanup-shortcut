@@ -1,5 +1,59 @@
 # Changelog
 
+## [0.18.0] — 2026-05-12 18:13:18 Eastern · *pnpm workspace + Turbo + a Next.js app — three frontends, one Python backend*
+
+Maintainer: *"pnpm turbo next"* — done.
+
+### Added — pnpm workspace
+- **Root `package.json`** + **`pnpm-workspace.yaml`** turn the repo into a real workspace. `apps/*` is the workspace glob.
+- **Two apps** under `apps/`:
+  - **`@cleanup-hub/web`** (the existing Vite + React app, renamed from `cleanup-hub-app` and moved from `web/app/` → `apps/web/` with `git mv` so history is preserved).
+  - **`@cleanup-hub/web-next`** (NEW — Next.js 14 with the App Router, configured as a static export so the Python server can ship it without a Node runtime).
+
+### Added — Turbo
+- **`turbo.json`** at the root defining the standard pipeline tasks: `build`, `dev`, `typecheck`, `lint`. `build` uses `dependsOn: ["^build"]` so workspace dependencies build first, and declares `dist/**`, `out/**`, `.next/**` as outputs (with `!.next/cache/**` excluded so Turbo's cache doesn't fight Next's).
+- Root scripts re-expose Turbo: `pnpm build` / `pnpm dev` / `pnpm typecheck` / `pnpm lint` all delegate to `turbo run ...`.
+- Verified: `pnpm turbo run build` produces both `apps/web/dist/` (Vite) and `apps/web-next/out/` (Next) in one pass.
+
+### Added — Next.js app at `apps/web-next/`
+- **App Router** (`app/page.tsx`, `app/layout.tsx`, `app/globals.css`) — no `pages/` legacy.
+- **`output: "export"`** in `next.config.mjs` — Next emits a fully-static site under `out/` so it can be served by any HTTP server (no Node runtime needed for production).
+- **`basePath: "/next"`** + **`assetPrefix: "/next"`** so the Next surface coexists with the Vite app at `/` instead of clashing on root.
+- **Tailwind config mirrors `@cleanup-hub/web`**'s token system (HSL custom properties, `--accent`/`--safe`/`--warn`/`--danger`, light + dark `prefers-color-scheme`) so the two apps render identically and we can lift components between them.
+- Demo page (`app/page.tsx`) fetches `/api/status` on mount and renders the hero. Proves the Python backend + Next frontend work together end-to-end.
+
+### Added — Python server routes
+- **`GET /next/`** → serves `apps/web-next/out/index.html` (no-store; reflects rebuilds on next refresh).
+- **`GET /next/_next/static/*`** → serves the Next-emitted hashed chunks with `Cache-Control: public, max-age=31536000, immutable`. Other `/next/*` paths fall through to disk so additional pages (when we add them) work without server changes.
+- **`GET /?next=1`** → 302-redirects to `/next/`. Lets `?legacy=1` (vanilla), default (Vite), and `?next=1` (Next) all be reachable via the same root URL.
+- `REACT_DIST_CANDIDATES` checks both the new `apps/web/dist/` and the legacy `web/app/dist/` path so a v0.17.x checkout that's already rebuilt locally keeps working.
+
+### Changed
+- **Makefile** ergonomics:
+  - `make ui` now runs `pnpm turbo run build` (Vite + Next in parallel) then launches the Python server.
+  - `make ui-react` builds **just** `@cleanup-hub/web` via `pnpm --filter`.
+  - `make ui-next` builds **just** `@cleanup-hub/web-next`.
+  - `make ui-legacy` (unchanged) — vanilla UI.
+  - **New `make ui-dev`** — `pnpm turbo run dev` to run both frontends in dev mode (Vite on `:5174`, Next on `:5175`) in parallel.
+- **`.gitignore`** extended for the new layout: `apps/*/dist/`, `apps/*/out/`, `apps/*/.next/`, `apps/*/node_modules/`, root `node_modules/`, `.turbo/`. Keeps the old `web/app/dist/` ignore for safety.
+- `web/server.py` imports `typing.Optional` so the new `_react_dist_dir()` helper stays compatible with Python 3.9 (the in-tree `|`-union syntax requires 3.10).
+- `_CTYPE_MAP` mime mapper picks up `.json`, `.html`, `.txt`, `.ico` so Next's emitted asset variety (build manifests, fallback HTML, favicon) serves with correct content types.
+
+### Migration
+- **Old build paths still work.** If you have a v0.17.x checkout with `web/app/dist/` already built, the server falls back to that location until you rebuild. After `git pull && pnpm install`, the new `apps/web/dist/` takes precedence.
+- **No URL surface change for users.** `/` still serves the canonical UI (now the Vite app from its new home). Vanilla UI at `/legacy` / `?legacy=1` is unchanged. The Next app is opt-in via `?next=1` or `/next/`.
+
+### Verified
+End-to-end at 1280x900 via `make ui`:
+- `/ → 200` (Vite — 11 sidebar tabs, pie chart, etc.)
+- `/?legacy=1 → 200` (vanilla v0.15.0+ shell)
+- `/?next=1 → 302` (redirects to `/next/`)
+- `/next/ → 200` with `<title>Cleanup Hub · Next</title>`
+- `/next/_next/static/css/*.css → 200`
+- Next page fetches `/api/status` and renders 12.2 GB free with the shared design tokens. Footer copyright matches the v0.14.2 wording.
+
+Three frontends, one Python backend, one `make ui`.
+
 ## [0.17.1] — 2026-05-12 16:55:02 Eastern · *every sidebar tab shows a number now*
 
 ### Fixed

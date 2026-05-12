@@ -5,9 +5,20 @@
 # package-shortcut outputs (signed bundles attached to releases, not committed)
 dist/
 
-# React build artifacts (vite build → web/app/dist/). Rebuilt by `make ui`.
+# React build artifacts. Pre-v0.18.0 the Vite app lived at web/app/; from v0.18
+# it lives at apps/web/. Both are gitignored so old checkouts keep working.
 web/app/dist/
 web/app/node_modules/
+
+# v0.18.0 pnpm workspace — Vite app (apps/web) + Next.js app (apps/web-next).
+apps/*/dist/
+apps/*/out/
+apps/*/.next/
+apps/*/node_modules/
+node_modules/
+
+# Turbo's local cache directory.
+.turbo/
 
 # Claude Code local helper config (preview launch.json, etc.)
 .claude/

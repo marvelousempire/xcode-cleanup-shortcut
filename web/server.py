@@ -31,6 +31,7 @@ import concurrent.futures
 import socket
 import time
 from pathlib import Path
+from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
 # Make sibling module importable
@@ -39,28 +40,47 @@ import cleaners  # noqa: E402
 
 REPO_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR  = REPO_DIR / "web"
-REACT_DIST_DIR = WEB_DIR / "app" / "dist"
+# v0.18.0 moved the Vite app from web/app → apps/web to fit a pnpm workspace.
+# Try the new location first; fall back to the old one so a non-rebuilt repo
+# checked out from a v0.17.x tag still serves.
+APPS_DIR = REPO_DIR / "apps"
+REACT_DIST_CANDIDATES = [APPS_DIR / "web" / "dist", WEB_DIR / "app" / "dist"]
+NEXT_OUT_DIR = APPS_DIR / "web-next" / "out"
 PREFERRED_PORT = int(os.environ.get("XCC_UI_PORT", "8765"))
 
-# Pick the React build if it's been compiled (vite build → web/app/dist/), unless
+def _react_dist_dir() -> Optional[Path]:
+    """Resolve the first React build directory that exists. None if no build."""
+    for d in REACT_DIST_CANDIDATES:
+        if (d / "index.html").exists():
+            return d
+    return None
+
+# Pick the React build if it's been compiled (vite build → apps/web/dist/), unless
 # XCC_LEGACY_UI=1 forces vanilla. Each request can also opt-back into vanilla
 # via ?legacy=1, so users can switch without restarting the server.
 def _react_build_available() -> bool:
-    return (REACT_DIST_DIR / "index.html").exists()
+    return _react_dist_dir() is not None
+
+def _next_build_available() -> bool:
+    return (NEXT_OUT_DIR / "index.html").exists()
 
 # Minimal mime mapping for vite's emitted assets (js, css, source maps, fonts).
 # We intentionally avoid the heavier mimetypes module — this covers everything
 # vite actually produces and stays in line with the rest of the stdlib-only feel.
 _CTYPE_MAP = {
-    ".js":   "application/javascript; charset=utf-8",
-    ".mjs":  "application/javascript; charset=utf-8",
-    ".css":  "text/css; charset=utf-8",
-    ".map":  "application/json; charset=utf-8",
-    ".svg":  "image/svg+xml",
-    ".png":  "image/png",
-    ".jpg":  "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".webp": "image/webp",
+    ".js":    "application/javascript; charset=utf-8",
+    ".mjs":   "application/javascript; charset=utf-8",
+    ".css":   "text/css; charset=utf-8",
+    ".map":   "application/json; charset=utf-8",
+    ".json":  "application/json; charset=utf-8",
+    ".html":  "text/html; charset=utf-8",
+    ".txt":   "text/plain; charset=utf-8",
+    ".ico":   "image/x-icon",
+    ".svg":   "image/svg+xml",
+    ".png":   "image/png",
+    ".jpg":   "image/jpeg",
+    ".jpeg":  "image/jpeg",
+    ".webp":  "image/webp",
     ".woff":  "font/woff",
     ".woff2": "font/woff2",
     ".ttf":   "font/ttf",
@@ -267,20 +287,48 @@ class Handler(http.server.BaseHTTPRequestHandler):
         query = parse_qs(url.query)
 
         if path == "/":
-            # Prefer the built React app when web/app/dist/index.html exists,
-            # unless the user opted into legacy via env or ?legacy=1.
+            # Three frontends ranked by query/env preference:
+            #   ?next=1   → Next.js static export (apps/web-next/out)
+            #   ?legacy=1 → vanilla web/index.html
+            #   default   → Vite React app (apps/web/dist) when built, else vanilla
+            want_next   = query.get("next",   ["0"])[0] == "1"
             force_legacy = os.environ.get("XCC_LEGACY_UI") == "1" or query.get("legacy", ["0"])[0] == "1"
+            if want_next and _next_build_available():
+                self.send_response(302)
+                self.send_header("Location", "/next/")
+                self.end_headers()
+                return
             if _react_build_available() and not force_legacy:
                 return self._serve_react_root()
             return self._serve_file("index.html", "text/html; charset=utf-8")
 
-        # Serve hashed assets emitted by `vite build` (web/app/dist/assets/*).
+        # Serve hashed assets emitted by `vite build` (apps/web/dist/assets/*).
         if path.startswith("/assets/") and _react_build_available():
             rel = path[len("/assets/"):]
-            asset = REACT_DIST_DIR / "assets" / rel
+            asset = _react_dist_dir() / "assets" / rel
             if asset.exists() and asset.is_file() and not any(p == ".." for p in asset.parts):
                 ctype = _guess_ctype(asset.name)
                 return self._serve_path(asset, ctype, cacheable=True)
+            return self.send_error(404)
+
+        # Next.js static export — served at /next/ + /next/_next/static/*.
+        # `next.config.mjs` sets basePath: "/next" so every emitted asset URL is
+        # prefixed correctly; we just have to forward those paths to disk.
+        if path == "/next" or path == "/next/":
+            if not _next_build_available():
+                return self.send_error(404, "Next.js app not built — run `pnpm turbo run build`")
+            return self._serve_path(NEXT_OUT_DIR / "index.html", "text/html; charset=utf-8", cacheable=False)
+        if path.startswith("/next/") and _next_build_available():
+            rel = path[len("/next/"):]
+            asset = NEXT_OUT_DIR / rel
+            if asset.is_dir():
+                asset = asset / "index.html"
+            if asset.exists() and asset.is_file() and ".." not in asset.parts:
+                ctype = _guess_ctype(asset.name)
+                # Hashed chunks under _next/static/* can cache forever; the HTML
+                # shell is no-store so a rebuild is picked up on next refresh.
+                cacheable = "/_next/static/" in path
+                return self._serve_path(asset, ctype, cacheable=cacheable)
             return self.send_error(404)
 
         # Legacy escape hatch — explicit /legacy URL serves vanilla regardless.
@@ -394,9 +442,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _serve_react_root(self):
-        # Serve web/app/dist/index.html as the canonical UI when available.
+        # Serve apps/web/dist/index.html as the canonical UI when available.
         # Marked no-store so a rebuild during `make ui` is reflected immediately.
-        return self._serve_path(REACT_DIST_DIR / "index.html", "text/html; charset=utf-8", cacheable=False)
+        d = _react_dist_dir()
+        if not d:
+            return self.send_error(404, "React build missing")
+        return self._serve_path(d / "index.html", "text/html; charset=utf-8", cacheable=False)
 
     def _serve_path(self, p: Path, ctype: str, cacheable: bool):
         body = p.read_bytes()

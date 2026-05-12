@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mirror the design tokens used by @cleanup-hub/web so the two apps render
+   identically. Eventually this would move to a shared @cleanup-hub/styles
+   package — for now duplication keeps the apps loosely coupled. */
+@layer base {
+  :root {
+    --bg-1: 0 0% 100%;
+    --bg-2: 0 0% 98%;
+    --bg-3: 0 0% 95%;
+    --fg: 240 6% 10%;
+    --fg-dim: 240 4% 35%;
+    --fg-faint: 240 4% 55%;
+    --border: 240 6% 88%;
+    --ring: 175 60% 40%;
+    --accent: 175 60% 40%;
+    --accent-strong: 175 65% 32%;
+    --accent-soft: 175 50% 92%;
+    --safe: 152 50% 38%;
+    --warn: 43 96% 56%;
+    --danger: 0 84% 60%;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-1: 240 6% 8%;
+      --bg-2: 240 5% 12%;
+      --bg-3: 240 4% 14%;
+      --fg: 0 0% 96%;
+      --fg-dim: 240 5% 70%;
+      --fg-faint: 240 5% 50%;
+      --border: 240 5% 22%;
+      --accent: 173 70% 50%;
+      --accent-strong: 173 75% 45%;
+      --accent-soft: 173 30% 18%;
+    }
+  }
+  html, body { background: hsl(var(--bg-1)); color: hsl(var(--fg)); }
+}
