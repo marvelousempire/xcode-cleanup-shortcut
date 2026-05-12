@@ -380,42 +380,47 @@
   }
   .overview-card .head svg { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; }
   .overview-card .head .name { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
-  .overview-card .total {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-    font-variant-numeric: tabular-nums;
-    margin-bottom: 4px;
-  }
-  .overview-card .total .unit { font-size: 14px; font-weight: 500; color: var(--text-dim); margin-left: 4px; }
-  .overview-card .total.zero { color: var(--text-faint); }
-  .overview-card .total.has-value { color: var(--accent); }
   .overview-card .tagline {
     font-size: 12px;
     color: var(--text-dim);
     line-height: 1.5;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
-  .overview-card .tier-row {
-    display: flex; gap: 12px; flex-wrap: wrap;
-    font-size: 11px;
+  /* Per-tier stats — stacked so the sum across cards matches the "Clean ALL"
+     buttons. Safe + opt-in are prominent; caution is a smaller informational
+     note since the dashboard never auto-deletes caution-tier paths. */
+  .overview-card .tier-stat {
+    display: flex; align-items: baseline; gap: 6px;
     font-variant-numeric: tabular-nums;
-    color: var(--text-dim);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
   }
-  .overview-card .tier-row .pill {
-    display: inline-flex; align-items: center; gap: 5px;
+  .overview-card .tier-stat .num { font-size: 22px; }
+  .overview-card .tier-stat .unit { font-size: 12px; font-weight: 500; color: var(--text-dim); }
+  .overview-card .tier-stat.safe { color: var(--safe); }
+  .overview-card .tier-stat.warn { color: var(--warn); }
+  .overview-card .tier-stat.zero {
+    color: var(--text-faint);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
   }
-  .overview-card .tier-row .pill::before {
+  .overview-card .tier-stat.caution-small {
+    margin-top: 6px;
+    color: var(--text-faint);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .overview-card .tier-stat.caution-small .num { font-size: 11px; font-weight: 600; }
+  .overview-card .tier-stat.caution-small::before {
     content: "";
+    display: inline-block;
     width: 6px; height: 6px; border-radius: 999px;
-    background: currentColor;
+    background: var(--danger);
     opacity: 0.6;
+    margin-right: 4px;
   }
-  .overview-card .tier-row .pill.safe   { color: var(--safe); }
-  .overview-card .tier-row .pill.warn   { color: var(--warn); }
-  .overview-card .tier-row .pill.danger { color: var(--danger); }
-  .overview-card .tier-row strong { color: var(--text); font-weight: 600; }
   .overview-card .open-hint {
     display: flex; justify-content: flex-end; align-items: center; gap: 4px;
     margin-top: 10px;
@@ -1365,23 +1370,32 @@ function renderOverviewGrid() {
       }
     }
 
-    const totalValue = cleanable >= 0.01
-      ? `${fmt(cleanable)} <span class="unit">GB cleanable</span>`
-      : (scanned ? `<span class="unit">nothing to clean</span>` : `<span class="unit">scanning…</span>`);
-    const totalCls = cleanable >= 0.01 ? "has-value" : "zero";
+    // Two prominent tier numbers so the math is transparent:
+    //   sum of all cards' "safe" lines  == "Clean ALL safe" button GB
+    //   sum of all cards' "opt-in" lines == "Clean ALL opt-in" button GB
+    // Caution is a smaller informational note since the dashboard never
+    // auto-cleans caution-tier paths.
+    let statsHtml = "";
+    if (!scanned) {
+      statsHtml = `<div class="tier-stat zero">scanning…</div>`;
+    } else if (safe < 0.001 && optin < 0.001 && caution < 0.001) {
+      statsHtml = `<div class="tier-stat zero">nothing to clean</div>`;
+    } else {
+      statsHtml =
+        `<div class="tier-stat safe"><span class="num">${fmt(safe)}</span><span class="unit">GB safe</span></div>` +
+        `<div class="tier-stat warn"><span class="num">${fmt(optin)}</span><span class="unit">GB opt-in</span></div>` +
+        (caution >= 0.01
+          ? `<div class="tier-stat caution-small"><span class="num">${fmt(caution)}</span>&nbsp;GB caution (surface only)</div>`
+          : "");
+    }
 
     const card = document.createElement("button");
     card.className = "overview-card";
     card.dataset.openTab = tab.id;
     card.innerHTML = `
       <div class="head">${iconFor(tab.id)}<span class="name">${stripLeadingGlyph(tab.label)}</span></div>
-      <div class="total ${totalCls}">${totalValue}</div>
       <div class="tagline">${tagline || "—"}</div>
-      <div class="tier-row">
-        <span class="pill safe">safe <strong>${fmt(safe)}</strong></span>
-        <span class="pill warn">opt-in <strong>${fmt(optin)}</strong></span>
-        <span class="pill danger">caution <strong>${fmt(caution)}</strong></span>
-      </div>
+      ${statsHtml}
       <div class="open-hint">Open <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></div>
     `;
     card.addEventListener("click", () => switchTab(tab.id));
