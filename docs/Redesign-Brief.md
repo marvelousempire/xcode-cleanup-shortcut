@@ -70,6 +70,97 @@ Source: [`marvelousempire/ai-skills-library/rules/library/`](https://github.com/
 
 ---
 
+## Explicit external references — use these
+
+### Animation library: Motion (motion.dev)
+
+**Use [Motion](https://motion.dev) — formerly Framer Motion — as the animation foundation.** It is the canonical motion library for the modern web. The repo is [`motiondivision/motion`](https://github.com/motiondivision/motion). The README says:
+
+> Framer Motion is now Motion. Import from `motion/react` instead of `framer-motion`.
+
+**Install paths:**
+
+| Stack | Package | Import |
+|---|---|---|
+| React | `npm install motion` | `import { motion } from "motion/react"` |
+| Vanilla JS / vanilla web | `npm install motion` (or CDN via jsDelivr/UNPKG) | `import { animate, scroll, inView, stagger } from "motion"` |
+| Vue | `npm install motion-v` | `import { motion } from "motion-v"` |
+
+**Hello-world patterns from the README:**
+
+```javascript
+// React
+import { motion } from "motion/react"
+function Component() {
+  return <motion.div animate={{ x: 100 }} />
+}
+
+// Vanilla JS
+import { animate } from "motion"
+animate("#box", { x: 100 })
+```
+
+**Core primitives to lean on** (per the motion.dev landing page):
+
+- **Independent transforms** — animate `x`, `y`, `rotateZ` independently, not as a matrix
+- **`AnimatePresence`** — declarative exit animations
+- **Spring physics** — natural motion (default for most transitions)
+- **Layout animations** — automatic FLIP for layout changes (`layout` prop on React, `animate()` with `layout` option on vanilla)
+- **Gestures** — `hover`, `press`, `drag` as first-class declarative props
+- **Variants + stagger** — orchestrate multi-element animations
+- **`scroll()`** — scroll-driven animations
+- **`inView()`** — fire animations when an element enters the viewport
+
+### Architectural decision the next session must make (then state in the PR)
+
+The current app is **vanilla JS + Python stdlib, zero dependencies**. Motion is npm-installed (or CDN). Two paths forward:
+
+| Path | What changes | Trade-off |
+|---|---|---|
+| **A. Motion via CDN, stay vanilla** | Add a single `<script type="module">` import from `cdn.jsdelivr.net/npm/motion/+esm`. No build step. No npm. Use `motion`'s vanilla-JS API: `animate()`, `scroll()`, `inView()`, `stagger()`. Keep the `web/index.html` single-file structure. | Preserves the "zero-deps, `make ui` and you're running" promise. Trade-off: no JSX, no React component model. Imperative animation code instead of declarative `<motion.div>`. |
+| **B. Migrate to React + Vite + Tailwind + Motion** | New `web/` structure: `web/src/`, `package.json`, build via Vite. Server.py still serves the built `dist/` HTML/JS. Use `motion/react` declaratively. | Full Motion API + 21st.dev hero components (which are React/Tailwind) drop straight in. Trade-off: breaks zero-deps. `make ui` needs `npm install` + `npm run build` first. Bigger install surface for new users. |
+
+**Default recommendation: Path A.** It preserves the moat. Use Motion One's vanilla JS API and recreate 21st.dev hero patterns in vanilla HTML/CSS. Only switch to Path B if the maintainer explicitly says "yes, take the dep."
+
+### Hero patterns: 21st.dev/community/components/s/hero
+
+[21st.dev](https://21st.dev/community/components/s/hero) hosts **284 hero components for React and Tailwind CSS**. Use as **inspiration, not direct copy** (unless we pick Path B above).
+
+**How to mine it for the redesign:**
+
+1. Browse the gallery (sort by popularity / by category)
+2. Pick **2–3 patterns** that align with `.agents/product-marketing-context.md`'s positioning:
+   - "Reclaim 10–40 GB your Mac is hoarding" — a *number-forward* hero (big GB count + tight subhead)
+   - "Auditable, free, MIT" — a *trust-forward* hero (badges, screenshots, "no telemetry" callout)
+   - "Six install paths" — a *capability-grid* hero (small icons, fast scan of what the tool offers)
+3. Sketch each pattern as a vanilla HTML structure (or React if Path B)
+4. Run the resulting hero through `page-cro` and `copywriting` skills to validate
+
+**Specifically forbidden** in hero choices:
+- Gradient-flooded "AI startup" backgrounds (we're not selling AI; we're selling restraint)
+- Floating SaaS-y mockups with fake screens
+- Heavy hero illustrations (heavy = slow = wrong tone for a *cleanup* tool)
+- Anything that looks like CleanMyMac's marketing site (deliberate anti-pattern per the product-marketing-context)
+
+### Animation use cases — concrete starter list
+
+For the dashboard redesign specifically, here's where to apply Motion (whether vanilla-API or React-API):
+
+| Element | Animation | Suggested Motion primitive |
+|---|---|---|
+| Hero GB number (`10.1 GB free` → `28.3 GB free` after a clean) | Smooth count-up / count-down, ~600ms ease-out | `animate(node, { textContent: targetNumber }, { duration: 0.6, ease: "easeOut" })` with a custom interpolator, OR `useSpring` (React) |
+| Disk-usage progress bar fill | Spring-based fill on first paint and after every scan | `animate(bar, { width: pct + "%" }, { type: "spring", stiffness: 120 })` |
+| Tab switching | Fade + subtle x-translate (4–8px) | `<AnimatePresence>` with `motion.div initial={{opacity:0, x:8}} animate={{opacity:1, x:0}} exit={{opacity:0, x:-8}}` |
+| Action confirm modal (currently a `confirm()`!) | Backdrop blur in, card scale 0.96→1 + opacity, 220ms ease-out | `motion.div initial={{opacity:0, scale:0.96}} animate={{opacity:1, scale:1}} transition={{duration:0.22}}` |
+| SSE output console reveal | Slide-down + fade, layout-animated as new lines append | `<motion.div layout>` on the console; each new line gets `initial={{opacity:0, y:-4}} animate={{opacity:1, y:0}}` |
+| Cost-of-doing-this banner | Subtle pulse on hover/focus to draw the eye | `whileHover={{scale: 1.01}}` with a stiff spring |
+| "Done. Freed X.X GB" success | Brief green pulse on the hero number + banner | `keyframes` from `1 → 1.05 → 1` over 280ms with a green color flash |
+| Per-path row entrance | Stagger them in as scan results arrive | `stagger(0.03)` across the rows |
+
+**emil-design-eng note**: every one of those animations should be **subtle**. The signal in our app is the data, not the choreography. If an animation makes a user *notice it,* it's wrong. The animations exist to make state transitions feel inevitable, not to entertain.
+
+---
+
 ## What's working — preserve these
 
 Don't redesign these *away.* They are the product:
