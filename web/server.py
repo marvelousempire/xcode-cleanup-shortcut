@@ -39,7 +39,37 @@ import cleaners  # noqa: E402
 
 REPO_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR  = REPO_DIR / "web"
+REACT_DIST_DIR = WEB_DIR / "app" / "dist"
 PREFERRED_PORT = int(os.environ.get("XCC_UI_PORT", "8765"))
+
+# Pick the React build if it's been compiled (vite build → web/app/dist/), unless
+# XCC_LEGACY_UI=1 forces vanilla. Each request can also opt-back into vanilla
+# via ?legacy=1, so users can switch without restarting the server.
+def _react_build_available() -> bool:
+    return (REACT_DIST_DIR / "index.html").exists()
+
+# Minimal mime mapping for vite's emitted assets (js, css, source maps, fonts).
+# We intentionally avoid the heavier mimetypes module — this covers everything
+# vite actually produces and stays in line with the rest of the stdlib-only feel.
+_CTYPE_MAP = {
+    ".js":   "application/javascript; charset=utf-8",
+    ".mjs":  "application/javascript; charset=utf-8",
+    ".css":  "text/css; charset=utf-8",
+    ".map":  "application/json; charset=utf-8",
+    ".svg":  "image/svg+xml",
+    ".png":  "image/png",
+    ".jpg":  "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".woff":  "font/woff",
+    ".woff2": "font/woff2",
+    ".ttf":   "font/ttf",
+}
+
+def _guess_ctype(name: str) -> str:
+    dot = name.rfind(".")
+    if dot < 0: return "application/octet-stream"
+    return _CTYPE_MAP.get(name[dot:].lower(), "application/octet-stream")
 
 # ── Running-cleans registry (v0.15.0) ──────────────────────────────────────
 # Each in-flight clean stream registers itself here at start and unregisters at
@@ -237,6 +267,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
         query = parse_qs(url.query)
 
         if path == "/":
+            # Prefer the built React app when web/app/dist/index.html exists,
+            # unless the user opted into legacy via env or ?legacy=1.
+            force_legacy = os.environ.get("XCC_LEGACY_UI") == "1" or query.get("legacy", ["0"])[0] == "1"
+            if _react_build_available() and not force_legacy:
+                return self._serve_react_root()
+            return self._serve_file("index.html", "text/html; charset=utf-8")
+
+        # Serve hashed assets emitted by `vite build` (web/app/dist/assets/*).
+        if path.startswith("/assets/") and _react_build_available():
+            rel = path[len("/assets/"):]
+            asset = REACT_DIST_DIR / "assets" / rel
+            if asset.exists() and asset.is_file() and not any(p == ".." for p in asset.parts):
+                ctype = _guess_ctype(asset.name)
+                return self._serve_path(asset, ctype, cacheable=True)
+            return self.send_error(404)
+
+        # Legacy escape hatch — explicit /legacy URL serves vanilla regardless.
+        if path == "/legacy":
             return self._serve_file("index.html", "text/html; charset=utf-8")
         if path == "/api/status":
             return self._serve_json(get_status())
@@ -342,6 +390,25 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_react_root(self):
+        # Serve web/app/dist/index.html as the canonical UI when available.
+        # Marked no-store so a rebuild during `make ui` is reflected immediately.
+        return self._serve_path(REACT_DIST_DIR / "index.html", "text/html; charset=utf-8", cacheable=False)
+
+    def _serve_path(self, p: Path, ctype: str, cacheable: bool):
+        body = p.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        # vite emits hashed filenames, so served assets can cache for a year.
+        # The HTML shell is no-store so a rebuild is picked up on next refresh.
+        self.send_header(
+            "Cache-Control",
+            "public, max-age=31536000, immutable" if cacheable else "no-store",
+        )
         self.end_headers()
         self.wfile.write(body)
 

@@ -2,7 +2,7 @@ SHORTCUT_NAME := Xcode Cleanup
 SCRIPT        := xcode-cleanup.applescript
 
 .DEFAULT_GOAL := help
-.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui clean-docker
+.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-legacy ui-react clean-docker
 
 help: ## Show this help
 	@echo "Xcode Cleanup Shortcut — Make targets"
@@ -144,5 +144,21 @@ package-shortcut: ## Sign an exported .shortcut bundle as 'Anyone Mode' for shar
 report: ## Sparkline of freed-GB across recent real cleanup runs
 	@python3 scripts/report.py
 
-ui: ## Open the web UI at http://127.0.0.1:8765 (localhost only)
+ui: ## Open the web UI at http://127.0.0.1:8765 (auto-builds React if pnpm available)
+	@# Build the React UI when pnpm is installed (Phase 4). The server detects
+	@# web/app/dist/index.html and serves it as the canonical UI; falls back to
+	@# the vanilla web/index.html when no build exists.
+	@if command -v pnpm >/dev/null 2>&1; then \
+		echo "▶ Building React UI (pnpm build)…"; \
+		(cd web/app && pnpm install --silent && pnpm build) || echo "⚠ React build failed — server will fall back to vanilla UI."; \
+	else \
+		echo "ℹ pnpm not installed — serving vanilla UI. Install pnpm + run 'make ui' to get the React build."; \
+	fi
+	@python3 web/server.py
+
+ui-legacy: ## Force the vanilla web/index.html UI even if a React build exists
+	@XCC_LEGACY_UI=1 python3 web/server.py
+
+ui-react: ## Build + serve the React app (no fallback to vanilla)
+	@cd web/app && pnpm install --silent && pnpm build
 	@python3 web/server.py

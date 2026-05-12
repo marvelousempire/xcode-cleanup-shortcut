@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens mirror docs/Design-System.md. HSL channels for Tailwind opacity. */
+@layer base {
+  :root {
+    color-scheme: light dark;
+
+    --bg-1: 48 25% 97%;       /* #FAFAF7 */
+    --bg-2: 0 0% 100%;
+    --bg-3: 0 0% 100%;
+    --border: 240 5% 8%;
+    --ring: 173 80% 27%;
+    --fg: 240 4% 9%;
+    --fg-dim: 240 5% 38%;
+    --fg-faint: 240 5% 62%;
+
+    --accent: 173 80% 27%;          /* #0F766E */
+    --accent-strong: 174 72% 22%;   /* #115E59 */
+    --accent-soft: 173 80% 27%;
+
+    --safe: 142 71% 38%;            /* #16A34A */
+    --safe-soft: 142 71% 38%;
+    --warn: 32 95% 44%;             /* #D97706 */
+    --warn-soft: 32 95% 44%;
+    --danger: 0 75% 42%;            /* #B91C1C */
+    --danger-soft: 0 75% 42%;
+  }
+
+  [data-theme="dark"], html.dark {
+    --bg-1: 240 5% 4%;
+    --bg-2: 240 4% 9%;
+    --bg-3: 240 4% 14%;
+    --border: 0 0% 100%;
+    --fg: 60 9% 95%;
+    --fg-dim: 240 5% 62%;
+    --fg-faint: 240 4% 42%;
+
+    --accent: 173 80% 50%;          /* #2DD4BF */
+    --accent-strong: 173 75% 65%;
+    --accent-soft: 173 80% 50%;
+
+    --safe: 142 71% 45%;
+    --warn: 43 96% 56%;
+    --danger: 0 84% 60%;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-1: 240 5% 4%;
+      --bg-2: 240 4% 9%;
+      --bg-3: 240 4% 14%;
+      --border: 0 0% 100%;
+      --fg: 60 9% 95%;
+      --fg-dim: 240 5% 62%;
+      --fg-faint: 240 4% 42%;
+
+      --accent: 173 80% 50%;
+      --accent-strong: 173 75% 65%;
+      --accent-soft: 173 80% 50%;
+
+      --safe: 142 71% 45%;
+      --warn: 43 96% 56%;
+      --danger: 0 84% 60%;
+    }
+  }
+
+  /* Surface alpha overrides so .bg-bg-2 uses the frosted-glass alpha values
+     that match the v0.14 design system. Applied via class for clarity. */
+  .glass {
+    background: hsl(var(--bg-2) / 0.78);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+  .glass-soft {
+    background: hsl(var(--bg-2) / 0.55);
+  }
+
+  body {
+    min-height: 100vh;
+    background-image:
+      radial-gradient(at 20% 0%, hsl(var(--accent) / 0.07) 0, transparent 50%),
+      radial-gradient(at 80% 100%, hsl(var(--safe) / 0.05) 0, transparent 50%);
+    background-color: hsl(var(--bg-1));
+    color: hsl(var(--fg));
+    font-feature-settings: "tnum" 0;
+  }
+
+  ::selection {
+    background: hsl(var(--accent) / 0.18);
+    color: hsl(var(--accent-strong));
+  }
+
+  *:focus-visible {
+    outline: 2px solid hsl(var(--accent));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Tabular numerals everywhere we render measurements */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+/* Spinner keyframes for the v0.15.0 RunningWidget + various loading rings. */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ANSI color classes — used by OutputConsole's parseAnsi() to render piped
+   CLI output that emits \e[3xm/\e[9xm color codes. Match the vanilla palette. */
+.ansi-fg-red    { color: #EF4444; }
+.ansi-fg-green  { color: #22C55E; }
+.ansi-fg-yellow { color: #FBBF24; }
+.ansi-fg-blue   { color: #60A5FA; }
+.ansi-fg-magenta{ color: #C084FC; }
+.ansi-fg-cyan   { color: #22D3EE; }
+.ansi-fg-gray   { color: #9B9BA3; }
+.ansi-bold      { font-weight: 700; }
+.hl             { background: hsl(45 100% 50% / 0.32); color: #F4F4F2; padding: 0 1px; border-radius: 2px; }
+
+/* Pulsing ring used by the OnboardingCoachmark to draw the eye to the pie pane. */
+@keyframes coach-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px hsl(var(--accent) / 0.18); }
+  50%      { box-shadow: 0 0 0 10px hsl(var(--accent) / 0.08); }
+}
+
+/* Overview 3-pane top — hero · pie · terminal. Tailwind can express grid-cols
+   via arbitrary values, but the responsive breakpoints below are simpler in
+   plain CSS (and match the vanilla v0.14.2 implementation 1:1). */
+.overview-top {
+  grid-template-columns: 1fr 0.92fr 1.05fr;
+}
+@media (max-width: 1100px) {
+  .overview-top {
+    grid-template-columns: 1fr 1fr;
+  }
+  .overview-top > :nth-child(3) {
+    grid-column: 1 / -1;
+    min-height: 180px;
+  }
+}
+@media (max-width: 720px) {
+  .overview-top {
+    grid-template-columns: 1fr;
+  }
+  .overview-top > :nth-child(3) {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

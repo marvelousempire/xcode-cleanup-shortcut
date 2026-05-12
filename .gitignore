@@ -5,5 +5,9 @@
 # package-shortcut outputs (signed bundles attached to releases, not committed)
 dist/
 
+# React build artifacts (vite build → web/app/dist/). Rebuilt by `make ui`.
+web/app/dist/
+web/app/node_modules/
+
 # Claude Code local helper config (preview launch.json, etc.)
 .claude/
