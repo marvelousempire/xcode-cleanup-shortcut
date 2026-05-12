@@ -105,6 +105,30 @@
   }
 }
 
+/* Overview 3-pane top — hero · pie · terminal. Tailwind can express grid-cols
+   via arbitrary values, but the responsive breakpoints below are simpler in
+   plain CSS (and match the vanilla v0.14.2 implementation 1:1). */
+.overview-top {
+  grid-template-columns: 1fr 0.92fr 1.05fr;
+}
+@media (max-width: 1100px) {
+  .overview-top {
+    grid-template-columns: 1fr 1fr;
+  }
+  .overview-top > :nth-child(3) {
+    grid-column: 1 / -1;
+    min-height: 180px;
+  }
+}
+@media (max-width: 720px) {
+  .overview-top {
+    grid-template-columns: 1fr;
+  }
+  .overview-top > :nth-child(3) {
+    grid-column: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

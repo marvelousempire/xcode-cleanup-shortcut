@@ -1,6 +1,8 @@
 import { motion } from "motion/react";
 import { useDashboard } from "../state/DashboardContext";
 import { Hero } from "./Hero";
+import { PieChart } from "./PieChart";
+import { OutputConsole } from "./OutputConsole";
 import { History, RefreshCw, CheckCheck, AlertTriangle, ChevronRight, TabIcon } from "./icons";
 import { cn, fmt } from "../lib/utils";
 
@@ -26,7 +28,27 @@ export function OverviewPanel() {
 
   return (
     <div>
-      <Hero status={status} />
+      {/* 3-pane top: hero · pie · terminal. Mirrors the vanilla v0.14.2 layout
+          so the same maintainer-driven structure is present in both frontends. */}
+      <div className="mb-3.5 grid gap-3.5 overview-top">
+        <div className="overflow-hidden rounded-lg border border-border/15 shadow-md" style={{ background: "hsl(var(--bg-2))" }}>
+          <Hero status={status} embedded />
+        </div>
+        <div className="flex flex-col overflow-hidden rounded-lg border border-border/15 shadow-sm" style={{ background: "hsl(var(--bg-2))" }}>
+          <div className="px-4 pb-2 pt-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">
+            Where the disk is going
+          </div>
+          <PieChart />
+        </div>
+        <div className="flex flex-col overflow-hidden rounded-lg border border-border/15 shadow-sm" style={{ background: "hsl(var(--bg-2))" }}>
+          <div className="px-4 pb-2 pt-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">
+            Activity
+          </div>
+          <div className="flex flex-1 flex-col px-3 pb-3">
+            <OutputConsole embedded fillHeight />
+          </div>
+        </div>
+      </div>
 
       {history?.real_runs ? (
         <div

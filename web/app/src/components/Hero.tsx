@@ -6,9 +6,13 @@ import type { DiskStatus } from "../lib/types";
 
 interface Props {
   status: DiskStatus | null;
+  /** When `embedded`, the hero drops its own border/shadow/background — the
+   * parent pane in the Overview 3-pane top owns those. Padding is also tighter
+   * so the hero shares the row with the pie + terminal cleanly. */
+  embedded?: boolean;
 }
 
-export function Hero({ status }: Props) {
+export function Hero({ status, embedded = false }: Props) {
   const free = status?.free_gb ?? 0;
   const total = status?.total_gb ?? 0;
   const used = status?.used_gb ?? 0;
@@ -34,10 +38,18 @@ export function Hero({ status }: Props) {
   const widthPct = Math.min(100, Math.max(0, pct));
 
   return (
-    <section className="glass rounded-lg shadow-md p-9 pt-10 pb-7 text-center">
+    <section
+      className={cn(
+        "text-center",
+        embedded
+          ? "px-6 pb-5 pt-7"
+          : "glass rounded-lg shadow-md p-9 pt-10 pb-7",
+      )}
+    >
       <div
         className={cn(
-          "font-bold leading-none tabular tracking-[-0.04em] text-[80px] transition-colors",
+          "font-bold leading-none tabular tracking-[-0.04em] transition-colors",
+          embedded ? "text-[56px]" : "text-[80px]",
           tier === "good" && "text-safe",
           tier === "warn" && "text-warn",
           tier === "danger" && "text-danger",
@@ -49,7 +61,12 @@ export function Hero({ status }: Props) {
         ) : (
           <motion.span>{display}</motion.span>
         )}
-        <span className="ml-1.5 text-[30px] font-medium text-fg-dim tracking-[-0.01em]">
+        <span
+          className={cn(
+            "font-medium text-fg-dim tracking-[-0.01em]",
+            embedded ? "ml-1 text-[22px]" : "ml-1.5 text-[30px]",
+          )}
+        >
           GB free
         </span>
       </div>

@@ -75,30 +75,40 @@ function AppBody() {
             </motion.div>
           </AnimatePresence>
 
-          <OutputConsole />
+          {/* On Overview, the terminal lives inside the 3-pane top — don't
+              render a second copy at the bottom of the viewport. On every
+              other tab, the bottom console is the only place output appears. */}
+          {activeTab !== "overview" && <OutputConsole />}
         </main>
 
         {hasSub ? <SidebarRight /> : null}
       </div>
 
       <footer className="mt-9 text-center text-[12px] text-fg-dim">
-        <a
-          href="https://github.com/marvelousempire/xcode-cleanup-shortcut"
-          target="_blank"
-          rel="noreferrer"
-          className="border-b border-border/20 text-fg no-underline transition-colors hover:border-accent hover:text-accent"
-        >
-          marvelousempire/xcode-cleanup-shortcut
-        </a>{" "}
-        · MIT ·{" "}
-        <a
-          href="#"
-          onClick={(e) => { e.preventDefault(); openChangelog(); }}
-          className="border-b border-border/20 text-fg no-underline transition-colors hover:border-accent hover:text-accent"
-        >
-          Changelog
-        </a>{" "}
-        · localhost-only
+        <div>
+          <a
+            href="https://github.com/marvelousempire/xcode-cleanup-shortcut"
+            target="_blank"
+            rel="noreferrer"
+            className="border-b border-border/20 text-fg no-underline transition-colors hover:border-accent hover:text-accent"
+          >
+            marvelousempire/xcode-cleanup-shortcut
+          </a>{" "}
+          · MIT ·{" "}
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); openChangelog(); }}
+            className="border-b border-border/20 text-fg no-underline transition-colors hover:border-accent hover:text-accent"
+          >
+            Changelog
+          </a>{" "}
+          · localhost-only
+        </div>
+        {/* Copyright per the `learn-mappers-copyright` global rule —
+            AVERY GOODMAN in all caps, UCC 1-308 reservation in the same block. */}
+        <div className="mt-2 text-[11px] text-fg-faint tracking-[0.01em]">
+          © 2026 Learn Mappers LLC DBA AVERY GOODMAN · All rights reserved · Intellectual property · UCC 1-308
+        </div>
       </footer>
 
       <ChangelogModal open={showChangelog} onClose={closeChangelog} />
