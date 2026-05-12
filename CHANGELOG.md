@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.8.5 — 2026-05-12
+
+### Fixed
+- **Version badge** in the top-right of the dashboard now reflects the actual shipped version. Previously hardcoded to `v0.7`, it stayed stale through v0.7.0 → v0.8.4.
+
+### Added
+- **`/api/status` now includes `version`**, read live from the first `## vX.Y.Z` heading in `CHANGELOG.md`. The JS updates the badge on every status poll (every 15s), so the displayed version is always the version of the server you're actually talking to.
+
 ## v0.8.4 — 2026-05-12
 
 ### Added

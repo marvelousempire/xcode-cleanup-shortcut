@@ -59,6 +59,18 @@ def find_open_port(preferred: int, tries: int = PORT_RANGE) -> int:
         return s.getsockname()[1]
 
 
+def get_version() -> str:
+    """Read the most recent version from CHANGELOG.md. Returns 'v?.?.?' on failure."""
+    try:
+        for line in (REPO_DIR / "CHANGELOG.md").read_text().splitlines():
+            if line.startswith("## v"):
+                # "## v0.8.4 — 2026-05-12" → "v0.8.4"
+                return line.split()[1]
+    except Exception:
+        pass
+    return "v?.?.?"
+
+
 def get_status() -> dict:
     total, used, free = shutil.disk_usage("/")
     return {
@@ -66,6 +78,7 @@ def get_status() -> dict:
         "used_gb":  round(used  / 1024**3, 1),
         "total_gb": round(total / 1024**3, 1),
         "used_pct": round(used / total * 100, 1),
+        "version":  get_version(),
     }
 
 

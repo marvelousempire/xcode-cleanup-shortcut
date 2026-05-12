@@ -391,7 +391,7 @@
       <path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>
     </svg>
     <h1>Cleanup Hub</h1>
-    <span class="badge" id="version">v0.7 · localhost</span>
+    <span class="badge" id="version">…</span>
   </header>
 
   <div class="card hero">
@@ -452,6 +452,7 @@ async function loadStatus() {
   fill.classList.toggle("warn",   d.used_pct >= 75 && d.used_pct < 90);
   fill.classList.toggle("danger", d.used_pct >= 90);
   $("#free-label").textContent = `${fmt(d.used_gb,0)} GB used of ${fmt(d.total_gb,0)} GB · ${fmt(d.used_pct,0)}%`;
+  if (d.version) $("#version").textContent = `${d.version} · localhost`;
 }
 
 let tabsState = { current: null, sub: {} /* tabId -> currentSub */, scans: {} /* catId -> scanData */ };
