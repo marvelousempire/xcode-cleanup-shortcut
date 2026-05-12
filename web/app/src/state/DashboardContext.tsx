@@ -178,6 +178,21 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [overviewAutoScanned],
   );
 
+  // Overview is the default activeTab on first mount, so setActiveTab("overview")
+  // is never called and the auto-scan above never fires. Mirror the trigger here
+  // once tabs have loaded — runs exactly once per session.
+  useEffect(() => {
+    if (
+      activeTab === "overview" &&
+      !overviewAutoScanned &&
+      tabs.length > 0
+    ) {
+      setOverviewAutoScanned(true);
+      setTimeout(() => void scanEverythingRef.current?.(), 30);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabs.length]);
+
   const setActiveSub = useCallback((tabId: string, subId: string) => {
     setActiveSubState((prev) => ({ ...prev, [tabId]: subId }));
   }, []);

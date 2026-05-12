@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.16.0] — 2026-05-12 16:26:13 Eastern · *Phase 4 — React app is now the canonical UI (vanilla available behind `/legacy`)*
+
+Closes the last item on the v0.14.2 audit list: gap 6 + elevation J. The React + Vite + Tailwind UI scaffolded across v0.15.0-WIP commits is now built and served by the Python server. Vanilla `web/index.html` lives on as the rollback escape hatch.
+
+### Added
+- **`web/server.py` serves `web/app/dist/`.** When `web/app/dist/index.html` exists, `GET /` returns the React HTML shell with cache-control `no-store`, and `GET /assets/*` returns the hashed JS/CSS with `Cache-Control: public, max-age=31536000, immutable`. The vite-emitted hashed filenames make long caching safe — every rebuild invalidates them automatically.
+- **`_guess_ctype()` mime mapper** for the assets dir. Stays stdlib-only (no `mimetypes` import) and covers exactly what `vite build` produces: `.js`, `.mjs`, `.css`, `.map`, `.svg`, `.png/.jpg/.jpeg/.webp`, `.woff/.woff2/.ttf`.
+- **`/legacy` route** always serves the vanilla `web/index.html` — a one-click rollback path that doesn't require restarting the server.
+- **`?legacy=1` query parameter** on `/` forces the vanilla UI even when a React build is present. So someone can pin a bookmark to `http://127.0.0.1:8765/?legacy=1` and keep using the v0.14.2 layout.
+- **`XCC_LEGACY_UI=1` environment variable** flips the default for the whole server process. Equivalent to using `make ui-legacy`.
+- **`make ui` auto-builds the React app** when `pnpm` is available, then launches the server. Falls back to the vanilla UI gracefully when `pnpm` isn't installed or the build fails — the dashboard stays available even on machines that can't build TypeScript.
+- **`make ui-legacy`** target — `XCC_LEGACY_UI=1 python3 web/server.py`. Useful for testing the vanilla path without uninstalling pnpm.
+- **`make ui-react`** target — explicit `pnpm install && pnpm build && python3 web/server.py`. For CI/automation where the implicit fallback isn't wanted.
+- **`web/app/dist/` and `web/app/node_modules/` added to `.gitignore`.** Build artifacts and the 200MB dependency tree don't belong in the repo.
+
+### Fixed (React WIP, surfaced once the build was actually running)
+- **Overview auto-scan now fires.** The React `DashboardContext` had `activeTab` defaulting to `"overview"` via `useState`, which meant `setActiveTab("overview")` was never called on mount — and that's where the auto-scan trigger lived. Added a `useEffect` that runs once when `tabs.length > 0` and re-triggers the scan if the user landed on Overview. The vanilla UI was unaffected (it uses `switchTab` explicitly during `loadTabs`).
+
+### Why
+Maintainer asked for "the rest of the gaps and elevations." This is the deploy-layer half that needed its own PR — landing it as a separate `v0.16.0` keeps the v0.15.0 visual + UX work as one reviewable unit and the deploy-story switch as another.
+
+The React build is **0.43 KB HTML + 21.29 KB CSS + 372.76 KB JS** (gzipped: 0.29 + 5.20 + 119.93). That's the entire app — every component, the bundled Motion library, the inlined types — in ~120KB over the wire. Loads in one trip from localhost.
+
+### Verified
+End-to-end via `make ui` at 1280x900: server logs the build, Vite emits `dist/`, Python serves the React `<div id="root">` shell, React mounts, `/api/status` returns 11.9 GB free, `/api/live` connects and pushes status deltas, the auto-scan fires, the pie populates with four colored slices summing to 30.3 GB scanned, the sidebar mini-donuts paint, the "Clean ALL safe · 0.9 GB" + "Clean ALL opt-in · 12.6 GB" mega-buttons enable, and the math matches the per-card tier sums.
+
+### Migration path (zero-friction)
+- **Already running v0.15.0?** Pull, run `make ui`. If `pnpm` is installed the React UI loads. If not, you still get the v0.15.0 vanilla UI you were using before. Nothing breaks.
+- **Don't want the React UI?** `make ui-legacy`, or set `XCC_LEGACY_UI=1`, or append `?legacy=1` to the URL. All three are equivalent.
+- **Plan to roll the legacy escape hatch out?** Not in this release — `/legacy` and `?legacy=1` stay supported through at least v0.17.
+
 ## [0.15.0] — 2026-05-12 15:59:58 Eastern · *full audit pass — pie polish, sidebar donuts, live SSE channel, terminal search, onboarding*
 
 The maintainer said "knock out the rest of the gaps and elevations." Everything from the v0.14.2 audit landed in one release except Phase 4 (production build → Python server), which is its own follow-up because it changes the deploy story.
