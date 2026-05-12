@@ -246,6 +246,131 @@
   .sub-panel { display: none; }
   .sub-panel.active { display: block; }
 
+  /* ── Overview 3-pane top: hero · pie · terminal ─────────── */
+  .overview-top {
+    display: grid;
+    grid-template-columns: 1fr 0.92fr 1.05fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .overview-top .pane {
+    background: var(--bg-2);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    min-height: 280px;
+  }
+  .overview-top .pane.pane-hero { box-shadow: var(--shadow-md); }
+  .overview-top .pane-title {
+    padding: 12px 16px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+  }
+  /* Hero pane reuses overview-hero internals — just remove margin since the
+     pane handles its own border + bg. */
+  .overview-top .pane-hero .overview-hero {
+    border: none; background: transparent; box-shadow: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    padding: 28px 24px 22px;
+  }
+  /* Pie pane */
+  .pie-wrap {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    padding: 4px 14px 14px;
+    position: relative;
+  }
+  .pie-svg {
+    width: 168px; height: 168px;
+    transform: rotate(-90deg);
+  }
+  .pie-svg path {
+    transition: opacity var(--d-quick) var(--ease-out);
+  }
+  .pie-svg path.empty { fill: var(--border); }
+  .pie-center-label {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, calc(-50% + 8px));
+    text-align: center;
+    pointer-events: none;
+  }
+  .pie-center-label .num {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.015em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .pie-center-label .unit { display: block; font-size: 9px; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 1px; }
+  .pie-legend {
+    margin-top: 10px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px;
+    width: 100%;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .pie-legend .legend-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background var(--d-quick) var(--ease-out);
+  }
+  .pie-legend .legend-item:hover { background: var(--bg-3); color: var(--text); }
+  .pie-legend .legend-dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .pie-legend .legend-name { flex: 1; }
+  .pie-legend .legend-gb { color: var(--text); font-weight: 600; }
+
+  /* Terminal pane (always visible variant) */
+  .terminal-pane {
+    flex: 1;
+    display: flex; flex-direction: column;
+    background: rgba(11,11,12,0.92);
+    color: #F4F4F2;
+    margin: 0 12px 12px;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .terminal-pane .terminal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 180px;
+  }
+  .terminal-pane .terminal-idle {
+    color: #6B6B73;
+    font-style: italic;
+  }
+  .terminal-pane .terminal-body .out-line { display: block; }
+  .terminal-pane .terminal-body .ok   { color: #22C55E; }
+  .terminal-pane .terminal-body .warn { color: #FBBF24; }
+  .terminal-pane .terminal-body .err  { color: #EF4444; }
+  .terminal-pane .terminal-body .dim  { color: #9B9BA3; }
+
+  @media (max-width: 1100px) {
+    .overview-top { grid-template-columns: 1fr 1fr; }
+    .overview-top .pane-terminal { grid-column: 1 / -1; min-height: 180px; }
+  }
+  @media (max-width: 720px) {
+    .overview-top { grid-template-columns: 1fr; }
+    .overview-top .pane-terminal { grid-column: auto; }
+  }
+
   /* ── Overview tab ───────────────────────────────────────── */
   .overview-hero {
     padding: 36px 32px 26px;
@@ -859,6 +984,12 @@
     font-size: 12px;
     color: var(--text-dim);
   }
+  footer .footer-row + .footer-row { margin-top: 8px; }
+  footer .footer-copyright {
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.01em;
+  }
   footer a {
     color: var(--text);
     text-decoration: none;
@@ -961,10 +1092,15 @@
 
   </div>
 
-  <div class="output" id="output"></div>
+  <div id="output-host-bottom"><div class="output" id="output"></div></div>
 
   <footer>
-    <a href="https://github.com/marvelousempire/xcode-cleanup-shortcut" target="_blank">marvelousempire/xcode-cleanup-shortcut</a> · MIT · <a href="#" id="footer-changelog">Changelog</a> · localhost-only
+    <div class="footer-row">
+      <a href="https://github.com/marvelousempire/xcode-cleanup-shortcut" target="_blank">marvelousempire/xcode-cleanup-shortcut</a> · MIT · <a href="#" id="footer-changelog">Changelog</a> · localhost-only
+    </div>
+    <div class="footer-row footer-copyright">
+      © 2026 Learn Mappers LLC DBA AVERY GOODMAN · All rights reserved · Intellectual property · UCC 1-308
+    </div>
   </footer>
 
   <div class="modal-backdrop" id="changelog-modal" hidden>
@@ -1278,16 +1414,43 @@ function switchSubItem(tabId, subId) {
 function buildOverviewPanel() {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <div class="card elevated overview-hero">
-      <div class="free" id="free-gb">— <span class="unit">GB free</span></div>
-      <div class="label" id="free-label">Checking disk…</div>
-      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-      <div class="promise">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <path d="m9 12 2 2 4-4"/>
-        </svg>
-        Factory-fresh without losing your stuff
+    <div class="overview-top">
+      <div class="pane pane-hero">
+        <div class="overview-hero">
+          <div class="free" id="free-gb">— <span class="unit">GB free</span></div>
+          <div class="label" id="free-label">Checking disk…</div>
+          <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+          <div class="promise">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            Factory-fresh without losing your stuff
+          </div>
+        </div>
+      </div>
+
+      <div class="pane pane-pie">
+        <div class="pane-title">Where the disk is going</div>
+        <div class="pie-wrap">
+          <svg class="pie-svg" id="overview-pie" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" class="empty" />
+          </svg>
+          <div class="pie-center-label">
+            <div class="num" id="pie-center-num">—</div>
+            <span class="unit">GB scanned</span>
+          </div>
+          <div class="pie-legend" id="pie-legend"></div>
+        </div>
+      </div>
+
+      <div class="pane pane-terminal">
+        <div class="pane-title">Activity</div>
+        <div class="terminal-pane">
+          <div class="terminal-body" id="output-host-top">
+            <span class="terminal-idle" id="terminal-idle">Idle — nothing is running. Hit Scan or Clean to see live output.</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1333,10 +1496,117 @@ function buildOverviewPanel() {
   return wrap;
 }
 
+// Per-category color palette for the disk-usage pie chart. Each top-level tab
+// gets a distinct hue so a glance at the slices identifies the heavy categories.
+const PIE_COLORS = {
+  "xcode":    "#0F766E", // teal — accent
+  "llms":     "#7C3AED", // violet
+  "docker":   "#0EA5E9", // sky
+  "apps":     "#F59E0B", // amber
+  "creative": "#EC4899", // pink
+  "system":   "#64748B", // slate
+};
+
+function renderPie() {
+  const svg = $("#overview-pie");
+  const legend = $("#pie-legend");
+  const centerNum = $("#pie-center-num");
+  if (!svg || !legend) return;
+
+  // Collect per-tab totals (safe + opt-in + caution = what we've seen on disk).
+  // Note: vanilla tabsState.scans[id] holds the raw scan object directly
+  // (the React WIP wraps it in { scan, actions }; this one does not).
+  const slices = [];
+  let grandTotal = 0;
+  for (const tab of tabsState.tabsManifest) {
+    if (tab.meta) continue;
+    let total = 0;
+    if (tab.subcategories) {
+      for (const sub of tab.subcategories) {
+        const s = tabsState.scans[sub];
+        if (s) total += (s.totals.safe || 0) + (s.totals.probably_safe || 0) + (s.totals.caution || 0);
+      }
+    } else if (tab.category) {
+      const s = tabsState.scans[tab.category];
+      if (s) total = (s.totals.safe || 0) + (s.totals.probably_safe || 0) + (s.totals.caution || 0);
+    }
+    slices.push({ id: tab.id, label: stripLeadingGlyph(tab.label), total, color: PIE_COLORS[tab.id] || "#888" });
+    grandTotal += total;
+  }
+
+  if (centerNum) centerNum.textContent = grandTotal > 0 ? fmt(grandTotal) : "—";
+
+  // Build SVG arcs.
+  svg.innerHTML = "";
+  if (grandTotal < 0.01) {
+    // Empty state — show a thin grey ring so the pane never looks broken.
+    svg.innerHTML = `<circle cx="50" cy="50" r="42" fill="none" stroke="hsl(0 0% 50% / 0.18)" stroke-width="2" />`;
+    legend.innerHTML = slices
+      .map((s) => `<span class="legend-item" data-tab="${s.id}"><span class="legend-dot" style="background:${s.color}"></span><span class="legend-name">${s.label}</span><span class="legend-gb">—</span></span>`)
+      .join("");
+    wireLegendClicks();
+    return;
+  }
+
+  let startAngle = 0;
+  const cx = 50, cy = 50, r = 42;
+  for (const slice of slices) {
+    if (slice.total <= 0) continue;
+    const frac = slice.total / grandTotal;
+    const endAngle = startAngle + frac * Math.PI * 2;
+    const path = arcPath(cx, cy, r, startAngle, endAngle);
+    const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    el.setAttribute("d", path);
+    el.setAttribute("fill", slice.color);
+    el.setAttribute("data-tab", slice.id);
+    el.style.cursor = "pointer";
+    el.addEventListener("click", () => switchTab(slice.id));
+    svg.appendChild(el);
+    startAngle = endAngle;
+  }
+  // Donut hole — same bg color so the legend center shows through.
+  const hole = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  hole.setAttribute("cx", "50");
+  hole.setAttribute("cy", "50");
+  hole.setAttribute("r", "22");
+  hole.setAttribute("fill", "hsl(0 0% 100%)");
+  hole.style.fill = "var(--bg-2, white)";
+  svg.appendChild(hole);
+
+  // Legend.
+  legend.innerHTML = slices
+    .map((s) => `<span class="legend-item" data-tab="${s.id}"><span class="legend-dot" style="background:${s.color}"></span><span class="legend-name">${s.label}</span><span class="legend-gb">${s.total >= 0.01 ? fmt(s.total) + " GB" : "—"}</span></span>`)
+    .join("");
+  wireLegendClicks();
+}
+
+function wireLegendClicks() {
+  $$("#pie-legend .legend-item").forEach((el) => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.tab;
+      if (id) switchTab(id);
+    });
+  });
+}
+
+// SVG arc helper. Angles in radians, 0 = top, positive = clockwise (because the
+// SVG is rotated -90deg via transform). For our purposes the rotation+angle math
+// works out so the slices read clockwise starting from 12 o'clock.
+function arcPath(cx, cy, r, startAngle, endAngle) {
+  const sx = cx + r * Math.cos(startAngle);
+  const sy = cy + r * Math.sin(startAngle);
+  const ex = cx + r * Math.cos(endAngle);
+  const ey = cy + r * Math.sin(endAngle);
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M ${cx} ${cy} L ${sx} ${sy} A ${r} ${r} 0 ${largeArc} 1 ${ex} ${ey} Z`;
+}
+
 function renderOverviewGrid() {
   const grid = $("#overview-grid");
   if (!grid) return;
   grid.innerHTML = "";
+  // Pie refresh follows the same lifecycle as the cards — both consume scans.
+  renderPie();
 
   // Build one card per top-level tab (skip the meta Overview itself).
   for (const tab of tabsState.tabsManifest) {
@@ -1696,14 +1966,38 @@ async function runAction(catId, actionId, label, costText) {
 }
 
 function appendLine(text, cls = "") {
-  const out = $("#output");
-  if (!out.classList.contains("visible")) out.classList.add("visible");
-  const span = document.createElement("span");
-  span.className = "out-line" + (cls ? " " + cls : "");
-  span.textContent = text;
-  out.appendChild(span);
-  safeAnimate(span, { opacity: [0, 1], y: [-3, 0] }, { duration: 0.18, easing: [0.22, 1, 0.36, 1] });
-  out.scrollTop = out.scrollHeight;
+  // Two render targets:
+  //   - bottom #output (always present, visible on non-overview tabs)
+  //   - top #output-host-top (Overview's terminal pane, present only when overview is mounted)
+  // Both stay in sync so cleans triggered from any tab show in whichever pane the user is viewing.
+  const targets = [];
+  const bottom = $("#output");
+  if (bottom) targets.push(bottom);
+  const topHost = $("#output-host-top");
+  if (topHost) targets.push(topHost);
+
+  // Hide the idle placeholder once we start emitting real output.
+  const idle = $("#terminal-idle");
+  if (idle) idle.style.display = "none";
+
+  for (const out of targets) {
+    if (out.id === "output" && !out.classList.contains("visible")) out.classList.add("visible");
+    const span = document.createElement("span");
+    span.className = "out-line" + (cls ? " " + cls : "");
+    span.textContent = text;
+    out.appendChild(span);
+    safeAnimate(span, { opacity: [0, 1], y: [-3, 0] }, { duration: 0.18, easing: [0.22, 1, 0.36, 1] });
+    out.scrollTop = out.scrollHeight;
+  }
+}
+
+function clearOutput() {
+  const bottom = $("#output");
+  const topHost = $("#output-host-top");
+  if (bottom) bottom.innerHTML = "";
+  if (topHost) {
+    topHost.innerHTML = '<span class="terminal-idle" id="terminal-idle">Idle — nothing is running. Hit Scan or Clean to see live output.</span>';
+  }
 }
 
 function successPulse(freedGb) {

@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.14.2] — 2026-05-12 15:05:24 Eastern · *Overview 3-pane top — hero · pie · terminal — plus copyright footer*
+
+### Added
+- **3-pane top in Overview** replacing the single hero card. Three sibling cards across the top of the Overview panel:
+  - **Left — Hero.** Free GB count + progress bar + "Factory-fresh without losing your stuff" lockup. Same content as before, narrower padding to share the row.
+  - **Middle — `Where the disk is going` donut pie.** SVG donut where each slice is one top-level tab (Xcode teal · LLMs violet · Docker sky-blue · Apps amber · Creative pink · System slate). Slice size = `safe + opt-in + caution` per tab (the full footprint we've scanned). Center number = total GB scanned. Click a slice or a legend entry to jump to that tab. Hidden when nothing has been scanned yet; shows an empty ring as a placeholder.
+  - **Right — `Activity` terminal.** The output console now lives here for Overview-triggered cleans. Always visible (not collapsed). Shows an italic "Idle — nothing is running. Hit Scan or Clean to see live output." placeholder when empty; lines stream in as cleans run. Bottom `#output` element stays as the fallback target for non-overview cleans, and `appendLine` writes to both targets so the output is in sync wherever you happen to be looking.
+- **Per-category pie color palette** keyed to top-level tab id (`PIE_COLORS`).
+- **`renderPie()`** + `arcPath()` helpers — pure-SVG donut, no chart library. Called from `renderOverviewGrid()` so the pie refreshes on every scan completion.
+- **Footer copyright row** below the existing footer line: `© 2026 Learn Mappers LLC DBA AVERY GOODMAN · All rights reserved · Intellectual property · UCC 1-308`. Follows the global `learn-mappers-copyright` rule (AVERY GOODMAN rendered in all caps, UCC 1-308 reservation included).
+
+### Changed
+- `#output` element wrapped in `#output-host-bottom` so the bottom output container is symmetric with the new `#output-host-top` (inside the terminal pane).
+- `appendLine()` now writes to both `#output` and `#output-host-top` so cleanups triggered from any tab show output in whichever pane the user is viewing — and hides the idle placeholder on first line.
+- `clearOutput()` helper added to reset both outputs back to the idle placeholder state.
+- `buildOverviewPanel()` HTML restructured for the 3-pane layout. The history strip, mega-button row, and per-category card grid remain in the same order below.
+- Footer markup wrapped in `.footer-row` divs so the copyright sits cleanly on its own line; copyright row uses `.footer-copyright` with `--text-faint` and slightly smaller type so it reads as legal-stamp not primary content.
+
+### Why
+Maintainer: *"The top part with the number split that whole section with that same part but share it with the part that's at the bottom now that little terminal so you'll have the terminal on one side and you'll have like the total free on the other side and in fact, make three spaces put the one in the middle to be like a pie of all of the areas and how much they're taking up on the disc."* Plus: *"the app is made by Learn Mappers LLC DBA Avery Goodman 2026 copyright intellectual property ucc 1-308."*
+
+The pie answers the disk-going-where question at a glance — Docker.raw being 14.8 GB out of 16.8 GB scanned is now a single sky-blue wedge dominating the donut, not a number you have to find in a panel.
+
 ## [0.14.1] — 2026-05-12 14:44:02 Eastern · *fix: Overview card totals now match the "Clean ALL" buttons*
 
 ### Fixed
