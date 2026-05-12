@@ -1,0 +1,16 @@
+{
+  "name": "cleanup-hub",
+  "version": "0.18.0",
+  "private": true,
+  "description": "Cleanup Hub — pnpm workspace root. Frontend apps live under apps/*. The canonical backend is web/server.py (Python stdlib only).",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0"
+  }
+}
