@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.8.3 — 2026-05-12
+
+### Performance
+- **Parallel scanning** — `scan_category` now uses a 6-thread `ThreadPoolExecutor` for the `du -sk` calls. `du` is I/O bound, so 6 paths can scan simultaneously without contention. Measured on the maintainer's machine: scan times dropped from minutes to seconds.
+  - Xcode (20 paths incl. DerivedData/DeviceSupport): ~2 sec
+  - LLMs/Claude/Cursor/ChatGPT: 30–210 ms each
+  - Apps: 250 ms
+  - System: 20 ms
+  - "Scan everything" (6 categories in parallel via JS): ~2 sec total (gated by Xcode, the slowest)
+- Scan response now includes `scan_ms` for the per-category wallclock — useful for "why is X slow" diagnostics.
+
+### Why
+User: "why does it take so long to load stats from each one?" — answer: the original implementation ran every `du -sk` sequentially. Threading was the fix.
+
 ## v0.8.1 — 2026-05-12
 
 ### Added

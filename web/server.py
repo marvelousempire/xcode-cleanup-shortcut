@@ -25,6 +25,8 @@ import socketserver
 import subprocess
 import sys
 import webbrowser
+import concurrent.futures
+import time
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -74,36 +76,58 @@ def get_report() -> dict:
     }
 
 
+def _measure_path(args):
+    """Worker for parallel scanning. Returns (group_name, label, path, expanded, exists, size_kb)."""
+    group_name, label, path = args
+    expanded = os.path.expanduser(path)
+    exists = os.path.exists(expanded)
+    size_kb = 0
+    if exists:
+        try:
+            out = subprocess.check_output(
+                ["du", "-sk", expanded], stderr=subprocess.DEVNULL, timeout=30,
+            )
+            size_kb = int(out.split()[0])
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired,
+                ValueError, FileNotFoundError):
+            pass
+    return (group_name, label, path, size_kb, exists)
+
+
 def scan_category(category_id: str) -> dict:
     cat = cleaners.CATEGORIES.get(category_id)
     if not cat:
         return None
 
-    groups_out = {}
-    totals = {}
+    # Collect every path-to-scan across all groups
+    work = []
     for group_name, items in cat["groups"].items():
-        paths = []
         for label, path in items:
-            expanded = os.path.expanduser(path)
-            size_kb = 0
-            exists = os.path.exists(expanded)
-            try:
-                if exists:
-                    out = subprocess.check_output(
-                        ["du", "-sk", expanded], stderr=subprocess.DEVNULL, timeout=30,
-                    )
-                    size_kb = int(out.split()[0])
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, FileNotFoundError):
-                pass
+            work.append((group_name, label, path))
+
+    # Run du in parallel — du is I/O bound, 6 workers gives a nice speedup
+    started_at = time.time()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
+        results = list(ex.map(_measure_path, work))
+    elapsed_ms = int((time.time() - started_at) * 1000)
+
+    # Reassemble into groups in the original order
+    groups_out = {gname: {"paths": [], "total_gb": 0} for gname in cat["groups"]}
+    by_label = {(g, l, p): (size_kb, exists) for g, l, p, size_kb, exists in results}
+    for group_name, items in cat["groups"].items():
+        for label, path in items:
+            size_kb, exists = by_label.get((group_name, label, path), (0, False))
             size_gb = round(size_kb / 1024 / 1024, 2)
-            paths.append({
+            groups_out[group_name]["paths"].append({
                 "label": label, "path": path,
                 "size_kb": size_kb, "size_gb": size_gb,
                 "exists":  exists,
             })
-        cat_total = round(sum(p["size_gb"] for p in paths), 2)
-        groups_out[group_name] = {"paths": paths, "total_gb": cat_total}
-        totals[group_name] = cat_total
+        groups_out[group_name]["total_gb"] = round(
+            sum(p["size_gb"] for p in groups_out[group_name]["paths"]), 2
+        )
+
+    totals = {g: groups_out[g]["total_gb"] for g in groups_out}
 
     return {
         "id": category_id,
@@ -115,6 +139,7 @@ def scan_category(category_id: str) -> dict:
         "total_cleanable_gb": round(
             totals.get("safe", 0) + totals.get("probably_safe", 0), 2
         ),
+        "scan_ms": elapsed_ms,
     }
 
 
