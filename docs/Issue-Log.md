@@ -19,6 +19,20 @@ Keep entries short — 5–7 lines is fine. Cite specific files / PRs / versions
 
 ## 2026-05-12
 
+### 13:05 Eastern — Preview server kept the wrong cwd through restart
+
+**Symptom:** Updated `.claude/launch.json` with a new `cwd` and called `preview_start` — server returned `"reused": false` and curl showed the OLD `web/index.html` was being served. `preview_stop` didn't actually free the port.
+**Diagnosis:** The Claude Code preview tool ignored the `cwd` field in `launch.json` (likely treated it as launch.json-relative or used a default working directory). The stale Python server process kept holding port 8765 / 8766 even after `preview_stop` returned success. Earlier runs had spawned a server with the wrong cwd; subsequent starts hit an "in use" port and silently reused the old listener.
+**Fix:** Changed `runtimeArgs` from `["web/server.py"]` (path-relative) to an absolute path to the worktree's `web/server.py`. Force-killed the stale PID with `kill <pid>` before retrying `preview_start`. Used port 8766 to avoid colliding with the maintainer's existing `make ui` on 8765.
+**Would have prevented it:** When configuring a preview server in a worktree, prefer absolute paths in `launch.json` over relative `runtimeArgs`. Verify served content matches on-disk content with `curl http://127.0.0.1:<port>/ | wc -c` immediately after `preview_start`. If the byte count differs from the on-disk file, the cwd is wrong — kill the PID and reconfigure.
+
+### 12:50 Eastern — Server ran on the maintainer's main checkout, not the worktree
+
+**Symptom:** Preview tool reported "server started on port 8765" but the page rendered the OLD design (v0.10.x), not the v0.11 redesign that had just been written to the worktree.
+**Diagnosis:** The maintainer had a separate `make ui` already running from `~/Developer/xcode-cleanup-shortcut` (the main checkout). That server was bound to port 8765 *before* my preview started. My subsequent `preview_start` calls believed they were starting a new server but the port was already held; tools returned `"reused": false` but the actual listener never changed.
+**Fix:** `lsof -ti :8765` to identify the foreign PID. Let it run (it's the maintainer's work — not mine to kill). Moved my preview to port 8766 via `XCC_UI_PORT=8766` in launch.json's `env` block.
+**Would have prevented it:** Always `lsof -ti :<preferred_port>` *before* asking the preview tool to start — if the port is held by something I didn't start, pick a different port. Don't trust `"reused": false` as proof a fresh server is listening; verify with curl.
+
 ### 11:55 Eastern — CHANGELOG format diverged from `marvelousempire/ai-skills-library` rules
 
 **Symptom:** Asked by maintainer whether the repo follows the team's design rules. Audit revealed: CHANGELOG at root not `docs/`, no Eastern timestamps, no taglines, no `Feature Ledger.md`, no `Issue-Log.md`, ~30 commits direct-to-`main` instead of via PR.

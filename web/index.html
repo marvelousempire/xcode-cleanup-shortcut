@@ -7,108 +7,284 @@
 <style>
   :root {
     color-scheme: light dark;
-    --bg-1: #f5f5f7;
-    --bg-2: rgba(255,255,255,0.72);
-    --bg-3: rgba(255,255,255,0.5);
-    --border: rgba(0,0,0,0.08);
-    --border-2: rgba(0,0,0,0.05);
-    --text: #1d1d1f;
-    --text-dim: #6e6e73;
-    --text-faint: #a1a1a6;
-    --accent: #0A84FF;
-    --green: #30D158;
-    --orange: #FF9F0A;
-    --red: #FF453A;
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-    --radius: 14px;
+
+    /* Neutrals — warm grayscale */
+    --bg-1: #FAFAF7;
+    --bg-2: rgba(255,255,255,0.78);
+    --bg-3: rgba(255,255,255,0.55);
+    --border: rgba(11,11,12,0.08);
+    --border-2: rgba(11,11,12,0.05);
+    --border-strong: rgba(11,11,12,0.14);
+    --text: #171719;
+    --text-dim: #5C5C66;
+    --text-faint: #9999A3;
+
+    /* Accent — deep teal (precision instrument) */
+    --accent: #0F766E;
+    --accent-strong: #115E59;
+    --accent-soft: rgba(15,118,110,0.10);
+
+    /* Semantic — safety tiers (1:1 with cleaners.py) */
+    --safe: #16A34A;
+    --safe-soft: rgba(22,163,74,0.10);
+    --warn: #D97706;
+    --warn-soft: rgba(217,119,6,0.10);
+    --danger: #B91C1C;
+    --danger-soft: rgba(185,28,28,0.10);
+
+    /* Legacy aliases — kept so older selectors keep working until fully renamed */
+    --green: var(--safe);
+    --orange: var(--warn);
+    --red: var(--danger);
+
+    /* Typography */
+    --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    --mono: var(--font-mono);
+
+    /* Radii */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 18px;
+    --r-pill: 999px;
+    --radius: var(--r-lg);
     --radius-sm: 8px;
-    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+
+    /* Elevation */
+    --shadow-sm: 0 1px 2px rgba(11,11,12,0.04), 0 2px 8px rgba(11,11,12,0.03);
+    --shadow-md: 0 2px 4px rgba(11,11,12,0.05), 0 8px 24px rgba(11,11,12,0.06);
+    --shadow-lg: 0 8px 16px rgba(11,11,12,0.10), 0 24px 64px rgba(11,11,12,0.18);
+    --shadow: var(--shadow-sm);
+
+    /* Motion */
+    --d-instant: 80ms;
+    --d-quick: 160ms;
+    --d-normal: 220ms;
+    --d-slow: 600ms;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
+
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg-1: #000;
-      --bg-2: rgba(28,28,30,0.72);
-      --bg-3: rgba(44,44,46,0.5);
-      --border:   rgba(255,255,255,0.10);
+      --bg-1: #0B0B0C;
+      --bg-2: rgba(22,22,24,0.78);
+      --bg-3: rgba(34,34,38,0.55);
+      --border: rgba(255,255,255,0.10);
       --border-2: rgba(255,255,255,0.06);
-      --text: #f5f5f7;
-      --text-dim: #98989d;
-      --text-faint: #6e6e73;
-      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5);
+      --border-strong: rgba(255,255,255,0.16);
+      --text: #F4F4F2;
+      --text-dim: #9B9BA3;
+      --text-faint: #6C6C76;
+
+      --accent: #2DD4BF;
+      --accent-strong: #5EEAD4;
+      --accent-soft: rgba(45,212,191,0.12);
+
+      --safe: #22C55E;
+      --safe-soft: rgba(34,197,94,0.14);
+      --warn: #FBBF24;
+      --warn-soft: rgba(251,191,36,0.14);
+      --danger: #EF4444;
+      --danger-soft: rgba(239,68,68,0.14);
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 2px 4px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5);
+      --shadow-lg: 0 8px 16px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.7);
+      --shadow: var(--shadow-sm);
     }
   }
+
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    font-family: var(--font-sans);
     background: var(--bg-1);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   body {
     min-height: 100vh;
     background-image:
-      radial-gradient(at 20% 0%,   rgba(10,132,255,0.10) 0, transparent 50%),
-      radial-gradient(at 80% 100%, rgba(48,209,88,0.08) 0, transparent 50%);
+      radial-gradient(at 20% 0%,   rgba(15,118,110,0.07) 0, transparent 50%),
+      radial-gradient(at 80% 100%, rgba(22,163,74,0.05)  0, transparent 50%);
     padding: 40px 24px 96px;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      background-image:
+        radial-gradient(at 20% 0%,   rgba(45,212,191,0.08) 0, transparent 50%),
+        radial-gradient(at 80% 100%, rgba(34,197,94,0.05)  0, transparent 50%);
+    }
   }
   .container { max-width: 760px; margin: 0 auto; }
 
-  header {
+  ::selection { background: var(--accent-soft); color: var(--accent-strong); }
+  *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+
+  /* ── Header ──────────────────────────────────────────────── */
+  header.app-header {
     display: flex; align-items: center; gap: 12px;
     margin-bottom: 24px;
   }
-  header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-  header .badge { margin-left: auto; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  header.app-header .logo {
+    width: 26px; height: 26px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  header.app-header h1 {
+    margin: 0;
+    font-size: 17px; font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  header.app-header .badge {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
 
+  /* ── Card ───────────────────────────────────────────────── */
   .card {
     background: var(--bg-2);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
   }
+  .card.elevated { box-shadow: var(--shadow-md); }
 
-  /* Hero — always visible */
+  /* ── Hero ───────────────────────────────────────────────── */
   .hero {
-    padding: 36px 32px 28px;
+    padding: 44px 32px 32px;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
   }
   .hero .free {
-    font-size: 72px;
+    font-size: 80px;
     font-weight: 700;
     letter-spacing: -0.04em;
     line-height: 1;
     font-variant-numeric: tabular-nums;
-    transition: color 0.3s ease;
+    font-feature-settings: "tnum" 1;
+    transition: color var(--d-normal) var(--ease-out);
+    will-change: transform;
   }
-  .hero .free .unit { font-size: 28px; font-weight: 500; color: var(--text-dim); margin-left: 4px; }
-  .hero .free.good   { color: var(--green); }
-  .hero .free.warn   { color: var(--orange); }
-  .hero .free.danger { color: var(--red); }
-  .hero .label { margin-top: 10px; font-size: 13px; color: var(--text-dim); }
+  .hero .free .unit { font-size: 30px; font-weight: 500; color: var(--text-dim); margin-left: 6px; letter-spacing: -0.01em; }
+  .hero .free.good   { color: var(--safe); }
+  .hero .free.warn   { color: var(--warn); }
+  .hero .free.danger { color: var(--danger); }
+  .hero .label {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
   .hero .progress-track {
-    margin-top: 20px;
+    margin-top: 22px;
     height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
   }
   .hero .progress-fill {
-    height: 100%; background: var(--accent);
-    transition: width 0.5s ease, background 0.3s ease;
+    height: 100%;
+    background: var(--accent);
+    transition: width var(--d-slow) var(--ease-out), background var(--d-normal) var(--ease-out);
   }
-  .hero .progress-fill.warn   { background: var(--orange); }
-  .hero .progress-fill.danger { background: var(--red); }
+  .hero .progress-fill.warn   { background: var(--warn); }
+  .hero .progress-fill.danger { background: var(--danger); }
+  .hero .promise {
+    margin-top: 18px;
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .hero .promise svg { width: 12px; height: 12px; color: var(--safe); }
 
-  /* Tabs */
+  /* History strip — sits between hero and CTA. Promoted from the footer. */
+  .history-strip {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-pill);
+    font-variant-numeric: tabular-nums;
+  }
+  .history-strip strong { color: var(--text); font-weight: 600; }
+  .history-strip svg { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
+  .history-strip[hidden] { display: none !important; }
+
+  /* ── First-run CTA ──────────────────────────────────────── */
+  .first-run {
+    padding: 28px 24px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .first-run .pretitle {
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .first-run h2 {
+    margin: 0 0 8px;
+    font-size: 22px; font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .first-run p {
+    margin: 0 auto 20px;
+    max-width: 460px;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+  .first-run .cta-row {
+    display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  }
+  .first-run .cta-primary {
+    appearance: none; border: none;
+    background: var(--accent); color: white;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    padding: 12px 22px; border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background var(--d-quick) var(--ease-out), transform var(--d-instant) var(--ease-out);
+    box-shadow: 0 2px 8px rgba(15,118,110,0.20);
+  }
+  .first-run .cta-primary:hover:not(:disabled) { background: var(--accent-strong); }
+  .first-run .cta-primary:active:not(:disabled) { transform: scale(0.97); }
+  .first-run .cta-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .first-run .cta-secondary {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    padding: 12px 14px; border-radius: var(--r-md);
+    cursor: pointer;
+    transition: color var(--d-quick) var(--ease-out);
+  }
+  .first-run .cta-secondary:hover { color: var(--text); }
+  .first-run[hidden] { display: none !important; }
+
+  /* ── Tabs ───────────────────────────────────────────────── */
   nav.tabs {
     display: flex; gap: 4px;
     padding: 4px;
     background: var(--bg-3);
-    border-radius: var(--radius);
+    border-radius: var(--r-lg);
     margin-bottom: 16px;
     overflow-x: auto;
+    border: 1px solid var(--border-2);
   }
   nav.tabs button {
     flex: 1;
@@ -119,83 +295,143 @@
     font-family: inherit;
     font-size: 13px;
     font-weight: 600;
-    padding: 10px 14px;
+    padding: 9px 14px;
     border-radius: 10px;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
+    transition: background var(--d-quick) var(--ease-out), color var(--d-quick) var(--ease-out);
     white-space: nowrap;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   }
+  nav.tabs button svg { width: 14px; height: 14px; flex-shrink: 0; }
   nav.tabs button:hover { color: var(--text); }
   nav.tabs button.active {
     background: var(--bg-2);
     color: var(--text);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 2px rgba(11,11,12,0.06);
   }
-  nav.sub-tabs {
-    display: flex; gap: 4px;
-    padding: 4px;
-    background: var(--border-2);
-    border-radius: var(--radius-sm);
-    margin-bottom: 16px;
-  }
-  nav.sub-tabs button {
-    flex: 1; appearance: none; background: transparent;
-    border: none; color: var(--text-dim);
-    font-family: inherit; font-size: 12px; font-weight: 500;
-    padding: 8px 12px; border-radius: 6px;
-    cursor: pointer; transition: all 0.15s ease;
-  }
-  nav.sub-tabs button.active { background: var(--bg-2); color: var(--text); }
+  nav.tabs button.active svg { color: var(--accent); }
 
   .panel { display: none; }
   .panel.active { display: block; }
+  .panel-cards { display: flex; flex-direction: column; gap: 12px; }
 
+  /* LLM sub-card label (when multiple categories share a panel) */
+  .panel-cards > .card + .card { margin-top: 0; }
+
+  /* ── Panel header ───────────────────────────────────────── */
   .panel-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
+    padding: 20px 24px 18px;
+    border-bottom: 1px solid var(--border-2);
   }
-  .panel-header h2 { margin: 0; font-size: 17px; font-weight: 600; }
-  .panel-header .tagline { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+  .panel-header h2 {
+    margin: 0;
+    font-size: 17px; font-weight: 600;
+    letter-spacing: -0.01em;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .panel-header h2 .cat-icon { color: var(--accent); }
+  .panel-header h2 .cat-icon svg { width: 16px; height: 16px; }
+  .panel-header .tagline {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
   .panel-header .totals {
-    display: flex; gap: 20px;
+    display: flex; gap: 18px; flex-wrap: wrap;
     margin-top: 14px;
     font-size: 12px;
     color: var(--text-dim);
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
   }
+  .panel-header .totals .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 0;
+  }
+  .panel-header .totals .pill::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px; border-radius: 999px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  .panel-header .totals .pill.safe   { color: var(--safe); }
+  .panel-header .totals .pill.warn   { color: var(--warn); }
+  .panel-header .totals .pill.danger { color: var(--danger); }
+  .panel-header .totals .pill.accent { color: var(--text); }
+  .panel-header .totals .pill.accent::before { background: var(--accent); opacity: 1; }
   .panel-header .totals strong { font-weight: 600; color: var(--text); }
 
-  .scan-section { padding: 16px 24px; }
+  /* Category callout — surfaces a single high-signal stat in the panel header.
+     Currently used by Docker to highlight Docker.raw size; future categories can opt in. */
+  .panel-header .callout {
+    margin-top: 12px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text);
+  }
+  .panel-header .callout svg { width: 14px; height: 14px; color: var(--warn); flex-shrink: 0; }
+  .panel-header .callout strong { color: var(--text); font-weight: 600; }
+  .panel-header .callout code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .panel-header .callout[hidden] { display: none !important; }
+
+  /* ── Scan section ───────────────────────────────────────── */
+  .scan-section { padding: 14px 24px 4px; }
   .scan-section h3 {
-    margin: 16px 0 10px;
+    margin: 18px 0 10px;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    display: inline-flex; align-items: center; gap: 8px;
   }
-  .scan-section h3.safe          { color: var(--green); }
-  .scan-section h3.probably_safe { color: var(--orange); }
-  .scan-section h3.caution       { color: var(--red); }
+  .scan-section h3::before {
+    content: "";
+    width: 6px; height: 6px; border-radius: 999px;
+    background: currentColor;
+  }
+  .scan-section h3.safe          { color: var(--safe); }
+  .scan-section h3.probably_safe { color: var(--warn); }
+  .scan-section h3.caution       { color: var(--danger); }
   .scan-section .group-note {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-dim);
     margin-bottom: 10px;
-    line-height: 1.5;
-    padding: 8px 12px;
-    background: var(--border-2);
-    border-radius: var(--radius-sm);
+    line-height: 1.55;
+    padding: 10px 12px;
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-sm);
+  }
+  .scan-section .group-note.caution {
+    background: var(--danger-soft);
+    border-color: transparent;
+    color: var(--text);
   }
   .path-row {
     display: flex; align-items: center; gap: 12px;
-    padding: 8px 12px;
+    padding: 9px 12px;
     font-size: 13px;
     background: var(--bg-3);
-    border-radius: 6px;
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-sm);
     margin-bottom: 3px;
+    transition: border-color var(--d-quick) var(--ease-out), background var(--d-quick) var(--ease-out);
   }
+  .path-row:hover { border-color: var(--border-strong); }
   .path-row.missing { opacity: 0.4; }
   .path-row .name { flex: 1; min-width: 0; }
-  .path-row .name strong { display: block; }
+  .path-row .name strong { display: block; font-weight: 500; }
   .path-row .name code {
     font-family: var(--mono);
     font-size: 10px;
@@ -212,60 +448,100 @@
     color: var(--text-dim);
     min-width: 60px;
     text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
+  /* ── Actions ────────────────────────────────────────────── */
   .actions-section {
-    padding: 0 24px 24px;
+    padding: 4px 24px 24px;
   }
   .actions-section h3 {
     font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.05em;
+    text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--text-dim);
-    margin: 24px 0 12px;
+    margin: 22px 0 12px;
   }
   .action-card {
     background: var(--bg-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 14px 16px;
+    border: 1px solid var(--border-2);
+    border-radius: var(--r-md);
+    padding: 0;
     margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color var(--d-quick) var(--ease-out);
   }
-  .action-card .head {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-  }
-  .action-card .label { font-size: 14px; font-weight: 600; }
-  .action-card .desc { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
+  .action-card:hover { border-color: var(--border-strong); }
+
+  /* Cost banner — LIFTED to the top of the card. The distinctive UX feature. */
   .action-card .cost {
-    font-size: 11px;
-    color: var(--orange);
-    margin-top: 8px;
-    padding: 8px 10px;
-    background: rgba(255,159,10,0.08);
-    border-left: 2px solid var(--orange);
-    border-radius: 0 6px 6px 0;
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 12px;
+    color: var(--text);
+    padding: 10px 14px;
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn);
     line-height: 1.5;
+    transition: transform var(--d-quick) var(--spring);
   }
-  .action-card .cost::before { content: "Cost of doing this: "; font-weight: 600; }
+  .action-card:hover .cost { transform: translateX(1px); }
+  .action-card .cost svg {
+    width: 14px; height: 14px;
+    color: var(--warn);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .action-card .cost .cost-text { flex: 1; min-width: 0; }
+  .action-card .cost .cost-label {
+    display: block;
+    font-size: 10px; font-weight: 600;
+    color: var(--warn);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .action-card .cost.sudo {
+    background: var(--danger-soft);
+    border-left-color: var(--danger);
+  }
+  .action-card .cost.sudo svg,
+  .action-card .cost.sudo .cost-label { color: var(--danger); }
+
+  .action-card .body {
+    padding: 14px 16px;
+  }
+  .action-card .label {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .action-card .desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    line-height: 1.55;
+  }
   .action-card button {
     appearance: none; border: none;
     background: var(--accent); color: white;
     font-family: inherit; font-size: 12px; font-weight: 600;
-    padding: 8px 16px; border-radius: 6px;
+    padding: 8px 16px; border-radius: var(--r-sm);
     cursor: pointer;
     margin-top: 12px;
-    transition: background 0.2s ease, transform 0.06s ease;
+    transition: background var(--d-quick) var(--ease-out), transform var(--d-instant) var(--ease-out);
   }
-  .action-card button:hover { background: #006FE6; }
-  .action-card button:active { transform: scale(0.97); }
+  .action-card button:hover:not(:disabled) { background: var(--accent-strong); }
+  .action-card button:active:not(:disabled) { transform: scale(0.97); }
   .action-card button:disabled { opacity: 0.4; cursor: not-allowed; }
   .action-card.informational { border-left: 3px solid var(--accent); }
-  .action-card.informational button { background: var(--text-dim); }
-  .action-card.informational button:hover { background: var(--text); }
+  .action-card.informational button { background: transparent; color: var(--text); border: 1px solid var(--border-strong); }
+  .action-card.informational button:hover:not(:disabled) { background: var(--bg-3); }
 
+  /* ── Global actions (returning user) ────────────────────── */
   .global-actions {
     padding: 18px 22px;
     margin-bottom: 16px;
   }
+  .global-actions[hidden] { display: none !important; }
   .ga-row {
     display: flex; gap: 10px;
     flex-wrap: wrap;
@@ -274,39 +550,56 @@
     appearance: none; border: 1px solid var(--border);
     background: var(--bg-3); color: var(--text);
     font-family: inherit; font-size: 13px; font-weight: 600;
-    padding: 11px 16px; border-radius: 10px;
-    cursor: pointer; transition: all 0.18s ease;
+    padding: 11px 16px; border-radius: var(--r-md);
+    cursor: pointer;
+    transition: border-color var(--d-quick) var(--ease-out),
+                background var(--d-quick) var(--ease-out),
+                transform var(--d-instant) var(--ease-out);
     flex: 1; min-width: 0;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   }
-  .ga-btn:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
+  .ga-btn svg { width: 14px; height: 14px; }
+  .ga-btn:hover:not(:disabled) { border-color: var(--accent); }
   .ga-btn:active:not(:disabled) { transform: scale(0.98); }
   .ga-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .ga-btn.primary {
-    background: linear-gradient(135deg, var(--accent), #006FE6);
-    color: white; border-color: transparent;
-    box-shadow: 0 4px 12px rgba(10,132,255,0.25);
+    background: var(--accent);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(15,118,110,0.20);
   }
-  .ga-btn.primary:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(10,132,255,0.35); }
+  .ga-btn.primary:hover:not(:disabled) {
+    background: var(--accent-strong);
+    box-shadow: 0 4px 14px rgba(15,118,110,0.30);
+  }
   .ga-hint {
     margin-top: 12px;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-dim);
     line-height: 1.55;
+    font-variant-numeric: tabular-nums;
   }
-  .ga-hint strong { color: var(--text); }
+  .ga-hint strong { color: var(--text); font-weight: 600; }
+  .ga-hint .breakdown-item { display: inline-block; margin-right: 14px; white-space: nowrap; }
+  .ga-hint .breakdown-item svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 3px; color: var(--accent); }
 
+  /* ── Top actions (per-category) ─────────────────────────── */
   .top-actions {
     display: flex; gap: 8px;
-    margin-top: 12px;
+    margin-top: 14px;
     flex-wrap: wrap;
   }
   .top-btn {
     appearance: none; border: 1px solid var(--border);
     background: var(--bg-3); color: var(--text);
     font-family: inherit; font-size: 12px; font-weight: 600;
-    padding: 8px 14px; border-radius: 8px;
-    cursor: pointer; transition: all 0.15s ease;
+    padding: 8px 14px; border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: border-color var(--d-quick) var(--ease-out),
+                background var(--d-quick) var(--ease-out),
+                transform var(--d-instant) var(--ease-out);
     flex: 1; min-width: 0;
+    font-variant-numeric: tabular-nums;
   }
   .top-btn:hover:not(:disabled) { border-color: var(--accent); }
   .top-btn:active:not(:disabled) { transform: scale(0.97); }
@@ -314,86 +607,88 @@
   .top-btn.primary {
     background: var(--accent); color: white; border-color: transparent;
   }
-  .top-btn.primary:hover:not(:disabled) { background: #006FE6; }
+  .top-btn.primary:hover:not(:disabled) { background: var(--accent-strong); }
 
+  /* Per-path clean button */
   button.path-clean {
     appearance: none; border: 1px solid var(--border);
-    background: var(--bg-2); color: var(--text);
+    background: var(--bg-2); color: var(--text-dim);
     font-family: inherit; font-size: 11px; font-weight: 500;
-    padding: 4px 10px; border-radius: 5px;
-    cursor: pointer; transition: all 0.15s ease;
+    padding: 4px 10px; border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: border-color var(--d-quick) var(--ease-out),
+                color var(--d-quick) var(--ease-out),
+                background var(--d-quick) var(--ease-out);
     margin-left: 8px;
   }
   button.path-clean:hover:not(:disabled) {
-    border-color: var(--red); color: var(--red);
+    border-color: var(--danger);
+    color: var(--danger);
+    background: var(--danger-soft);
   }
   button.path-clean:disabled { opacity: 0.3; cursor: not-allowed; }
   .path-clean-placeholder { display: inline-block; min-width: 52px; }
 
-  .scan-btn {
-    appearance: none; border: 1px solid var(--border);
-    background: var(--bg-2); color: var(--text);
-    font-family: inherit; font-size: 13px; font-weight: 600;
-    padding: 12px 20px; border-radius: var(--radius-sm);
-    cursor: pointer; width: 100%;
-    transition: border-color 0.2s ease;
-  }
-  .scan-btn:hover { border-color: var(--accent); }
-  .scan-btn:disabled { opacity: 0.6; }
-
-  /* Shared output console */
+  /* ── Output console ─────────────────────────────────────── */
   .output {
     margin-top: 24px;
-    background: rgba(0,0,0,0.88);
-    color: #f5f5f7;
-    border-radius: var(--radius);
+    background: rgba(11,11,12,0.92);
+    color: #F4F4F2;
+    border-radius: var(--r-lg);
+    border: 1px solid rgba(255,255,255,0.06);
     padding: 0;
     font-family: var(--mono);
     font-size: 12px;
     line-height: 1.6;
-    max-height: 280px;
     overflow-y: auto;
     white-space: pre-wrap;
     word-break: break-word;
-    transition: padding 0.2s ease, max-height 0.3s ease;
+    transition: padding var(--d-normal) var(--ease-out), max-height var(--d-normal) var(--ease-out);
     max-height: 0;
     overflow: hidden;
   }
   .output.visible { padding: 16px 18px; max-height: 360px; overflow-y: auto; }
-  .output .ok   { color: #30D158; }
-  .output .warn { color: #FF9F0A; }
-  .output .err  { color: #FF453A; }
-  .output .dim  { color: #98989d; }
+  .output .ok   { color: #22C55E; }
+  .output .warn { color: #FBBF24; }
+  .output .err  { color: #EF4444; }
+  .output .dim  { color: #9B9BA3; }
+  .output .out-line { display: block; }
 
+  /* ── Version pill ───────────────────────────────────────── */
   .badge-btn {
     appearance: none; border: 1px solid transparent;
     background: transparent; color: inherit;
-    font-family: inherit; font-size: 12px; font-variant-numeric: tabular-nums;
-    padding: 4px 10px; border-radius: 6px;
-    cursor: pointer; transition: all 0.15s ease;
+    font-family: inherit; font-size: 11px; font-variant-numeric: tabular-nums;
+    padding: 5px 10px; border-radius: var(--r-pill);
+    cursor: pointer;
+    transition: all var(--d-quick) var(--ease-out);
   }
-  .badge-btn:hover { background: var(--bg-3); border-color: var(--border); }
+  .badge-btn:hover { background: var(--bg-3); border-color: var(--border); color: var(--text); }
 
+  /* ── Modal ──────────────────────────────────────────────── */
   .modal-backdrop {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(11,11,12,0.55);
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     display: flex; align-items: center; justify-content: center;
     z-index: 100;
-    animation: fadeIn 0.2s ease;
+    padding: 24px;
   }
-  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  @media (prefers-color-scheme: dark) {
+    .modal-backdrop { background: rgba(0,0,0,0.65); }
+  }
   .modal-backdrop[hidden] { display: none; }
   .modal-card {
     background: var(--bg-1);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-    width: 90vw; max-width: 720px;
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 720px;
     max-height: 85vh;
     display: flex; flex-direction: column;
     overflow: hidden;
   }
+  .modal-card.confirm { max-width: 460px; }
   .modal-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 16px 20px;
@@ -403,13 +698,14 @@
   .modal-close {
     appearance: none; border: none;
     background: transparent; color: var(--text-dim);
-    font-size: 24px; line-height: 1;
-    padding: 0 8px; cursor: pointer;
-    border-radius: 6px;
+    font-size: 22px; line-height: 1;
+    padding: 4px 10px; cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: background var(--d-quick) var(--ease-out), color var(--d-quick) var(--ease-out);
   }
   .modal-close:hover { background: var(--bg-3); color: var(--text); }
   .modal-body {
-    padding: 20px 24px 28px;
+    padding: 20px 24px 24px;
     overflow-y: auto;
     line-height: 1.55;
     font-size: 13px;
@@ -421,8 +717,8 @@
   }
   .modal-body h2:first-child { margin-top: 0; }
   .modal-body h3 {
-    font-size: 12px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.05em;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--text-dim);
     margin: 14px 0 6px;
   }
@@ -434,10 +730,64 @@
     font-size: 11px;
     background: var(--bg-3);
     padding: 1px 6px;
-    border-radius: 4px;
+    border-radius: var(--r-sm);
   }
   .modal-body strong { font-weight: 600; }
-  .modal-body em { color: var(--text-dim); }
+  .modal-body em { color: var(--text-dim); font-style: normal; }
+
+  /* Confirm-modal specific */
+  .confirm-body {
+    padding: 18px 22px 22px;
+  }
+  .confirm-body .what {
+    font-size: 15px; font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: -0.005em;
+  }
+  .confirm-body .detail {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+    line-height: 1.5;
+    font-family: var(--mono);
+    word-break: break-all;
+  }
+  .confirm-body .cost-block {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 12px 14px;
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn);
+    border-radius: var(--r-sm);
+    margin-bottom: 18px;
+  }
+  .confirm-body .cost-block svg { width: 16px; height: 16px; color: var(--warn); flex-shrink: 0; margin-top: 1px; }
+  .confirm-body .cost-block .cost-label {
+    display: block; font-size: 10px; font-weight: 600;
+    color: var(--warn); letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .confirm-body .cost-block .cost-text { font-size: 13px; line-height: 1.5; }
+  .confirm-actions {
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+  .confirm-actions button {
+    appearance: none; font-family: inherit;
+    font-size: 13px; font-weight: 600;
+    padding: 9px 16px; border-radius: var(--r-md);
+    cursor: pointer;
+    transition: all var(--d-quick) var(--ease-out);
+  }
+  .confirm-actions .cancel {
+    background: transparent; color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .confirm-actions .cancel:hover { color: var(--text); border-color: var(--border-strong); }
+  .confirm-actions .confirm {
+    background: var(--accent); color: white; border: 1px solid transparent;
+  }
+  .confirm-actions .confirm:hover { background: var(--accent-strong); }
+  .confirm-actions .confirm.danger { background: var(--danger); }
+  .confirm-actions .confirm.danger:hover { background: #991B1B; }
 
   footer {
     margin-top: 48px;
@@ -445,21 +795,45 @@
     font-size: 12px;
     color: var(--text-dim);
   }
-  footer a { color: var(--accent); text-decoration: none; }
-  footer a:hover { text-decoration: underline; }
+  footer a {
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    transition: border-color var(--d-quick) var(--ease-out), color var(--d-quick) var(--ease-out);
+  }
+  footer a:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
   @media (max-width: 600px) {
     body { padding: 24px 14px 64px; }
-    nav.tabs button { font-size: 12px; padding: 9px 10px; }
+    .container { max-width: 100%; }
+    nav.tabs button { font-size: 12px; padding: 8px 10px; }
+    nav.tabs button span.tab-label { display: none; }
+    .hero { padding: 32px 20px 24px; }
     .hero .free { font-size: 56px; }
+    .hero .free .unit { font-size: 22px; }
+    .first-run { padding: 22px 18px; }
+    .first-run h2 { font-size: 19px; }
+    .ga-row { flex-direction: column; }
+    .panel-header { padding: 16px 18px 14px; }
+    .scan-section, .actions-section { padding-left: 18px; padding-right: 18px; }
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 </style>
 </head>
 <body>
 <div class="container">
 
-  <header>
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <header class="app-header">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/>
       <path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/>
       <path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>
@@ -468,17 +842,52 @@
     <button class="badge badge-btn" id="version" title="Click to view changelog">…</button>
   </header>
 
-  <div class="card hero">
+  <div class="card elevated hero">
     <div class="free" id="free-gb">— <span class="unit">GB free</span></div>
     <div class="label" id="free-label">Checking disk…</div>
     <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="promise">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      Factory-fresh without losing your stuff
+    </div>
   </div>
 
-  <div class="card global-actions" id="global-actions">
+  <div class="history-strip" id="history-strip" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/>
+    </svg>
+    <span id="history-text">…</span>
+  </div>
+
+  <!-- First-run progressive disclosure: shown to brand-new visitors -->
+  <div class="card first-run" id="first-run" hidden>
+    <div class="pretitle">Welcome</div>
+    <h2>Show me what's worth cleaning.</h2>
+    <p>Scan every category at once. Nothing is deleted. You'll see exactly what's there, the cost of removing each piece, and decide.</p>
+    <div class="cta-row">
+      <button class="cta-primary" id="first-run-scan">Scan every category</button>
+      <button class="cta-secondary" id="first-run-skip">Skip the tour</button>
+    </div>
+  </div>
+
+  <!-- Returning-user power-mode -->
+  <div class="card global-actions" id="global-actions" hidden>
     <div class="ga-row">
-      <button class="ga-btn" id="btn-scan-all">⚡ Scan everything</button>
-      <button class="ga-btn primary" id="btn-clean-all-safe" disabled>✨ Clean ALL safe · scan first</button>
-      <button class="ga-btn" id="btn-clean-all-optin" disabled>⚠ Clean ALL opt-in · scan first</button>
+      <button class="ga-btn" id="btn-scan-all">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
+        Scan everything
+      </button>
+      <button class="ga-btn primary" id="btn-clean-all-safe" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        Clean ALL safe · scan first
+      </button>
+      <button class="ga-btn" id="btn-clean-all-optin" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4"/><path d="M12 17h.01"/></svg>
+        Clean ALL opt-in · scan first
+      </button>
     </div>
     <div class="ga-hint" id="ga-hint">Scan every tab at once, then click Clean ALL safe to factory-fresh your Mac across Xcode, LLMs, Apps, and System — without touching anything in the caution tier.</div>
   </div>
@@ -490,7 +899,7 @@
   <div class="output" id="output"></div>
 
   <footer>
-    <a href="https://github.com/marvelousempire/xcode-cleanup-shortcut" target="_blank">marvelousempire/xcode-cleanup-shortcut</a> · MIT · <a href="#" id="footer-changelog">Changelog</a> · localhost-only · factory-fresh without losing your stuff
+    <a href="https://github.com/marvelousempire/xcode-cleanup-shortcut" target="_blank">marvelousempire/xcode-cleanup-shortcut</a> · MIT · <a href="#" id="footer-changelog">Changelog</a> · localhost-only
   </footer>
 
   <div class="modal-backdrop" id="changelog-modal" hidden>
@@ -503,43 +912,149 @@
     </div>
   </div>
 
+  <!-- Custom confirm modal (replaces window.confirm) -->
+  <div class="modal-backdrop" id="confirm-modal" hidden>
+    <div class="modal-card confirm">
+      <header class="modal-header">
+        <h2 id="confirm-title">Confirm</h2>
+        <button class="modal-close" id="confirm-close" aria-label="Close">×</button>
+      </header>
+      <div class="confirm-body">
+        <p class="what" id="confirm-what">…</p>
+        <p class="detail" id="confirm-detail" hidden></p>
+        <div class="cost-block" id="confirm-cost-block" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+          </svg>
+          <div>
+            <span class="cost-label">Cost of doing this</span>
+            <span class="cost-text" id="confirm-cost-text">…</span>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="cancel" id="confirm-cancel">Cancel</button>
+          <button class="confirm danger" id="confirm-ok">Clean</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<script>
+<script type="module">
+// Motion via CDN — keeps the zero-deps server-side promise.
+// Graceful degradation: every call is wrapped, and a fallback no-op stands in if the import fails.
+let M = null;
+try {
+  M = await import("https://cdn.jsdelivr.net/npm/motion@11.18.0/+esm");
+} catch (e) {
+  console.warn("[motion] CDN unavailable — falling back to instant state changes.", e);
+}
+
+const PRM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const safeAnimate = (target, keyframes, options) => {
+  if (!M || PRM) return null;
+  try { return M.animate(target, keyframes, options); } catch (e) { return null; }
+};
+const safeStagger = (delay) => (M && !PRM) ? M.stagger(delay) : 0;
+const safeInView  = (target, cb, opts) => {
+  if (!M || PRM) { try { cb(); } catch(e){} return () => {}; }
+  try { return M.inView(target, cb, opts); } catch(e) { try { cb(); } catch{} return () => {}; }
+};
+
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = (n, d=1) => Number(n).toFixed(d);
+const FR_KEY = "cleanupHub.hasVisited";
 
 const CATEGORY_LABELS = {
-  safe:          { label: "✓ Safe to delete",
+  safe:          { label: "Safe to delete",
                    note: "These caches regenerate automatically. Cleaning has near-zero cost." },
-  probably_safe: { label: "⚠ Probably safe — opt in",
+  probably_safe: { label: "Probably safe — opt in",
                    note: "Bigger reclaim, but you'll re-fetch / re-cache something. Read each cost note before clicking." },
-  caution:       { label: "⛔ Caution — review manually",
+  caution:       { label: "Caution — review manually",
                    note: "Never auto-deleted. Surfaces sizes so you can review and act in Finder/Terminal yourself." },
 };
 
-const ACTION_ICON = {
-  safe:          "var(--green)",
-  probably_safe: "var(--orange)",
-  caution:       "var(--red)",
+// Tab-icon map — drops emoji from the tab bar in favor of Lucide SVGs.
+// Server returns labels with leading emoji glyphs; we strip them and render the SVG.
+const TAB_ICONS = {
+  "xcode":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 12 5-5-3-3-5 5"/><path d="m9 17-1.5-1.5"/><path d="m15.5 6.5 2 2"/><path d="M16.5 14.5 22 20l-2 2-5.5-5.5"/><path d="M14 8 8 14l1 2-5 5 2 2 5-5 2 1 6-6"/></svg>',
+  "llms":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
+  "docker":   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 7.7c0-.6-.4-1.2-.8-1.5-.5-.3-1.1-.5-1.7-.5-.6 0-1.3.2-1.7.5-.4.3-.8.9-.8 1.5 0 .6.4 1.2.8 1.5.4.3 1.1.5 1.7.5.6 0 1.3-.2 1.7-.5.4-.3.8-.9.8-1.5z"/><path d="M2 12V8h4v4H2z"/><path d="M6 12V8h4v4H6z"/><path d="M10 12V8h4v4h-4z"/><path d="M14 12V8h4v4h-4z"/><path d="M6 16V12h4v4H6z"/><path d="M10 16V12h4v4h-4z"/><path d="M14 16V12h4v4h-4z"/><path d="M2 16h20v2a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-2z"/></svg>',
+  "apps":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="14" x="3" y="6" rx="2"/><path d="M3 10h18"/><path d="M7 8h.01"/><path d="M10 8h.01"/></svg>',
+  "creative": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',
+  "system":   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg>',
 };
+// Display names for sub-categories before their scan resolves the canonical label.
+const SUB_LABELS = {
+  "llms-claude":       "Claude",
+  "llms-cursor":       "Cursor",
+  "llms-chatgpt":      "ChatGPT",
+  "creative-adobe":    "Adobe",
+  "creative-davinci":  "DaVinci Resolve",
+  "creative-finalcut": "Final Cut Pro",
+  "creative-logic":    "Logic Pro",
+  "creative-blender":  "Blender",
+  "creative-obs":      "OBS Studio",
+};
+function iconFor(tabId) { return TAB_ICONS[tabId] || ""; }
+// Strip leading non-word/space characters (emoji, etc.) from a server-supplied label.
+function stripLeadingGlyph(label) { return (label || "").replace(/^[\p{Extended_Pictographic}\p{Emoji}☀-➿]+\s*/u, "").trim() || label; }
 
 async function loadStatus() {
   const r = await fetch("/api/status"); const d = await r.json();
   const free = $("#free-gb"), fill = $("#progress-fill");
-  free.firstChild.nodeValue = fmt(d.free_gb);
+
+  const oldVal = parseFloat(free.firstChild.nodeValue);
+  const newVal = d.free_gb;
+  tweenHeroNumber(free, isNaN(oldVal) ? 0 : oldVal, newVal);
+
   free.classList.toggle("good",   d.free_gb >= 50);
   free.classList.toggle("warn",   d.free_gb >= 20 && d.free_gb < 50);
   free.classList.toggle("danger", d.free_gb < 20);
-  fill.style.width = d.used_pct + "%";
+
+  safeAnimate(fill, { width: d.used_pct + "%" }, { duration: 0.6, easing: [0.22, 1, 0.36, 1] })
+    || (fill.style.width = d.used_pct + "%");
+
   fill.classList.toggle("warn",   d.used_pct >= 75 && d.used_pct < 90);
   fill.classList.toggle("danger", d.used_pct >= 90);
   $("#free-label").textContent = `${fmt(d.used_gb,0)} GB used of ${fmt(d.total_gb,0)} GB · ${fmt(d.used_pct,0)}%`;
   if (d.version) $("#version").textContent = `${d.version} · localhost`;
 }
 
-let tabsState = { current: null, sub: {} /* tabId -> currentSub */, scans: {} /* catId -> scanData */ };
+// Smooth count-down/up of the hero number. Falls back to a snap when motion is off.
+function tweenHeroNumber(el, from, to) {
+  if (!M || PRM || !isFinite(from) || !isFinite(to)) {
+    el.firstChild.nodeValue = fmt(to);
+    return;
+  }
+  const start = performance.now();
+  const dur = 600;
+  const ease = t => 1 - Math.pow(1 - t, 3); // cubic ease-out
+  function frame(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const v = from + (to - from) * ease(t);
+    el.firstChild.nodeValue = fmt(v);
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch("/api/report");
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d || !d.real_runs) return;
+    const strip = $("#history-strip");
+    const text = $("#history-text");
+    text.innerHTML = `You've freed <strong>${fmt(d.total_freed_gb)} GB</strong> across <strong>${d.real_runs}</strong> run${d.real_runs === 1 ? "" : "s"}.`;
+    strip.hidden = false;
+  } catch (e) { /* no history yet */ }
+}
+
+let tabsState = { current: null, scans: {}, allCategories: [] };
 
 async function loadTabs() {
   const r = await fetch("/api/tabs"); const { tabs } = await r.json();
@@ -548,10 +1063,18 @@ async function loadTabs() {
   tabBar.innerHTML = "";
   panels.innerHTML = "";
 
+  // Derive the canonical list of all category IDs from the server response (no hardcoding).
+  const allCats = [];
+  for (const t of tabs) {
+    if (t.subcategories) allCats.push(...t.subcategories);
+    else if (t.category) allCats.push(t.category);
+  }
+  tabsState.allCategories = allCats;
+
   tabs.forEach((tab, idx) => {
     const btn = document.createElement("button");
-    btn.textContent = tab.label;
     btn.dataset.tab = tab.id;
+    btn.innerHTML = `${iconFor(tab.id)}<span class="tab-label">${stripLeadingGlyph(tab.label)}</span>`;
     if (idx === 0) btn.classList.add("active");
     btn.addEventListener("click", () => switchTab(tab.id));
     tabBar.appendChild(btn);
@@ -562,24 +1085,15 @@ async function loadTabs() {
     panels.appendChild(panel);
 
     if (tab.subcategories) {
-      const subBar = document.createElement("nav");
-      subBar.className = "sub-tabs";
-      tab.subcategories.forEach((sub, sidx) => {
-        const sbtn = document.createElement("button");
-        sbtn.textContent = sub.replace("llms-", "").replace(/^./, c => c.toUpperCase());
-        sbtn.dataset.sub = sub;
-        if (sidx === 0) { sbtn.classList.add("active"); tabsState.sub[tab.id] = sub; }
-        sbtn.addEventListener("click", () => switchSub(tab.id, sub));
-        subBar.appendChild(sbtn);
-      });
-      panel.appendChild(subBar);
-      tab.subcategories.forEach((sub, sidx) => {
-        const subPanel = document.createElement("div");
-        subPanel.className = "sub-panel" + (sidx === 0 ? " active" : "");
-        subPanel.dataset.subPanel = sub;
-        if (sidx !== 0) subPanel.style.display = "none";
-        panel.appendChild(subPanel);
-        renderCategoryInto(sub, subPanel);
+      // Phase-2 change: LLM providers render as stacked cards in a single panel — no sub-tabs.
+      const stack = document.createElement("div");
+      stack.className = "panel-cards";
+      panel.appendChild(stack);
+      tab.subcategories.forEach((sub) => {
+        const subCard = document.createElement("div");
+        subCard.dataset.subCategory = sub;
+        stack.appendChild(subCard);
+        renderCategoryInto(sub, subCard, { providerLabel: SUB_LABELS[sub] || sub });
       });
     } else {
       renderCategoryInto(tab.category, panel);
@@ -590,26 +1104,21 @@ async function loadTabs() {
 }
 
 function switchTab(tabId) {
+  if (tabsState.current === tabId) return;
   $$("nav.tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
   $$(".panel").forEach(p => p.classList.toggle("active", p.dataset.panel === tabId));
   tabsState.current = tabId;
+  const entering = $(`.panel[data-panel="${tabId}"]`);
+  if (entering) {
+    safeAnimate(entering, { opacity: [0, 1], x: [6, 0] }, { duration: 0.22, easing: [0.22, 1, 0.36, 1] });
+  }
 }
 
-function switchSub(tabId, subId) {
-  const panel = $(`.panel[data-panel="${tabId}"]`);
-  panel.querySelectorAll("nav.sub-tabs button").forEach(b => b.classList.toggle("active", b.dataset.sub === subId));
-  panel.querySelectorAll(".sub-panel").forEach(p => {
-    const isActive = p.dataset.subPanel === subId;
-    p.classList.toggle("active", isActive);
-    p.style.display = isActive ? "" : "none";
-  });
-  tabsState.sub[tabId] = subId;
-}
-
-async function renderCategoryInto(catId, container) {
+async function renderCategoryInto(catId, container, opts = {}) {
+  const labelOverride = opts.providerLabel;
   container.innerHTML = `<div class="card">
     <div class="panel-header">
-      <h2 id="hdr-${catId}">${catId}</h2>
+      <h2><span class="cat-icon" id="cat-icon-${catId}"></span><span id="hdr-${catId}">${labelOverride || catId}</span></h2>
       <div class="tagline" id="tagline-${catId}">Loading…</div>
       <div class="top-actions" id="top-actions-${catId}">
         <button class="top-btn primary" data-scan="${catId}">Scan</button>
@@ -617,6 +1126,7 @@ async function renderCategoryInto(catId, container) {
         <button class="top-btn" data-clean-all="${catId}" data-tier="probably_safe" disabled>Clean opt-in</button>
       </div>
       <div class="totals" id="totals-${catId}"></div>
+      <div class="callout" id="callout-${catId}" hidden></div>
     </div>
     <div class="scan-section" id="scan-${catId}"></div>
     <div class="actions-section" id="actions-${catId}" hidden>
@@ -632,7 +1142,20 @@ async function renderCategoryInto(catId, container) {
 
 async function cleanAllInCategory(catId, tier) {
   const tierLabel = tier === "safe" ? "all safe" : "all opt-in";
-  if (!confirm(`Clean ${tierLabel} paths in ${catId}?\n\nReview the cost note for each below before confirming.`)) return;
+  const scan = tabsState.scans[catId];
+  const gb = scan ? (scan.totals[tier] || 0) : 0;
+  const tierName = tier === "safe" ? "safe-tier" : "opt-in-tier";
+  const okPress = await openConfirm({
+    title: "Confirm cleanup",
+    what: `Clean ${tierLabel} paths in ${scan ? scan.label : catId}?`,
+    detail: `Frees ~${fmt(gb)} GB. Runs the same rm -rf each per-path button runs.`,
+    costText: tier === "safe"
+      ? "First build after this regenerates the affected caches (typically ~30s extra)."
+      : "Opt-in caches you've selectively trusted — re-fetched on next use. Reviewable below before you confirm.",
+    danger: true,
+    okLabel: `Clean ${tierName}`,
+  });
+  if (!okPress) return;
   disableAllButtons(true);
   const out = $("#output");
   out.innerHTML = ""; out.classList.add("visible");
@@ -647,8 +1170,10 @@ async function cleanAllInCategory(catId, tier) {
     } else if (msg.event === "done") {
       es.close();
       appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB.`, "ok");
+      successPulse(msg.data.freed_gb);
       disableAllButtons(false);
       loadStatus();
+      loadHistory();
       scanAndRender(catId);
     }
   };
@@ -656,7 +1181,15 @@ async function cleanAllInCategory(catId, tier) {
 }
 
 async function cleanSinglePath(catId, path, label) {
-  if (!confirm(`Clean "${label}"?\n\nPath: ${path}\n\nDeletes the contents (rm -rf <path>/*). Cannot be undone.`)) return;
+  const okPress = await openConfirm({
+    title: "Confirm cleanup",
+    what: `Clean "${label}"?`,
+    detail: path,
+    costText: "Deletes the contents of this path (rm -rf <path>/*). Cannot be undone — but only safe-tier and opt-in paths are surfaced for one-click cleaning, so the worst case is a re-cache.",
+    danger: true,
+    okLabel: "Clean this path",
+  });
+  if (!okPress) return;
   disableAllButtons(true);
   const out = $("#output");
   out.innerHTML = ""; out.classList.add("visible");
@@ -670,8 +1203,10 @@ async function cleanSinglePath(catId, path, label) {
     } else if (msg.event === "done") {
       es.close();
       appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB.`, "ok");
+      successPulse(msg.data.freed_gb);
       disableAllButtons(false);
       loadStatus();
+      loadHistory();
       scanAndRender(catId);
     }
   };
@@ -679,12 +1214,12 @@ async function cleanSinglePath(catId, path, label) {
 }
 
 function disableAllButtons(disabled) {
-  $$("button[data-action], button[data-scan], button[data-clean-all], button.path-clean").forEach(b => b.disabled = disabled);
+  $$("button[data-action], button[data-scan], button[data-clean-all], button.path-clean, #btn-scan-all, #btn-clean-all-safe, #btn-clean-all-optin, #first-run-scan").forEach(b => b.disabled = disabled);
 }
 
 async function scanAndRender(catId) {
   const scanBtn = document.querySelector(`button[data-scan="${catId}"]`);
-  scanBtn.textContent = "Scanning…"; scanBtn.disabled = true;
+  if (scanBtn) { scanBtn.textContent = "Scanning…"; scanBtn.disabled = true; }
 
   const [scan, actions] = await Promise.all([
     fetch(`/api/category/${catId}/scan`).then(r => r.json()),
@@ -692,13 +1227,14 @@ async function scanAndRender(catId) {
   ]);
   tabsState.scans[catId] = scan;
 
-  $(`#hdr-${catId}`).textContent = `${scan.icon || ""} ${scan.label}`;
+  const hdr = $(`#hdr-${catId}`);
+  if (hdr) hdr.textContent = stripLeadingGlyph(scan.label) || scan.label;
   $(`#tagline-${catId}`).textContent = scan.tagline || "";
   $(`#totals-${catId}`).innerHTML = `
-    <span>safe <strong>${fmt(scan.totals.safe || 0)} GB</strong></span>
-    <span>opt-in <strong>${fmt(scan.totals.probably_safe || 0)} GB</strong></span>
-    <span>caution <strong>${fmt(scan.totals.caution || 0)} GB</strong></span>
-    <span>cleanable <strong>${fmt(scan.total_cleanable_gb)} GB</strong></span>
+    <span class="pill safe">safe <strong>${fmt(scan.totals.safe || 0)} GB</strong></span>
+    <span class="pill warn">opt-in <strong>${fmt(scan.totals.probably_safe || 0)} GB</strong></span>
+    <span class="pill danger">caution <strong>${fmt(scan.totals.caution || 0)} GB</strong></span>
+    <span class="pill accent">cleanable <strong>${fmt(scan.total_cleanable_gb)} GB</strong></span>
   `;
 
   let scanHtml = "";
@@ -706,8 +1242,9 @@ async function scanAndRender(catId) {
     const group = scan.groups[groupName];
     if (!group || !group.paths.length) continue;
     const meta = CATEGORY_LABELS[groupName];
+    const noteCls = groupName === "caution" ? "group-note caution" : "group-note";
     scanHtml += `<h3 class="${groupName}">${meta.label}</h3>
-      <div class="group-note">${meta.note}</div>`;
+      <div class="${noteCls}">${meta.note}</div>`;
     for (const p of group.paths.slice().sort((a,b) => b.size_gb - a.size_gb)) {
       const sizeLabel = p.size_gb >= 0.01 ? `${fmt(p.size_gb)} GB`
                        : p.size_kb >= 1024 ? `${Math.round(p.size_kb/1024)} MB`
@@ -717,7 +1254,7 @@ async function scanAndRender(catId) {
       const cleanBtn = cleanable
         ? `<button class="path-clean" data-cat="${catId}" data-path="${encodeURIComponent(p.path)}" data-label="${p.label.replace(/"/g, '&quot;')}" title="Delete contents of this path">Clean</button>`
         : `<span class="path-clean-placeholder"></span>`;
-      scanHtml += `<div class="path-row${!p.exists ? ' missing' : ''}">
+      scanHtml += `<div class="path-row${!p.exists ? ' missing' : ''}" data-row="${groupName}">
         <div class="name"><strong>${p.label}</strong><code>${p.path}</code></div>
         <div class="value">${sizeLabel}</div>
         ${cleanBtn}
@@ -725,6 +1262,12 @@ async function scanAndRender(catId) {
     }
   }
   $(`#scan-${catId}`).innerHTML = scanHtml;
+  applyCategoryCallouts(catId, scan);
+  // Stagger row entrance
+  const rows = $(`#scan-${catId}`).querySelectorAll(".path-row");
+  if (rows.length && M && !PRM) {
+    safeAnimate(rows, { opacity: [0, 1], y: [4, 0] }, { duration: 0.28, delay: safeStagger(0.025), easing: [0.22, 1, 0.36, 1] });
+  }
   // Wire per-path inline clean buttons
   $(`#scan-${catId}`).querySelectorAll(`button.path-clean`).forEach(btn => {
     btn.addEventListener("click", () => {
@@ -743,33 +1286,44 @@ async function scanAndRender(catId) {
     optInBtn.textContent = `Clean opt-in · ${fmt(scan.totals.probably_safe || 0)} GB`;
     optInBtn.disabled = (scan.totals.probably_safe || 0) < 0.001;
   }
-  // Update Scan button to "Re-scan"
-  // scanBtn already declared above; just update its text after first scan
   if (scanBtn) { scanBtn.textContent = "Re-scan"; scanBtn.disabled = false; }
 
+  // Actions list — cost banner is LIFTED to the top of the card
   let actionsHtml = "";
   for (const a of actions.actions) {
+    const costSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>`;
+    const costBlock = a.cost
+      ? `<div class="cost"><span>${costSvg}</span><div class="cost-text"><span class="cost-label">Cost of doing this</span>${a.cost}</div></div>`
+      : "";
+    const sudoBlock = a.sudo
+      ? `<div class="cost sudo"><span>${costSvg}</span><div class="cost-text"><span class="cost-label">Sudo required</span>This surfaces info only. Run the printed commands in your Terminal to actually delete.</div></div>`
+      : "";
     actionsHtml += `<div class="action-card${a.informational ? ' informational' : ''}">
-      <div class="head">
-        <div>
-          <div class="label">${a.label}</div>
-          <div class="desc">${a.desc}</div>
-        </div>
+      ${costBlock}
+      ${sudoBlock}
+      <div class="body">
+        <div class="label">${a.label}</div>
+        <div class="desc">${a.desc}</div>
+        <button data-action="${a.id}" data-category="${catId}" data-cost="${(a.cost || '').replace(/"/g, '&quot;')}">${a.informational ? "Show details" : "Run"}</button>
       </div>
-      ${a.cost ? `<div class="cost">${a.cost}</div>` : ''}
-      ${a.sudo ? `<div class="cost" style="border-left-color: var(--red); color: var(--red); background: rgba(255,69,58,0.08)"><strong>sudo required:</strong> this surfaces info only. Run the printed commands in your Terminal to actually delete.</div>` : ''}
-      <button data-action="${a.id}" data-category="${catId}">${a.informational ? "Show details" : "Run"}</button>
     </div>`;
   }
   $(`#action-list-${catId}`).innerHTML = actionsHtml;
   $(`#actions-${catId}`).hidden = false;
   $(`#actions-${catId}`).querySelectorAll("button[data-action]").forEach(btn => {
-    btn.addEventListener("click", () => runAction(btn.dataset.category, btn.dataset.action, btn.parentElement.querySelector(".label").textContent));
+    btn.addEventListener("click", () => runAction(btn.dataset.category, btn.dataset.action, btn.parentElement.querySelector(".label").textContent, btn.dataset.cost));
   });
 }
 
-async function runAction(catId, actionId, label) {
-  if (!confirm(`Run "${label}"?\n\nRead the cost note above before confirming.`)) return;
+async function runAction(catId, actionId, label, costText) {
+  const okPress = await openConfirm({
+    title: "Confirm action",
+    what: `Run "${label}"?`,
+    costText: costText || "Read the cost note above before confirming.",
+    danger: false,
+    okLabel: "Run",
+  });
+  if (!okPress) return;
   $$("button[data-action]").forEach(b => b.disabled = true);
   $$("button[data-scan]").forEach(b => b.disabled = true);
 
@@ -791,9 +1345,11 @@ async function runAction(catId, actionId, label) {
       es.close();
       const freed = msg.data.freed_gb;
       appendLine(`✓ Done. Freed ${fmt(freed)} GB.`, "ok");
+      if (freed > 0) successPulse(freed);
       $$("button[data-action]").forEach(b => b.disabled = false);
       $$("button[data-scan]").forEach(b => b.disabled = false);
       loadStatus();
+      loadHistory();
       scanAndRender(catId);
     }
   };
@@ -809,22 +1365,55 @@ function appendLine(text, cls = "") {
   const out = $("#output");
   if (!out.classList.contains("visible")) out.classList.add("visible");
   const span = document.createElement("span");
-  if (cls) span.className = cls;
-  span.textContent = text + "\n";
+  span.className = "out-line" + (cls ? " " + cls : "");
+  span.textContent = text;
   out.appendChild(span);
+  safeAnimate(span, { opacity: [0, 1], y: [-3, 0] }, { duration: 0.18, easing: [0.22, 1, 0.36, 1] });
   out.scrollTop = out.scrollHeight;
+}
+
+// Category-specific post-scan augmentation. Surfaces a single high-signal stat in the
+// panel header when one is worth calling out — currently Docker.raw for the docker tab.
+function applyCategoryCallouts(catId, scan) {
+  const el = $(`#callout-${catId}`);
+  if (!el) return;
+  el.hidden = true;
+  el.innerHTML = "";
+
+  if (catId === "docker") {
+    // Find the biggest Docker.raw row in the caution group.
+    const cautionPaths = (scan.groups?.caution?.paths || [])
+      .filter(p => p.path.includes("Docker.raw") && p.exists && p.size_kb > 0)
+      .sort((a, b) => b.size_kb - a.size_kb);
+    if (cautionPaths.length) {
+      const top = cautionPaths[0];
+      const sizeLabel = top.size_gb >= 0.01 ? `${fmt(top.size_gb)} GB`
+                       : top.size_kb >= 1024 ? `${Math.round(top.size_kb / 1024)} MB`
+                       : `${top.size_kb} KB`;
+      el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>` +
+        `<div><strong>Docker.raw is ${sizeLabel}.</strong> Pruning shrinks what's INSIDE the VM, not the .raw file on disk. See <em>How to actually shrink Docker.raw</em> below for the reset path. <code>${top.path}</code></div>`;
+      el.hidden = false;
+    }
+  }
+}
+
+// Brief green pulse on the hero number after a successful clean — Emil-tier subtle.
+function successPulse(freedGb) {
+  if (!M || PRM || !freedGb || freedGb <= 0) return;
+  const free = $("#free-gb");
+  safeAnimate(free, { scale: [1, 1.05, 1] }, { duration: 0.5, easing: [0.22, 1, 0.36, 1] });
 }
 
 async function scanEverything() {
   const btn = $("#btn-scan-all");
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = "Scanning every tab…";
+  const frBtn = $("#first-run-scan");
+  if (btn) { btn.disabled = true; btn.querySelector("svg")?.setAttribute("class", ""); }
+  if (frBtn) { frBtn.disabled = true; frBtn.textContent = "Scanning…"; }
   $("#btn-clean-all-safe").disabled = true;
   $("#btn-clean-all-optin").disabled = true;
-  $("#ga-hint").innerHTML = "Scanning all 6 categories in parallel…";
+  $("#ga-hint").innerHTML = "Scanning all categories in parallel…";
 
-  // Get list of categories from tabs structure (or hardcode for now since tabs are loaded)
-  const allCats = ["xcode", "llms-claude", "llms-cursor", "llms-chatgpt", "apps", "system"];
+  const allCats = tabsState.allCategories.length ? tabsState.allCategories : ["xcode", "llms-claude", "llms-cursor", "llms-chatgpt", "apps", "system"];
   let completed = 0;
   const progressLine = () => `Scanning all ${allCats.length} categories… <strong>${completed}/${allCats.length}</strong>`;
   $("#ga-hint").innerHTML = progressLine();
@@ -834,38 +1423,56 @@ async function scanEverything() {
       .finally(() => { completed++; $("#ga-hint").innerHTML = progressLine(); })
   ));
 
-  // Sum safe + probably_safe totals across all
   let totalSafe = 0, totalOptIn = 0;
   for (const c of allCats) {
     const s = tabsState.scans[c];
     if (!s) continue;
-    totalSafe   += s.totals.safe || 0;
-    totalOptIn  += s.totals.probably_safe || 0;
+    totalSafe  += s.totals.safe || 0;
+    totalOptIn += s.totals.probably_safe || 0;
   }
 
-  $("#btn-clean-all-safe").textContent  = `✨ Clean ALL safe · ${fmt(totalSafe)} GB`;
-  $("#btn-clean-all-optin").textContent = `⚠ Clean ALL opt-in · ${fmt(totalOptIn)} GB`;
+  $("#btn-clean-all-safe").innerHTML  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Clean ALL safe · ${fmt(totalSafe)} GB`;
+  $("#btn-clean-all-optin").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4"/><path d="M12 17h.01"/></svg>Clean ALL opt-in · ${fmt(totalOptIn)} GB`;
   $("#btn-clean-all-safe").disabled  = totalSafe  < 0.001;
   $("#btn-clean-all-optin").disabled = totalOptIn < 0.001;
 
-  // Per-tab breakdown
-  let breakdown = "<strong>Per tab:</strong> ";
+  // Per-tab breakdown — collapsed, one row.
+  let breakdown = "<strong>Per category:</strong> ";
   for (const c of allCats) {
     const s = tabsState.scans[c];
     if (!s) continue;
     const t = (s.totals.safe || 0) + (s.totals.probably_safe || 0);
-    breakdown += `<span style="margin-right:12px">${s.icon} ${s.label} <strong>${fmt(t)} GB</strong></span>`;
+    const lbl = stripLeadingGlyph(s.label);
+    breakdown += `<span class="breakdown-item">${lbl} <strong>${fmt(t)} GB</strong></span>`;
   }
   $("#ga-hint").innerHTML = breakdown;
 
-  btn.textContent = orig.replace("Scan everything", "Re-scan everything");
-  btn.disabled = false;
+  if (btn) { btn.disabled = false; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>Re-scan everything`; }
+  if (frBtn) { frBtn.disabled = false; }
+
+  // First-run handoff: once a scan completes, swap to returning-user mode.
+  markVisited();
 }
 
 async function cleanEverything(tier) {
   const label = tier === "safe" ? "ALL safe" : "ALL opt-in";
-  const totalBtn = tier === "safe" ? $("#btn-clean-all-safe") : $("#btn-clean-all-optin");
-  if (!confirm(`Clean ${label} paths across every category?\n\nThis runs the same rm -rf the per-tab buttons run, just in one pass. Caution-tier items are NOT touched. Cost notes from each category apply.`)) return;
+  let total = 0;
+  for (const c of tabsState.allCategories) {
+    const s = tabsState.scans[c];
+    if (!s) continue;
+    total += s.totals[tier] || 0;
+  }
+  const okPress = await openConfirm({
+    title: "Confirm cleanup",
+    what: `Clean ${label} across every category?`,
+    detail: `Frees ~${fmt(total)} GB total. Same rm -rf the per-tab buttons run, just batched.`,
+    costText: tier === "safe"
+      ? "First build after this regenerates Xcode caches (~30s extra). Browser caches re-fetch. LLM tool indexes rebuild on next open. Caution-tier items are NOT touched."
+      : "Opt-in caches you've explicitly trusted are removed. Plus everything safe. Caution-tier items are still NOT touched.",
+    danger: true,
+    okLabel: `Clean ${tier === "safe" ? "safe-tier" : "opt-in-tier"} everywhere`,
+  });
+  if (!okPress) return;
 
   disableAllButtons(true);
   const out = $("#output");
@@ -885,13 +1492,67 @@ async function cleanEverything(tier) {
     } else if (msg.event === "done") {
       es.close();
       appendLine(`✓ Done. Freed ${fmt(msg.data.freed_gb)} GB across all categories.`, "ok");
+      successPulse(msg.data.freed_gb);
       disableAllButtons(false);
       loadStatus();
-      // Re-scan everything to refresh sizes
+      loadHistory();
       scanEverything();
     }
   };
   es.onerror = () => { es.close(); appendLine("✗ Connection lost.", "err"); disableAllButtons(false); };
+}
+
+// ── First-run flow ──────────────────────────────────────────
+function applyFirstRunState() {
+  const hasVisited = localStorage.getItem(FR_KEY) === "1";
+  $("#first-run").hidden = hasVisited;
+  $("#global-actions").hidden = !hasVisited;
+}
+function markVisited() {
+  if (localStorage.getItem(FR_KEY) === "1") return;
+  localStorage.setItem(FR_KEY, "1");
+  $("#first-run").hidden = true;
+  $("#global-actions").hidden = false;
+  safeAnimate($("#global-actions"), { opacity: [0, 1], y: [4, 0] }, { duration: 0.3, easing: [0.22, 1, 0.36, 1] });
+}
+
+// ── Confirm modal (replaces window.confirm) ────────────────
+function openConfirm(opts) {
+  const modal = $("#confirm-modal");
+  $("#confirm-title").textContent = opts.title || "Confirm";
+  $("#confirm-what").textContent  = opts.what || "Continue?";
+  const detail = $("#confirm-detail");
+  if (opts.detail) { detail.textContent = opts.detail; detail.hidden = false; }
+  else { detail.hidden = true; }
+  const cost = $("#confirm-cost-block");
+  if (opts.costText) { $("#confirm-cost-text").textContent = opts.costText; cost.hidden = false; }
+  else { cost.hidden = true; }
+  const okBtn = $("#confirm-ok");
+  okBtn.textContent = opts.okLabel || "Confirm";
+  okBtn.classList.toggle("danger", !!opts.danger);
+
+  modal.hidden = false;
+  safeAnimate(modal.querySelector(".modal-card"), { opacity: [0, 1], scale: [0.96, 1] }, { duration: 0.22, easing: [0.34, 1.56, 0.64, 1] });
+
+  return new Promise((resolve) => {
+    const cleanup = (result) => {
+      modal.hidden = true;
+      okBtn.onclick = null;
+      $("#confirm-cancel").onclick = null;
+      $("#confirm-close").onclick = null;
+      modal.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKey);
+      resolve(result);
+    };
+    const onBackdrop = (ev) => { if (ev.target === modal) cleanup(false); };
+    const onKey = (ev) => { if (ev.key === "Escape") cleanup(false); else if (ev.key === "Enter") cleanup(true); };
+    okBtn.onclick = () => cleanup(true);
+    $("#confirm-cancel").onclick = () => cleanup(false);
+    $("#confirm-close").onclick  = () => cleanup(false);
+    modal.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKey);
+    setTimeout(() => okBtn.focus(), 30);
+  });
 }
 
 // ── Changelog modal ─────────────────────────────────────────
@@ -921,6 +1582,7 @@ function renderMarkdown(md) {
 async function openChangelog() {
   $("#changelog-modal").hidden = false;
   $("#changelog-body").textContent = "Loading…";
+  safeAnimate($("#changelog-modal").querySelector(".modal-card"), { opacity: [0, 1], scale: [0.97, 1] }, { duration: 0.22, easing: [0.34, 1.56, 0.64, 1] });
   try {
     const r = await fetch("/api/changelog");
     const md = await r.text();
@@ -931,6 +1593,8 @@ async function openChangelog() {
   }
 }
 function closeChangelog() { $("#changelog-modal").hidden = true; }
+
+// ── Wire-up ─────────────────────────────────────────────────
 $("#version").addEventListener("click", openChangelog);
 $("#changelog-close").addEventListener("click", closeChangelog);
 $("#changelog-modal").addEventListener("click", (ev) => { if (ev.target.id === "changelog-modal") closeChangelog(); });
@@ -941,7 +1605,13 @@ $("#btn-scan-all").addEventListener("click", scanEverything);
 $("#btn-clean-all-safe").addEventListener("click", () => cleanEverything("safe"));
 $("#btn-clean-all-optin").addEventListener("click", () => cleanEverything("probably_safe"));
 
-loadStatus(); loadTabs();
+$("#first-run-scan").addEventListener("click", scanEverything);
+$("#first-run-skip").addEventListener("click", () => markVisited());
+
+applyFirstRunState();
+loadStatus();
+loadHistory();
+loadTabs();
 setInterval(loadStatus, 15000);
 </script>
 </body>

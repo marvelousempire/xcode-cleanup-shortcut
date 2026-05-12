@@ -1,6 +1,6 @@
 # Feature Ledger
 
-*Last updated: 2026-05-12 11:57 Eastern (v0.9.0)*
+*Last updated: 2026-05-12 12:55 Eastern (v0.13.0)*
 
 Status legend: **✅ shipped** · **✔️ partial / works but rough** · **🔜 next** · **❌ deferred / out of scope**
 
@@ -39,16 +39,39 @@ Status legend: **✅ shipped** · **✔️ partial / works but rough** · **🔜
 | 24 | Live SSE output console | ✅ | bottom | v0.5.0 |
 | 25 | History sparkline (Unicode blocks) | ✅ | bottom | v0.5.0 |
 
-## Cleanup categories (~70 paths, 21 actions)
+## Web UI — v0.11 redesign (the big polish pass)
 
-| # | Category | Paths | Actions | Status |
+| # | Feature | Status | Tab/area | Shipped in |
 |---|---|---|---|---|
-| 26 | Xcode | 20 | 4 | ✅ |
-| 27 | LLMs/Claude | 8 | 4 (incl. opt-in `reset-claude-desktop` for 10+ GB app state) | ✅ |
-| 28 | LLMs/Cursor | 13 | 2 | ✅ |
-| 29 | LLMs/ChatGPT | 3 | 1 | ✅ |
-| 30 | Apps (browsers, chat, Homebrew) | 15 | 5 | ✅ |
-| 31 | System (icon cache, snapshots, etc.) | 11 | 5 | ✅ |
+| 25a | Design system (teal accent, Lucide icons, motion tokens) | ✅ | global, `docs/Design-System.md` | v0.11.0 |
+| 25b | First-run progressive disclosure flow (localStorage gated) | ✅ | top of dashboard | v0.11.0 |
+| 25c | Custom cost-modal (replaces `window.confirm`) | ✅ | any clean action | v0.11.0 |
+| 25d | "Factory-fresh without losing your stuff" promise lockup | ✅ | hero card | v0.11.0 |
+| 25e | Live cumulative-freed history strip (reads `/api/report`) | ✅ | under hero | v0.11.0 |
+| 25f | LLM providers as stacked cards in one panel (sub-tabs removed) | ✅ | LLMs panel | v0.11.0 |
+| 25g | Cost annotation lifted to top of every action card | ✅ | per-action | v0.11.0 |
+| 25h | Motion (motion.dev) via CDN — hero tween, spring fill, stagger, success pulse | ✅ | global | v0.11.0 |
+| 25i | `prefers-reduced-motion` honoured globally | ✅ | global | v0.11.0 |
+| 25j | Lucide tab icons (emoji dropped) | ✅ | tab bar | v0.11.0 |
+| 25k | Category callout in panel header (Docker.raw size highlight) | ✅ | Docker panel header | v0.13.0 |
+
+## Cleanup categories (~120 paths, 35+ actions)
+
+| # | Category | Paths | Actions | Status | Added |
+|---|---|---|---|---|---|
+| 26 | Xcode | 20 | 4 | ✅ | v0.7.0 |
+| 27 | LLMs/Claude | 8 | 4 (incl. opt-in `reset-claude-desktop` for 10+ GB app state) | ✅ | v0.7.0 |
+| 28 | LLMs/Cursor | 13 | 2 | ✅ | v0.7.0 |
+| 29 | LLMs/ChatGPT | 3 | 1 | ✅ | v0.7.0 |
+| 30 | Apps (browsers, chat, Homebrew) | 15 | 5 | ✅ | v0.7.0 |
+| 31 | System (icon cache, snapshots, etc.) | 11 | 5 | ✅ | v0.7.0 |
+| 31a | Docker (logs, buildx, prune, Docker.raw surface) | 8 | 6 (prune-safe, buildx-prune, volume-preflight, prune-everything, vm-reset-info, system-df, clear-logs) | ✅ | v0.12.0 / refined v0.13.0 |
+| 31b | Creative/Adobe (Premiere/AE/Photoshop/Lightroom/Bridge) | 11 | 5 (incl. per-catalog Lightroom preview cleanup + folder-stats info) | ✅ | v0.12.0 / refined v0.13.0 |
+| 31c | Creative/DaVinci Resolve | 10 | 3 (incl. both legacy + Resolve-18+ CacheClip locations) | ✅ | v0.12.0 / refined v0.13.0 |
+| 31d | Creative/Final Cut Pro (per-library render + transcoded media + backups) | 4 | 3 | ✅ | v0.13.0 |
+| 31e | Creative/Logic Pro (caches, Apple Loops info) | 6 | 2 | ✅ | v0.13.0 |
+| 31f | Creative/Blender (per-version Cycles cache + autosave temp) | 4 | 2 | ✅ | v0.13.0 |
+| 31g | Creative/OBS Studio (logs, crash dumps, browser-source cache) | 5 | 2 | ✅ | v0.13.0 |
 
 ## Auto-release & CI
 
@@ -62,17 +85,19 @@ Status legend: **✅ shipped** · **✔️ partial / works but rough** · **🔜
 
 | # | Doc | Status | Notes |
 |---|---|---|---|
-| 35 | README hero (conversion-shaped via copywriting skill) | ✅ | v0.4.2 |
+| 35 | README hero (conversion-shaped via copywriting skill) | ✅ | v0.4.2 → rewritten v0.11.0 |
 | 36 | `docs/SHORTCUTS.md` (Apple Shortcuts integration) | ✅ | v0.4.1 |
 | 37 | `docs/Launch-Plan.md` (Show HN / Reddit / Mastodon copy) | ✅ | v0.4.4 |
 | 38 | `docs/CHANGELOG.md` (canonical format) | ✅ | v0.9.0 — moved from root |
-| 39 | `docs/Feature Ledger.md` (this file) | ✅ | v0.9.0 |
+| 39 | `docs/Feature Ledger.md` (this file) | ✅ | v0.9.0 → updated v0.13.0 |
 | 40 | `docs/Issue-Log.md` (near-misses + lessons) | ✅ | v0.9.0 |
 | 41 | `.agents/product-marketing-context.md` (positioning) | ✅ | v0.4.3 |
 | 42 | `PRD.md` (functional + non-functional requirements) | ✅ | v0.1 → maintained per release |
 | 43 | `HANDOFF.md` (current state of the repo) | ✅ | maintained per release |
+| 44 | `docs/Design-System.md` (tokens + rationale for the v0.11 redesign) | ✅ | v0.11.0 |
+| 45 | `docs/Redesign-Brief.md` (the action document the v0.11 redesign answered) | ✅ | v0.10.0 |
 
-## Next (v0.10 wishlist)
+## Next (v0.14+ wishlist)
 
 | Feature | Why | Difficulty |
 |---|---|---|

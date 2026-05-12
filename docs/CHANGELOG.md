@@ -1,5 +1,110 @@
 # Changelog
 
+## [0.13.0] — 2026-05-12 13:11:52 Eastern · *full gap-audit + elevation pass — closes every open follow-up from v0.11+v0.12*
+
+The maintainer asked for everything in the audit list — gaps + elevations — and got it.
+
+### Added — new Creative sub-cards
+- **Final Cut Pro** sub-card. Per-library actions that walk every `~/Movies/*.fcpbundle`: clear *Render Files*, clear *Transcoded Media* (proxies + optimized), clear `~/Movies/Final Cut Backups`. Library structure + edits + imported media are never touched.
+- **Logic Pro** sub-card. Per-app + waveform + Plug-In Settings caches. Apple Loops surfaced informationally (5–20 GB but reinstallable — the safe reclaim path is in-app, not Finder).
+- **Blender** sub-card. Per-version Cycles cache cleanup that walks `~/Library/Application Support/Blender/*/cache`. Plus `/tmp/blender_autosave` cleanup for crash orphans.
+- **OBS Studio** sub-card. Logs + crashes + browser-source Chromium cache. User config (scenes, profiles) explicitly surfaced as caution-tier read-only.
+
+### Added — Docker hardening
+- **`docker system df -v` informational action.** Top of the Docker action stack. The summary the OS doesn't surface anywhere else.
+- **Pre-flight volume check.** Lists every volume + every *unattached* volume *before* the aggressive prune runs — with the size of each. So "you're about to wipe `postgres-data` and `redis-data`" is a visible decision, not a surprise.
+- **Build cache split out** into its own action (`docker buildx prune -af`). Was originally bundled into the safe-prune; the next build runs from scratch after this, so it deserves its own opt-in click.
+- **Docker.raw size callout** in the Docker panel header. After a scan, if Docker.raw is found, a warn-tinted callout shows its size + a pointer to the reset-the-VM action. The biggest hog on most dev Macs, now unmissable.
+
+### Added — Adobe / Lightroom hardening
+- **Per-catalog Lightroom preview cleanup action.** Walks `~/Pictures/Lightroom/*` and removes only `Previews.lrdata` / `*.lrpreviewstore` / `Helper.lrdata` per catalog. The `.lrcat` files (your catalog — irreplaceable) are *never* touched.
+- **Lightroom folder-stats action.** Informational. Fast `du -sh -d 0` so a 500 GB photo library doesn't lock the UI.
+- **Clear Adobe app caches** description sharpened to spell out the overlap: this action touches `~/Library/Caches/Adobe/*` (which includes Lightroom's *non-catalog* caches); your `~/Pictures/Lightroom` catalog is never affected by it.
+
+### Added — DaVinci Resolve hardening
+- **Both CacheClip locations** are now scanned + cleaned in the same action. Legacy `~/Movies/CacheClip` + the Resolve-18+ `~/Movies/Blackmagic Design/DaVinci Resolve/CacheClip`. No more wondering which version we cover.
+
+### Added — README + Makefile + docs
+- **README hero subtitle** extended: now mentions Docker / Adobe / DaVinci / Final Cut / Logic alongside the previous "LLM tool caches, browser caches, system junk" — with an honest "50–150 GB on a working creative-pro Mac" range.
+- **README "What it finds" table** updated to six tabs, with the Creative tab broken down into its six sub-cards.
+- **`make clean-docker`** target — safe-prune from the CLI with the same y/N gate + cost preamble + summary the dashboard runs. One shortcut as a proof of concept; the dashboard remains the canonical UX.
+- **`docs/Feature Ledger.md`** updated with all v0.11 + v0.12 + v0.13 features (rows 25a–25k + 31a–31g) and the new `docs/Design-System.md` + `docs/Redesign-Brief.md` doc entries.
+- **`docs/Issue-Log.md`** updated with two new entries: the preview-server-cwd gotcha + the port-collision-with-maintainer's-make-ui gotcha.
+
+### Caveats (honest limitations)
+- Docker, Adobe, DaVinci, Final Cut, Logic, Blender, OBS path syntax was verified by reading recent versions' documentation + spot-checking what existed on this Mac. Only Docker has a real install on the verification machine (Docker.raw is 12.1 GB and the callout fires). Anyone running the dashboard on a creative-pro Mac will be the first to validate the Adobe / DaVinci / FCP / Logic / Blender / OBS paths against real data — please open an issue if anything misses.
+- The Demo GIF (Issue #2) is still open — a manual screen-recording task, not automatable from this session.
+
+### Why
+Maintainer: "build them all." Every numbered gap (1–8) and every lettered elevation (A–H, minus the recording task) from the v0.12 audit is landed.
+
+## [0.12.0] — 2026-05-12 12:55:20 Eastern · *Docker, Adobe, DaVinci Resolve — three new categories*
+
+Three of the biggest disk hogs on a working Mac that v0.10 didn't cover.
+
+### Added
+- **Docker tab** — own top-level category. The Docker.raw VM disk routinely sits at 30–60 GB on dev machines.
+  - **Safe:** Docker Desktop logs · buildx build cache · CLI plugins cache · diagnostics · telemetry queue.
+  - **Caution (surface only):** the Docker.raw file itself in both new and legacy locations, plus the Group Containers state directory.
+  - **Actions:**
+    - *Prune Docker — safe.* `docker container prune` + `image prune` (dangling only) + `network prune` + `buildx prune -af`. Volumes left alone — DB data stays safe.
+    - *Nuke ALL unused Docker.* `docker system prune -a --volumes -f`. Cost annotation makes the volume-wipe risk unmissable.
+    - *How to actually shrink Docker.raw* (informational). Pruning shrinks the contents, not the .raw file — surfaces the Docker Desktop reset path + a CLI alternative.
+    - *Clear Docker Desktop logs + diagnostics.*
+- **Creative tab** — stacked-card panel containing Adobe + DaVinci Resolve (same pattern as LLMs).
+  - **Adobe sub-card.** Targets the biggest reclaim on a video editor's Mac: the shared Premiere/AE Media Cache. Plus per-app disk caches (Premiere · AE · Photoshop · Bridge · Acrobat · Creative Cloud), Camera Raw cache, and a deliberately *non-deleting* Lightroom info action so the catalog is never at risk.
+  - **DaVinci Resolve sub-card.** Render Cache · Optimized Media · CacheClip proxies as the safe trio. Gallery Stills + Fusion disk cache as opt-in. Projects + disk database in caution (surfaced for review only).
+
+### Changed
+- `cleaners.py` `TABS` array now has six entries: `xcode · llms · docker · apps · creative · system`. The redesigned UI absorbs them automatically — no server.py changes needed.
+- New Lucide tab icons for Docker (container glyph) and Creative (palette glyph), matching the v0.11 icon system.
+- `LLM_PROVIDER_LABELS` renamed to `SUB_LABELS` since it now also holds the Adobe / DaVinci pre-scan display names.
+
+### Preserved
+- Cost annotation on every new action — including the explicit volume-wipe warning on `docker system prune -a --volumes` and the explicit catalog-protection note on the Lightroom action.
+- Three-tier safety taxonomy applied to every new path. No new tier semantics; the new categories slot into the existing model.
+- The redesigned UI (v0.11.0 in this PR) renders the new tabs with zero structural change.
+
+### Why
+Maintainer follow-up to v0.11.0: "we need to add a Docker Section in there too. I forgot Docker was another Huge one, and Adobe too. and DaVinci Resolve too." Three of the most common 10+ GB hogs on a working Mac that weren't in v0.10's surface.
+
+## [0.11.0] — 2026-05-12 12:45:29 Eastern · *v1 redesign — design system, restructure, Motion polish, README rewrite*
+
+The redesign called for in `docs/Redesign-Brief.md`. One feature branch, four phases, every preserve-list item intact.
+
+### Added
+- **`docs/Design-System.md`** — canonical token reference (colors, type, spacing, radii, elevation, motion). Captures the decisions so future contributors don't re-derive them.
+- **Teal accent** (`#0F766E` light / `#2DD4BF` dark) replaces Apple blue. Distinct from every other Apple-blue dev tool on a Show-HN thumbnail; calm precision-instrument family (Linear, Things, Tot share it). Semantic tier colors retuned for confidence over neon.
+- **Cumulative-freed history strip** below the hero — surfaces "you've freed N GB across M runs" on every visit, sourced live from `/api/report`. Promoted from the buried footer.
+- **"Factory-fresh without losing your stuff" promise lockup** with a shield icon, visible on the hero card every session. The safety claim now lives in the UI, not just the README.
+- **First-run progressive disclosure flow.** A new visitor sees a single "Scan every category" CTA instead of the three-button mega-bar. Once they scan or click "Skip the tour," the returning-user state activates and persists (localStorage `cleanupHub.hasVisited`). Power users get zero regression.
+- **Custom confirm modal** replacing every `window.confirm()` call. The cost annotation is now the visual centerpiece of the confirm — the distinctive UX feature finally earns its moment. Backdrop blur + spring scale-in (220ms).
+- **Motion (motion.dev) loaded via CDN** as a single ES-module import, pinned to `motion@11.18.0`. Zero-deps server-side promise preserved. Graceful degradation: every animation call is wrapped; CDN failure leaves the UI fully functional with instant state changes.
+- **Motion micro-interactions** per the brief's animation table: hero number count-up tween (600ms ease-out), progress-bar spring fill, tab fade+slide, success pulse on successful clean, staggered path-row entrance after scan, line-by-line SSE console reveal, cost-banner translate on hover.
+- **`prefers-reduced-motion` honoured globally** — all animations collapse to instant state changes for users who've opted out.
+- **Lucide tab icons** (Xcode hammer-down, LLMs bot, Apps app-window, System hard-drive) replacing the emoji glyphs. One icon system, no font-renderer drift.
+
+### Changed
+- **Cost annotation lifted** to the top of every action card (was buried below the description). Now the first thing the eye lands on — with a left-border in `--warn`, an info-icon, and a small `COST OF DOING THIS` uppercase label.
+- **LLM tab pattern** — Claude/Cursor/ChatGPT now render as three stacked cards in a single panel. Sub-tab navigation removed. One click per provider instead of two.
+- **Hero number** sized up from 72px to 80px with tighter `-0.04em` tracking. `font-variant-numeric: tabular-nums` applied globally so the tween doesn't jiggle.
+- **Caution-tier note style** — the informational red-tier note now uses a `--danger-soft` background instead of a flat grey, visually distinguishing "review manually" sections at a glance.
+- **README rewritten** — tighter hero ("Reclaim 10–25 GB Xcode is hoarding. One click.") with a subtitle that surfaces the cost-annotation + no-telemetry promises. Install matrix collapsed into two `<details>` groups ("I want a GUI" / "I want a CLI"). Comparison table vs CleanMyMac / DevCleaner / `rm -rf` surfaced from the internal positioning doc — the competitive moat made tangible.
+- **Hardcoded category list deleted** at the JS layer — was duplicating `/api/tabs`. Now derived from the server response (`tabsState.allCategories`). Flagged in `docs/Redesign-Brief.md` as brittleness; fixed in this pass.
+
+### Fixed
+- JS module syntax-checked with `node --check` before commit — the v0.8.2 ghost (Issue-Log 2026-05-12 11:17 ET) doesn't reach `main` again.
+
+### Preserved (the moats — non-negotiable)
+- All 6 install surfaces (Web UI · Shortcut · CLI · launchd · SwiftBar · SSH) still work; `cleaners.py` and `xcode-cleanup.applescript` are unchanged.
+- Three safety tiers (`safe`/`probably_safe`/`caution`) — taxonomy and behavior identical.
+- `127.0.0.1` localhost binding, zero pip/npm server-side deps.
+- Real-time SSE console — now with subtle line-by-line fade, no behavioral change.
+- Live CHANGELOG version badge + in-app changelog modal.
+
+### Why
+The maintainer authored `docs/Redesign-Brief.md` explicitly for this moment ("redesign this entire app based on the knowledge, skills, and tools available"). Four-phase plan ratified in plan mode; this PR is the merge.
+
 ## [0.10.1] — 2026-05-12 12:20:57 Eastern · *expressed intent on Motion (motion.dev) + 21st.dev hero patterns*
 
 ### Added

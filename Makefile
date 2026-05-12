@@ -2,7 +2,7 @@ SHORTCUT_NAME := Xcode Cleanup
 SCRIPT        := xcode-cleanup.applescript
 
 .DEFAULT_GOAL := help
-.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui
+.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui clean-docker
 
 help: ## Show this help
 	@echo "Xcode Cleanup Shortcut — Make targets"
@@ -22,6 +22,17 @@ demo: ## Simulate phases (sleeps instead of deleting) — for screen recording
 
 force: ## Run cleanup even if disk is healthy (skip 50 GB threshold)
 	@XCODE_CLEANUP_FORCE=1 osascript $(SCRIPT)
+
+clean-docker: ## Safe Docker prune (containers + dangling images + networks). See dashboard for cost annotations.
+	@if ! command -v docker >/dev/null 2>&1; then echo "Docker CLI not found — install Docker Desktop or skip."; exit 1; fi
+	@echo "▶ Docker safe-prune (containers + dangling images + networks). Volumes + build cache are NOT touched."
+	@echo "  (For the same action with cost annotations + a pre-flight volume check, use 'make ui' → Docker tab.)"
+	@printf "Continue? [y/N] "; \
+	read ans; case "$$ans" in y|Y|yes|YES) ;; *) echo "  cancelled."; exit 0;; esac
+	@echo "▶ container prune"; docker container prune -f
+	@echo "▶ image prune (dangling)"; docker image prune -f
+	@echo "▶ network prune"; docker network prune -f
+	@echo "▶ disk usage now:"; docker system df
 
 install-shortcut: ## Copy script to clipboard and open Shortcuts.app for paste
 	@pbcopy < $(SCRIPT)
