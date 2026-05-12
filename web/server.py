@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
-"""Xcode Cleanup web UI — localhost-only server.
+"""Xcode/LLM/Apps/System Cleanup web UI — localhost-only server.
 
-Runs a tiny HTTP server on http://127.0.0.1:8765 that exposes a few endpoints
-the bundled HTML calls. Streams cleanup output via Server-Sent Events.
+Runs on http://127.0.0.1:8765 (override via XCC_UI_PORT env var).
+Reads cleanup definitions from cleaners.CATEGORIES.
 
-Pure stdlib. No pip install. macOS only (uses du / bash / xcrun via subprocess).
+Endpoints:
+    GET /                          → index.html
+    GET /api/status                → {free_gb, used_gb, total_gb, used_pct}
+    GET /api/tabs                  → tab structure for the UI
+    GET /api/category/<id>/scan    → {groups, totals} for that category
+    GET /api/category/<id>/actions → list of {id, label, desc, cost} for that category
+    GET /api/run?category=<>&action=<>  → SSE stream of action output
+    GET /api/report                → CSV history sparkline data
+
+Pure Python stdlib. No pip install. macOS only.
 """
 
 import csv
@@ -19,78 +28,14 @@ import webbrowser
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+# Make sibling module importable
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cleaners  # noqa: E402
+
 REPO_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR  = REPO_DIR / "web"
 PORT     = int(os.environ.get("XCC_UI_PORT", "8765"))
-HOST     = "127.0.0.1"   # localhost only — never bind 0.0.0.0
-
-# Basic scan: same set the AppleScript cleans in normal mode
-CLEANUP_PATHS = [
-    ("DerivedData",            "~/Library/Developer/Xcode/DerivedData"),
-    ("iOS DeviceSupport",      "~/Library/Developer/Xcode/iOS DeviceSupport"),
-    ("watchOS DeviceSupport",  "~/Library/Developer/Xcode/watchOS DeviceSupport"),
-    ("tvOS DeviceSupport",     "~/Library/Developer/Xcode/tvOS DeviceSupport"),
-    ("Xcode caches",           "~/Library/Caches/com.apple.dt.Xcode"),
-    ("SwiftPM cache",          "~/Library/Caches/org.swift.swiftpm"),
-    ("Simulator caches",       "~/Library/Developer/CoreSimulator/Caches"),
-]
-
-# Deep scan: an exhaustive list of Xcode-adjacent locations, grouped by safety.
-# "safe"          → cleanable by normal mode + the script
-# "probably_safe" → user must opt-in; bigger reclaim but loses simulator app data, etc.
-# "caution"       → never auto-delete; surface size only so user can review manually
-DEEP_PATHS = {
-    "safe": [
-        ("DerivedData",                 "~/Library/Developer/Xcode/DerivedData"),
-        ("iOS DeviceSupport",           "~/Library/Developer/Xcode/iOS DeviceSupport"),
-        ("watchOS DeviceSupport",       "~/Library/Developer/Xcode/watchOS DeviceSupport"),
-        ("tvOS DeviceSupport",          "~/Library/Developer/Xcode/tvOS DeviceSupport"),
-        ("visionOS DeviceSupport",      "~/Library/Developer/Xcode/visionOS DeviceSupport"),
-        ("Xcode caches",                "~/Library/Caches/com.apple.dt.Xcode"),
-        ("SwiftPM cache",               "~/Library/Caches/org.swift.swiftpm"),
-        ("Simulator caches",            "~/Library/Developer/CoreSimulator/Caches"),
-        ("CoreSimulator Cryptex",       "~/Library/Developer/CoreSimulator/Cryptex"),
-        ("iOS Device Logs",             "~/Library/Developer/Xcode/iOS Device Logs"),
-        ("Xcode Snapshots",             "~/Library/Developer/Xcode/Snapshots"),
-        ("Interface Builder caches",    "~/Library/Developer/Xcode/UserData/IB Support"),
-        ("Xcode Products",              "~/Library/Developer/Xcode/Products"),
-    ],
-    "probably_safe": [
-        ("Simulator app data (all)",    "~/Library/Developer/CoreSimulator/Devices"),
-        ("Instruments traces",          "~/Library/Application Support/Instruments"),
-        ("CocoaPods cache",             "~/Library/Caches/CocoaPods"),
-        ("CocoaPods specs",             "~/.cocoapods/repos"),
-    ],
-    "caution": [
-        ("iOS device backups (Finder/iTunes)",  "~/Library/Application Support/MobileSync/Backup"),
-        ("Xcode Archives (NEEDED for crash symbolication)", "~/Library/Developer/Xcode/Archives"),
-        ("Provisioning Profiles",                "~/Library/MobileDevice/Provisioning Profiles"),
-    ],
-}
-
-# Deep-action recipes — what each opt-in deep cleanup does
-DEEP_ACTIONS = {
-    "erase-simulators": {
-        "label": "Erase all simulator app data",
-        "desc":  "Runs `xcrun simctl erase all`. Keeps simulator devices, wipes installed apps + their data.",
-        "cmd":   ["xcrun", "simctl", "erase", "all"],
-    },
-    "clear-instruments": {
-        "label": "Clear Instruments traces",
-        "desc":  "Removes all saved .trace files.",
-        "shell": "rm -rf ~/Library/Application\ Support/Instruments/*",
-    },
-    "clear-cocoapods": {
-        "label": "Clear CocoaPods caches",
-        "desc":  "Removes ~/Library/Caches/CocoaPods + ~/.cocoapods/repos. Re-fetched on next `pod install`.",
-        "shell": "rm -rf ~/Library/Caches/CocoaPods/* ~/.cocoapods/repos/*",
-    },
-    "clear-extras": {
-        "label": "Clear Xcode extras",
-        "desc":  "Wipes Snapshots, IB caches, iOS Device Logs, Products — all regenerable.",
-        "shell": "rm -rf ~/Library/Developer/Xcode/Snapshots/* ~/Library/Developer/Xcode/UserData/IB\ Support/* ~/Library/Developer/Xcode/iOS\ Device\ Logs/* ~/Library/Developer/Xcode/Products/*",
-    },
-}
+HOST     = "127.0.0.1"   # localhost only
 
 
 def get_status() -> dict:
@@ -103,46 +48,24 @@ def get_status() -> dict:
     }
 
 
-def get_sizes() -> dict:
-    results = []
-    for label, path in CLEANUP_PATHS:
-        expanded = os.path.expanduser(path)
-        try:
-            out = subprocess.check_output(
-                ["du", "-sk", expanded],
-                stderr=subprocess.DEVNULL, timeout=15,
-            )
-            size_kb = int(out.split()[0])
-            results.append({
-                "label": label,
-                "path": path,
-                "size_kb": size_kb,
-                "size_gb": round(size_kb / 1024 / 1024, 2),
-            })
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError):
-            results.append({"label": label, "path": path, "size_kb": 0, "size_gb": 0})
-    return {"paths": results, "total_gb": round(sum(p["size_gb"] for p in results), 2)}
-
-
 def get_report() -> dict:
     csv_path = Path.home() / "Library/Logs/xcode-cleanup-history.csv"
     if not csv_path.exists():
-        return {"runs": [], "total_freed_gb": 0, "real_runs": 0}
+        return {"runs": [], "total_freed_gb": 0, "real_runs": 0, "max_freed_gb": 0}
     runs = []
     with csv_path.open() as f:
         for row in csv.reader(f):
             if len(row) >= 5:
                 try:
                     runs.append({
-                        "ts":     row[0],
-                        "mode":   row[1],
+                        "ts": row[0], "mode": row[1],
                         "freed":  float(row[2]),
                         "before": float(row[3]),
                         "after":  float(row[4]),
                     })
                 except ValueError:
                     continue
-    real = [r for r in runs if r["mode"] == "real"]
+    real = [r for r in runs if r["mode"] in ("real", "real-ssh")]
     return {
         "runs": runs[-30:],
         "real_runs": len(real),
@@ -151,33 +74,101 @@ def get_report() -> dict:
     }
 
 
+def scan_category(category_id: str) -> dict:
+    cat = cleaners.CATEGORIES.get(category_id)
+    if not cat:
+        return None
+
+    groups_out = {}
+    totals = {}
+    for group_name, items in cat["groups"].items():
+        paths = []
+        for label, path in items:
+            expanded = os.path.expanduser(path)
+            size_kb = 0
+            exists = os.path.exists(expanded)
+            try:
+                if exists:
+                    out = subprocess.check_output(
+                        ["du", "-sk", expanded], stderr=subprocess.DEVNULL, timeout=30,
+                    )
+                    size_kb = int(out.split()[0])
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, FileNotFoundError):
+                pass
+            size_gb = round(size_kb / 1024 / 1024, 2)
+            paths.append({
+                "label": label, "path": path,
+                "size_kb": size_kb, "size_gb": size_gb,
+                "exists":  exists,
+            })
+        cat_total = round(sum(p["size_gb"] for p in paths), 2)
+        groups_out[group_name] = {"paths": paths, "total_gb": cat_total}
+        totals[group_name] = cat_total
+
+    return {
+        "id": category_id,
+        "label": cat["label"],
+        "icon":  cat.get("icon", ""),
+        "tagline": cat.get("tagline", ""),
+        "groups": groups_out,
+        "totals": totals,
+        "total_cleanable_gb": round(
+            totals.get("safe", 0) + totals.get("probably_safe", 0), 2
+        ),
+    }
+
+
+def list_actions(category_id: str):
+    cat = cleaners.CATEGORIES.get(category_id)
+    if not cat:
+        return None
+    return [
+        {
+            "id": aid,
+            "label": a["label"],
+            "desc":  a["desc"],
+            "cost":  a.get("cost", ""),
+            "informational": a.get("informational", False),
+            "sudo":  a.get("sudo", False),
+        }
+        for aid, a in cat["actions"].items()
+    ]
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
-        url = urlparse(self.path)
-        if url.path == "/":
-            self._serve_file("index.html", "text/html; charset=utf-8")
-        elif url.path == "/api/status":
-            self._serve_json(get_status())
-        elif url.path == "/api/sizes":
-            self._serve_json(get_sizes())
-        elif url.path == "/api/report":
-            self._serve_json(get_report())
-        elif url.path == "/api/stream":
-            mode = parse_qs(url.query).get("mode", ["dry"])[0]
-            self._stream_cleanup(mode)
-        elif url.path == "/api/deep-scan":
-            self._serve_json(self._deep_scan())
-        elif url.path == "/api/deep-actions":
-            self._serve_json({"actions": [
-                {"id": k, "label": v["label"], "desc": v["desc"]}
-                for k, v in DEEP_ACTIONS.items()
-            ]})
-        elif url.path == "/api/deep-action":
-            action = parse_qs(url.query).get("id", [""])[0]
-            self._stream_deep_action(action)
-        else:
-            self.send_error(404)
+        url   = urlparse(self.path)
+        path  = url.path
+        query = parse_qs(url.query)
+
+        if path == "/":
+            return self._serve_file("index.html", "text/html; charset=utf-8")
+        if path == "/api/status":
+            return self._serve_json(get_status())
+        if path == "/api/tabs":
+            return self._serve_json({"tabs": cleaners.TABS})
+        if path == "/api/report":
+            return self._serve_json(get_report())
+
+        # /api/category/<id>/scan or /actions
+        if path.startswith("/api/category/"):
+            parts = path[len("/api/category/"):].split("/")
+            if len(parts) == 2:
+                cid, sub = parts
+                if sub == "scan":
+                    result = scan_category(cid)
+                    return self._serve_json(result) if result else self.send_error(404)
+                if sub == "actions":
+                    actions = list_actions(cid)
+                    return self._serve_json({"actions": actions}) if actions is not None else self.send_error(404)
+
+        if path == "/api/run":
+            cid    = query.get("category", [""])[0]
+            action = query.get("action",   [""])[0]
+            return self._stream_action(cid, action)
+
+        self.send_error(404)
 
     def _serve_file(self, name: str, ctype: str):
         path = WEB_DIR / name
@@ -200,37 +191,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _deep_scan(self):
-        result = {"categories": [], "total_safe_gb": 0, "total_probably_gb": 0, "total_caution_gb": 0}
-        for category, items in DEEP_PATHS.items():
-            paths = []
-            for label, path in items:
-                expanded = os.path.expanduser(path)
-                size_kb = 0
-                try:
-                    out = subprocess.check_output(
-                        ["du", "-sk", expanded], stderr=subprocess.DEVNULL, timeout=30,
-                    )
-                    size_kb = int(out.split()[0])
-                except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, FileNotFoundError):
-                    pass
-                size_gb = round(size_kb / 1024 / 1024, 2)
-                paths.append({
-                    "label": label, "path": path,
-                    "size_kb": size_kb, "size_gb": size_gb,
-                })
-            cat_total = round(sum(p["size_gb"] for p in paths), 2)
-            result["categories"].append({"name": category, "paths": paths, "total_gb": cat_total})
-            if category == "safe":         result["total_safe_gb"]     = cat_total
-            elif category == "probably_safe": result["total_probably_gb"] = cat_total
-            elif category == "caution":    result["total_caution_gb"]  = cat_total
-        return result
+    def _stream_action(self, category_id: str, action_id: str):
+        cat = cleaners.CATEGORIES.get(category_id)
+        if not cat or action_id not in cat["actions"]:
+            return self.send_error(404, f"unknown action: {category_id}/{action_id}")
 
-    def _stream_deep_action(self, action_id: str):
-        if action_id not in DEEP_ACTIONS:
-            return self.send_error(400, f"unknown action: {action_id}")
-
-        action = DEEP_ACTIONS[action_id]
+        action = cat["actions"][action_id]
 
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
@@ -241,13 +207,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         before = get_status()
         self._send_sse({"event": "status", "data": before})
-        self._send_sse({"event": "line", "data": f"→ {action['label']}"})
+        self._send_sse({"event": "line", "data": f"▶ {action['label']}"})
         self._send_sse({"event": "line", "data": f"  {action['desc']}"})
+        if action.get("cost"):
+            self._send_sse({"event": "line", "data": f"  cost: {action['cost']}"})
 
+        # Build subprocess command
         if "shell" in action:
             cmd = ["bash", "-c", action["shell"] + " 2>&1"]
-        else:
+        elif "cmd" in action:
             cmd = action["cmd"]
+        else:
+            self._send_sse({"event": "line", "data": "(no command defined for this action)"})
+            self._send_sse({"event": "done", "data": {"code": 0, "freed_gb": 0}})
+            return
 
         try:
             proc = subprocess.Popen(
@@ -257,64 +230,36 @@ class Handler(http.server.BaseHTTPRequestHandler):
             for line in proc.stdout:
                 self._send_sse({"event": "line", "data": line.rstrip()})
             proc.wait()
+
             after = get_status()
+            freed = round(after["free_gb"] - before["free_gb"], 1)
             self._send_sse({
                 "event": "done",
                 "data": {
                     "code": proc.returncode,
                     "before_gb": before["free_gb"],
                     "after_gb":  after["free_gb"],
-                    "freed_gb":  round(after["free_gb"] - before["free_gb"], 1),
+                    "freed_gb":  freed,
                 },
             })
+
+            # Log to CSV (real cleanup runs only — skip informational ones)
+            if not action.get("informational") and proc.returncode == 0:
+                self._log_run(category_id, action_id, freed, before["free_gb"], after["free_gb"])
+
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def _stream_cleanup(self, mode: str):
-        """SSE stream of cleanup output. Modes: dry / real / force."""
-        if mode not in ("dry", "real", "force"):
-            return self.send_error(400, "bad mode")
-
-        self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream")
-        self.send_header("Cache-Control", "no-cache")
-        self.send_header("Connection", "keep-alive")
-        self.send_header("X-Accel-Buffering", "no")
-        self.end_headers()
-
-        before = get_status()
-        self._send_sse({"event": "status", "data": before})
-
-        script = REPO_DIR / "scripts" / "remote-cleanup.sh"
-        cmd = ["bash", str(script)]
-        if mode == "dry":
-            cmd.append("--dry-run")
-        elif mode == "force":
-            cmd.append("--force")
-        # real mode = no flag; relies on threshold gate
-
-        env = os.environ.copy()
-
+    def _log_run(self, category_id, action_id, freed_gb, before_gb, after_gb):
         try:
-            proc = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                env=env, bufsize=1, text=True,
-            )
-            for line in proc.stdout:
-                self._send_sse({"event": "line", "data": line.rstrip()})
-            proc.wait()
-
-            after = get_status()
-            self._send_sse({
-                "event": "done",
-                "data": {
-                    "code": proc.returncode,
-                    "before_gb": before["free_gb"],
-                    "after_gb":  after["free_gb"],
-                    "freed_gb":  round(after["free_gb"] - before["free_gb"], 1),
-                },
-            })
-        except (BrokenPipeError, ConnectionResetError):
+            from datetime import datetime
+            csv_path = Path.home() / "Library/Logs/xcode-cleanup-history.csv"
+            csv_path.parent.mkdir(parents=True, exist_ok=True)
+            with csv_path.open("a") as f:
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                mode = f"real-ui-{category_id}-{action_id}"
+                f.write(f"{ts},{mode},{freed_gb},{before_gb},{after_gb}\n")
+        except Exception:
             pass
 
     def _send_sse(self, payload: dict):
@@ -332,11 +277,11 @@ def main():
     httpd = socketserver.ThreadingTCPServer((HOST, PORT), Handler)
     httpd.daemon_threads = True
     url = f"http://{HOST}:{PORT}"
-    print(f"🧹  Xcode Cleanup web UI → \033[1;36m{url}\033[0m")
+    print(f"🧹  Cleanup Hub web UI → \033[1;36m{url}\033[0m")
+    print(f"    {sum(len(c['actions']) for c in cleaners.CATEGORIES.values())} actions across {len([t for t in cleaners.TABS])} tabs")
     print("    Localhost only — never reachable from your network.")
     print("    Press Ctrl+C to stop.\n")
 
-    # Open the browser unless XCC_UI_NO_OPEN=1
     if not os.environ.get("XCC_UI_NO_OPEN"):
         try:
             webbrowser.open(url)

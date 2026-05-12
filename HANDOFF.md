@@ -4,13 +4,13 @@
 > Edit this in place. Don't append a new section per handoff — overwrite stale lines.
 
 **Last updated:** 2026-05-08
-**Updated by:** v0.6.0 ship (deep scan + README quickstart)
+**Updated by:** v0.7.0 ship (multi-category Cleanup Hub)
 
 ---
 
 ## TL;DR
 
-Repo is at v0.6.0. Web UI grew a deep scan section that covers ~20 Xcode-adjacent locations beyond the basic 7 (simulator app data is the biggest single opt-in win, typically 3–8 GB). README rewritten to put `make ui` front and center as the recommended install path. All 7 gaps + all 8 elevations from the prior audits are closed. v0.4 shipped: `xcc` CLI (bin/), launchd hourly agent, SwiftBar menu-bar plugin, daily update check via GitHub API (cached), CSV history + sparkline report, auto-release Actions workflow (`vX.Y.Z:` prefix → tag + release), retroactive tags for all historical versions, `make package-shortcut` infrastructure. v0.4.1 adds `scripts/remote-cleanup.sh` (pure-shell, no UI) and `docs/SHORTCUTS.md` (paste-ready blocks for Run Shell Script / Run AppleScript / Run Script Over SSH, validated against Shortcuts 12.4 / macOS 26). Issue #2 (progress-bar GIF) remains the only outstanding follow-up.
+Repo is at v0.7.0. Web UI moved from one Xcode-only page to four tabs (Xcode / LLMs / Apps / System), with LLMs having sub-tabs for Claude, Cursor, ChatGPT. Total ~70 paths across 6 categories. Every action ships a cost annotation. README now positions the product as a broader cleanup hub, not Xcode-only. All 7 gaps + all 8 elevations from the prior audits are closed. v0.4 shipped: `xcc` CLI (bin/), launchd hourly agent, SwiftBar menu-bar plugin, daily update check via GitHub API (cached), CSV history + sparkline report, auto-release Actions workflow (`vX.Y.Z:` prefix → tag + release), retroactive tags for all historical versions, `make package-shortcut` infrastructure. v0.4.1 adds `scripts/remote-cleanup.sh` (pure-shell, no UI) and `docs/SHORTCUTS.md` (paste-ready blocks for Run Shell Script / Run AppleScript / Run Script Over SSH, validated against Shortcuts 12.4 / macOS 26). Issue #2 (progress-bar GIF) remains the only outstanding follow-up.
 
 ## Current status
 
@@ -51,6 +51,11 @@ Nothing.
 | 2026-05-12 | Deep scan splits paths into safe / probably_safe / caution | Basic mode stays narrow + reliable; opt-in actions surface real reclaim potential without surprising the user. Caution category never auto-deletes — only surfaces size. |
 | 2026-05-12 | Simulator app data not in basic mode | Wiping `xcrun simctl erase all` removes installed simulator apps + their saved data; some users want that preserved. Opt-in only. |
 | 2026-05-12 | README quickstart leads with `make ui`, not `make install-shortcut` | User feedback: easiest path wins. Web UI is zero-config, browser opens automatically, 3 buttons visible. Shortcut path is for people who want a permanent hotkey. |
+| 2026-05-12 | Cleanup definitions moved to web/cleaners.py | One source of truth for paths + actions + costs. Server.py is now pure routing. |
+| 2026-05-12 | Every action ships a `cost` annotation | User philosophy: "tells me the cost of deleting certain things." UI surfaces it in an orange banner per action. Lets users make informed trades. |
+| 2026-05-12 | 3 safety tiers (safe / probably_safe / caution) | Codifies the "factory-fresh without losing data" goal. Caution paths are NEVER auto-deleted, only surfaced. |
+| 2026-05-12 | LLMs has sub-tabs (Claude/Cursor/ChatGPT), not separate top tabs | Top-level tabs stay readable; sub-tabs keep each LLM tool's actions grouped without page-flipping. |
+| 2026-05-12 | reset-claude-desktop is opt-in with explicit cost | Claude Desktop app state can be 10+ GB. Auto-deleting would sign people out unexpectedly. Surface as opt-in with strong cost copy. |
 
 ## Blockers
 
@@ -81,8 +86,9 @@ None.
 | `bin/xcc` | CLI wrapper exposing flags as `--dry-run` / `--force` / `--patterns` etc. |
 | `launchd/com.marvelousempire.xcode-cleanup.plist` | LaunchAgent template (path substituted at install time). |
 | `swiftbar/xcode-cleanup.30m.sh` | SwiftBar plugin — menu-bar disk indicator + actions. |
-| `web/server.py` | Localhost-only Python HTTP server (stdlib, no pip) — 4 endpoints + SSE. |
-| `web/index.html` | Single-file dashboard UI — live indicator, per-path sizes, sparkline, one-click actions. |
+| `web/server.py` | Localhost-only Python HTTP server (stdlib, no pip) — routes category endpoints + SSE streams. |
+| `web/cleaners.py` | All cleanup categories, paths, actions, and cost annotations. Single source of truth. |
+| `web/index.html` | Tabbed dashboard UI — Xcode / LLMs (Claude/Cursor/ChatGPT) / Apps / System. |
 | `scripts/report.py` | Reads CSV history, renders sparkline. |
 | `scripts/remote-cleanup.sh` | Pure-shell cleanup for SSH / headless / CI. |
 | `docs/SHORTCUTS.md` | Paste-ready Shortcuts blocks (Run Shell Script + Run Script Over SSH + Run AppleScript). |

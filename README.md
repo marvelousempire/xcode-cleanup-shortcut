@@ -2,10 +2,10 @@
   <img src="assets/icon-hero.svg" width="96" height="96" alt="Xcode Cleanup">
 </p>
 
-<h1 align="center">Reclaim 10–25 GB Xcode is hoarding. One click.</h1>
+<h1 align="center">Reclaim 10–40 GB your Mac is hoarding — Xcode, LLM tools, apps, system.</h1>
 
 <p align="center">
-  A free macOS Shortcut that wipes <code>DerivedData</code>, iOS/watchOS/tvOS <code>DeviceSupport</code>, SwiftPM caches, and dead simulators — safely. Skips your Archives so App Store crash symbolication keeps working. No subscription. No telemetry. One short AppleScript you can read in five minutes.
+  A free dashboard that finds disk-hogging caches across <strong>Xcode</strong>, <strong>Claude / Cursor / ChatGPT</strong>, <strong>everyday apps</strong> (browsers, chat, Spotify, Homebrew, …), and <strong>macOS system junk</strong>. Tells you the <em>cost</em> of every cleanup so you choose with full info. Skips Archives and irreplaceable data. No subscription. No telemetry.
 </p>
 
 <p align="center">
@@ -33,6 +33,19 @@ That's it. Three buttons. No CLI, no AppleScript editing, nothing else to learn.
 ![preview of the dashboard](https://img.shields.io/badge/dashboard-localhost%3A8765-0A84FF?style=for-the-badge)
 
 > Don't want a browser? See [other install paths](#install-60-seconds--pick-your-path) — Apple Shortcut, CLI, launchd background agent, SwiftBar menu-bar plugin, SSH for remote Macs. All five share one source script.
+
+### Inside the dashboard
+
+Four tabs, each with its own scan + actions + per-action cost notes:
+
+| Tab | What it finds | Typical reclaim |
+|---|---|---|
+| **🛠 Xcode** | DerivedData, DeviceSupport (iOS/watchOS/tvOS/visionOS), SwiftPM, simulator caches + app data, Snapshots, IB caches, Products, Instruments traces, CocoaPods | 10–25 GB |
+| **🤖 LLMs** (Claude · Cursor · ChatGPT) | Claude Desktop updater cache, Claude Code session transcripts, Cursor Code/GPU/extension caches, ChatGPT cache + logs | 1–15 GB |
+| **🧹 Apps** | Chrome/Safari/Firefox/Brave/Arc caches, Slack/Discord/Zoom/Teams/Spotify caches, `~/Downloads/*.dmg`, Trash, Homebrew downloads | 0.5–5 GB |
+| **💾 System** | Icon cache, Spotlight parser, help/CloudKit/iCloud Drive caches, Time Machine local snapshots, diagnostic reports, old macOS installers | 0.1–20 GB (Time Machine snapshots often the biggest) |
+
+**Every action tells you the cost** — exactly what you lose when you click it ("Chrome reloads pages from origin on next visit. Bookmarks/passwords safe."). Three safety tiers per tab: ✓ Safe (regenerable), ⚠ Probably safe (opt-in), ⛔ Caution (surface only, never auto-delete).
 
 ---
 

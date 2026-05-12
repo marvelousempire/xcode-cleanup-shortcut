@@ -3,30 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xcode Cleanup</title>
+<title>Cleanup Hub</title>
 <style>
   :root {
     color-scheme: light dark;
     --bg-1: #f5f5f7;
     --bg-2: rgba(255,255,255,0.72);
+    --bg-3: rgba(255,255,255,0.5);
     --border: rgba(0,0,0,0.08);
+    --border-2: rgba(0,0,0,0.05);
     --text: #1d1d1f;
     --text-dim: #6e6e73;
+    --text-faint: #a1a1a6;
     --accent: #0A84FF;
     --green: #30D158;
     --orange: #FF9F0A;
     --red: #FF453A;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
     --radius: 14px;
+    --radius-sm: 8px;
     --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg-1: #000;
       --bg-2: rgba(28,28,30,0.72);
-      --border: rgba(255,255,255,0.08);
+      --bg-3: rgba(44,44,46,0.5);
+      --border:   rgba(255,255,255,0.10);
+      --border-2: rgba(255,255,255,0.06);
       --text: #f5f5f7;
       --text-dim: #98989d;
+      --text-faint: #6e6e73;
       --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5);
     }
   }
@@ -37,32 +44,23 @@
     background: var(--bg-1);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
   body {
     min-height: 100vh;
     background-image:
-      radial-gradient(at 20% 0%, rgba(10,132,255,0.10) 0px, transparent 50%),
-      radial-gradient(at 80% 100%, rgba(48,209,88,0.08) 0px, transparent 50%);
-    padding: 48px 24px 96px;
+      radial-gradient(at 20% 0%,   rgba(10,132,255,0.10) 0, transparent 50%),
+      radial-gradient(at 80% 100%, rgba(48,209,88,0.08) 0, transparent 50%);
+    padding: 40px 24px 96px;
   }
-  .container { max-width: 720px; margin: 0 auto; }
+  .container { max-width: 760px; margin: 0 auto; }
+
   header {
     display: flex; align-items: center; gap: 12px;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
   }
-  header h1 {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-  header .badge {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--text-dim);
-    font-variant-numeric: tabular-nums;
-  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+  header .badge { margin-left: auto; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
   .card {
     background: var(--bg-2);
     backdrop-filter: saturate(180%) blur(20px);
@@ -72,249 +70,232 @@
     box-shadow: var(--shadow);
     overflow: hidden;
   }
+
+  /* Hero — always visible */
   .hero {
-    padding: 40px 32px;
+    padding: 36px 32px 28px;
     text-align: center;
+    margin-bottom: 20px;
   }
   .hero .free {
-    font-size: 80px;
+    font-size: 72px;
     font-weight: 700;
     letter-spacing: -0.04em;
     line-height: 1;
     font-variant-numeric: tabular-nums;
     transition: color 0.3s ease;
   }
-  .hero .free .unit { font-size: 32px; font-weight: 500; color: var(--text-dim); margin-left: 4px; }
-  .hero .free.good     { color: var(--green); }
-  .hero .free.warn     { color: var(--orange); }
-  .hero .free.danger   { color: var(--red); }
-  .hero .label {
-    margin-top: 12px;
-    font-size: 14px;
-    color: var(--text-dim);
-  }
+  .hero .free .unit { font-size: 28px; font-weight: 500; color: var(--text-dim); margin-left: 4px; }
+  .hero .free.good   { color: var(--green); }
+  .hero .free.warn   { color: var(--orange); }
+  .hero .free.danger { color: var(--red); }
+  .hero .label { margin-top: 10px; font-size: 13px; color: var(--text-dim); }
   .hero .progress-track {
-    margin-top: 24px;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
+    margin-top: 20px;
+    height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
   }
   .hero .progress-fill {
-    height: 100%;
-    background: var(--accent);
+    height: 100%; background: var(--accent);
     transition: width 0.5s ease, background 0.3s ease;
   }
   .hero .progress-fill.warn   { background: var(--orange); }
   .hero .progress-fill.danger { background: var(--red); }
 
-  .actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 12px;
-    margin-top: 16px;
-  }
-  button {
-    appearance: none;
-    border: none;
-    background: var(--bg-2);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border: 1px solid var(--border);
+  /* Tabs */
+  nav.tabs {
+    display: flex; gap: 4px;
+    padding: 4px;
+    background: var(--bg-3);
     border-radius: var(--radius);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 16px 18px;
-    cursor: pointer;
-    transition: transform 0.06s ease, background 0.2s ease, border-color 0.2s ease;
-    box-shadow: var(--shadow);
-    text-align: center;
+    margin-bottom: 16px;
+    overflow-x: auto;
   }
-  button:hover { border-color: rgba(10,132,255,0.4); }
-  button:active { transform: scale(0.97); }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  button.primary {
-    background: var(--accent);
-    color: white;
-    border-color: transparent;
-  }
-  button.primary:hover { background: #006FE6; border-color: transparent; }
-  button .sub {
-    display: block;
-    font-size: 11px;
-    font-weight: 400;
+  nav.tabs button {
+    flex: 1;
+    appearance: none;
+    background: transparent;
+    border: none;
     color: var(--text-dim);
-    margin-top: 4px;
-  }
-  button.primary .sub { color: rgba(255,255,255,0.7); }
-
-  section { margin-top: 28px; }
-  section h2 {
-    margin: 0 0 12px;
+    font-family: inherit;
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
   }
-  .sizes {
-    padding: 8px 0;
+  nav.tabs button:hover { color: var(--text); }
+  nav.tabs button.active {
+    background: var(--bg-2);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
   }
-  .size-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 20px;
-    font-size: 14px;
+  nav.sub-tabs {
+    display: flex; gap: 4px;
+    padding: 4px;
+    background: var(--border-2);
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+  }
+  nav.sub-tabs button {
+    flex: 1; appearance: none; background: transparent;
+    border: none; color: var(--text-dim);
+    font-family: inherit; font-size: 12px; font-weight: 500;
+    padding: 8px 12px; border-radius: 6px;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  nav.sub-tabs button.active { background: var(--bg-2); color: var(--text); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .panel-header {
+    padding: 20px 24px;
     border-bottom: 1px solid var(--border);
   }
-  .size-row:last-child { border-bottom: none; }
-  .size-row .name { flex: 1; }
-  .size-row .bar {
-    width: 80px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
-  }
-  .size-row .bar-fill {
-    height: 100%; background: var(--accent); transition: width 0.4s ease;
-  }
-  .size-row .value {
+  .panel-header h2 { margin: 0; font-size: 17px; font-weight: 600; }
+  .panel-header .tagline { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+  .panel-header .totals {
+    display: flex; gap: 20px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
     font-variant-numeric: tabular-nums;
+  }
+  .panel-header .totals strong { font-weight: 600; color: var(--text); }
+
+  .scan-section { padding: 16px 24px; }
+  .scan-section h3 {
+    margin: 16px 0 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .scan-section h3.safe          { color: var(--green); }
+  .scan-section h3.probably_safe { color: var(--orange); }
+  .scan-section h3.caution       { color: var(--red); }
+  .scan-section .group-note {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    line-height: 1.5;
+    padding: 8px 12px;
+    background: var(--border-2);
+    border-radius: var(--radius-sm);
+  }
+  .path-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px;
+    font-size: 13px;
+    background: var(--bg-3);
+    border-radius: 6px;
+    margin-bottom: 3px;
+  }
+  .path-row.missing { opacity: 0.4; }
+  .path-row .name { flex: 1; min-width: 0; }
+  .path-row .name strong { display: block; }
+  .path-row .name code {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    display: block;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .path-row .value {
     font-family: var(--mono);
     font-size: 12px;
     color: var(--text-dim);
-    min-width: 56px;
+    min-width: 60px;
     text-align: right;
   }
 
+  .actions-section {
+    padding: 0 24px 24px;
+  }
+  .actions-section h3 {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin: 24px 0 12px;
+  }
+  .action-card {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .action-card .head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  }
+  .action-card .label { font-size: 14px; font-weight: 600; }
+  .action-card .desc { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
+  .action-card .cost {
+    font-size: 11px;
+    color: var(--orange);
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(255,159,10,0.08);
+    border-left: 2px solid var(--orange);
+    border-radius: 0 6px 6px 0;
+    line-height: 1.5;
+  }
+  .action-card .cost::before { content: "Cost of doing this: "; font-weight: 600; }
+  .action-card button {
+    appearance: none; border: none;
+    background: var(--accent); color: white;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: background 0.2s ease, transform 0.06s ease;
+  }
+  .action-card button:hover { background: #006FE6; }
+  .action-card button:active { transform: scale(0.97); }
+  .action-card button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action-card.informational { border-left: 3px solid var(--accent); }
+  .action-card.informational button { background: var(--text-dim); }
+  .action-card.informational button:hover { background: var(--text); }
+
+  .scan-btn {
+    appearance: none; border: 1px solid var(--border);
+    background: var(--bg-2); color: var(--text);
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 12px 20px; border-radius: var(--radius-sm);
+    cursor: pointer; width: 100%;
+    transition: border-color 0.2s ease;
+  }
+  .scan-btn:hover { border-color: var(--accent); }
+  .scan-btn:disabled { opacity: 0.6; }
+
+  /* Shared output console */
   .output {
-    margin-top: 16px;
-    background: rgba(0,0,0,0.85);
+    margin-top: 24px;
+    background: rgba(0,0,0,0.88);
     color: #f5f5f7;
     border-radius: var(--radius);
-    padding: 16px 18px;
+    padding: 0;
     font-family: var(--mono);
     font-size: 12px;
     line-height: 1.6;
-    max-height: 240px;
+    max-height: 280px;
     overflow-y: auto;
     white-space: pre-wrap;
     word-break: break-word;
-    transition: opacity 0.3s ease;
-    opacity: 0;
-    height: 0;
-    padding: 0 18px;
+    transition: padding 0.2s ease, max-height 0.3s ease;
+    max-height: 0;
+    overflow: hidden;
   }
-  .output.visible {
-    opacity: 1;
-    height: auto;
-    padding: 16px 18px;
-    margin-top: 16px;
-  }
-  .output .ok    { color: #30D158; }
-  .output .warn  { color: #FF9F0A; }
-  .output .err   { color: #FF453A; }
-  .output .dim   { color: #98989d; }
-
-  .report {
-    padding: 20px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    text-align: center;
-  }
-  .report .stat .num {
-    font-size: 28px; font-weight: 600;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
-  .report .stat .lbl {
-    font-size: 11px; color: var(--text-dim);
-    text-transform: uppercase; letter-spacing: 0.04em;
-    margin-top: 4px;
-  }
-  .deep-category {
-    margin-bottom: 20px;
-  }
-  .deep-category:last-child { margin-bottom: 0; }
-  .deep-category-header {
-    display: flex; align-items: baseline; justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .deep-category.safe          .deep-category-header { color: var(--green); }
-  .deep-category.probably_safe .deep-category-header { color: var(--orange); }
-  .deep-category.caution       .deep-category-header { color: var(--red); }
-  .deep-category-total {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-    font-weight: 500;
-  }
-  .deep-paths { margin-bottom: 10px; }
-  .deep-path {
-    display: flex; align-items: center; gap: 12px;
-    padding: 8px 12px;
-    font-size: 13px;
-    background: rgba(0,0,0,0.025);
-    border-radius: 8px;
-    margin-bottom: 4px;
-  }
-  @media (prefers-color-scheme: dark) {
-    .deep-path { background: rgba(255,255,255,0.03); }
-  }
-  .deep-path:last-child { margin-bottom: 0; }
-  .deep-path .name { flex: 1; }
-  .deep-path .path-detail {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-dim);
-    display: block;
-    margin-top: 2px;
-  }
-  .deep-path .value {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-    min-width: 56px;
-    text-align: right;
-  }
-  .deep-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-  }
-  .deep-actions button {
-    flex: 1;
-    min-width: 0;
-    padding: 10px 12px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-  .deep-actions button .sub {
-    font-size: 10px;
-    margin-top: 2px;
-  }
-  .deep-note {
-    font-size: 11px;
-    color: var(--text-dim);
-    line-height: 1.5;
-    padding: 8px 12px;
-    margin-top: 6px;
-    border-left: 2px solid var(--border);
-  }
-
-  .sparkline {
-    font-family: var(--mono);
-    font-size: 24px;
-    letter-spacing: -2px;
-    color: var(--accent);
-    word-break: break-all;
-    line-height: 1;
-    margin: 4px 20px 20px;
-  }
+  .output.visible { padding: 16px 18px; max-height: 360px; overflow-y: auto; }
+  .output .ok   { color: #30D158; }
+  .output .warn { color: #FF9F0A; }
+  .output .err  { color: #FF453A; }
+  .output .dim  { color: #98989d; }
 
   footer {
     margin-top: 48px;
@@ -325,11 +306,10 @@
   footer a { color: var(--accent); text-decoration: none; }
   footer a:hover { text-decoration: underline; }
 
-  @media (max-width: 540px) {
-    body { padding: 24px 16px 64px; }
-    .actions { grid-template-columns: 1fr; }
-    .report  { grid-template-columns: 1fr; }
-    .hero .free { font-size: 64px; }
+  @media (max-width: 600px) {
+    body { padding: 24px 14px 64px; }
+    nav.tabs button { font-size: 12px; padding: 9px 10px; }
+    .hero .free { font-size: 56px; }
   }
 </style>
 </head>
@@ -342,8 +322,8 @@
       <path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/>
       <path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>
     </svg>
-    <h1>Xcode Cleanup</h1>
-    <span class="badge" id="version">localhost</span>
+    <h1>Cleanup Hub</h1>
+    <span class="badge" id="version">v0.7 · localhost</span>
   </header>
 
   <div class="card hero">
@@ -352,67 +332,41 @@
     <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
   </div>
 
-  <div class="actions">
-    <button id="btn-dry">
-      Dry run
-      <span class="sub">Measure, don't delete</span>
-    </button>
-    <button id="btn-real" class="primary">
-      Clean now
-      <span class="sub">Threshold-gated</span>
-    </button>
-    <button id="btn-force">
-      Force clean
-      <span class="sub">Skip the gate</span>
-    </button>
-  </div>
+  <nav class="tabs" id="tabs"></nav>
+
+  <div id="panels"></div>
 
   <div class="output" id="output"></div>
 
-  <section>
-    <h2>What would be cleaned</h2>
-    <div class="card sizes" id="sizes">
-      <div class="size-row dim"><div class="name">Loading…</div></div>
-    </div>
-  </section>
-
-  <section id="deep-section">
-    <h2>Deep scan — find what basic mode misses</h2>
-    <div class="card" style="padding: 20px">
-      <button id="btn-deep-scan" style="width:100%; padding: 14px">Run deep scan</button>
-      <div id="deep-results" style="margin-top: 16px; display:none"></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Your cleanup history</h2>
-    <div class="card">
-      <div class="sparkline" id="sparkline">▁</div>
-      <div class="report">
-        <div class="stat"><div class="num" id="rep-total">—</div><div class="lbl">GB freed total</div></div>
-        <div class="stat"><div class="num" id="rep-runs">—</div><div class="lbl">Real runs</div></div>
-        <div class="stat"><div class="num" id="rep-max">—</div><div class="lbl">Best single run</div></div>
-      </div>
-    </div>
-  </section>
-
   <footer>
-    <a href="https://github.com/marvelousempire/xcode-cleanup-shortcut" target="_blank">marvelousempire/xcode-cleanup-shortcut</a> · MIT · localhost-only
+    <a href="https://github.com/marvelousempire/marvelousempire/xcode-cleanup-shortcut" target="_blank">marvelousempire/xcode-cleanup-shortcut</a> · MIT · localhost-only · factory-fresh without losing your stuff
   </footer>
 
 </div>
 
 <script>
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmt = (n, d=1) => Number(n).toFixed(d);
 
-function fmt(n, d=1) { return Number(n).toFixed(d); }
+const CATEGORY_LABELS = {
+  safe:          { label: "✓ Safe to delete",
+                   note: "These caches regenerate automatically. Cleaning has near-zero cost." },
+  probably_safe: { label: "⚠ Probably safe — opt in",
+                   note: "Bigger reclaim, but you'll re-fetch / re-cache something. Read each cost note before clicking." },
+  caution:       { label: "⛔ Caution — review manually",
+                   note: "Never auto-deleted. Surfaces sizes so you can review and act in Finder/Terminal yourself." },
+};
+
+const ACTION_ICON = {
+  safe:          "var(--green)",
+  probably_safe: "var(--orange)",
+  caution:       "var(--red)",
+};
 
 async function loadStatus() {
-  const r = await fetch("/api/status");
-  const d = await r.json();
-  const free = $("#free-gb");
-  const fill = $("#progress-fill");
+  const r = await fetch("/api/status"); const d = await r.json();
+  const free = $("#free-gb"), fill = $("#progress-fill");
   free.firstChild.nodeValue = fmt(d.free_gb);
   free.classList.toggle("good",   d.free_gb >= 50);
   free.classList.toggle("warn",   d.free_gb >= 20 && d.free_gb < 50);
@@ -423,47 +377,191 @@ async function loadStatus() {
   $("#free-label").textContent = `${fmt(d.used_gb,0)} GB used of ${fmt(d.total_gb,0)} GB · ${fmt(d.used_pct,0)}%`;
 }
 
-async function loadSizes() {
-  const r = await fetch("/api/sizes");
-  const d = await r.json();
-  const max = Math.max(...d.paths.map(p => p.size_gb), 0.001);
-  const html = d.paths.map(p => `
-    <div class="size-row">
-      <div class="name">${p.label}</div>
-      <div class="bar"><div class="bar-fill" style="width:${(p.size_gb / max * 100)}%"></div></div>
-      <div class="value">${p.size_gb >= 1 ? fmt(p.size_gb) + " GB" : p.size_kb >= 1024 ? fmt(p.size_kb/1024,0) + " MB" : p.size_kb + " KB"}</div>
+let tabsState = { current: null, sub: {} /* tabId -> currentSub */, scans: {} /* catId -> scanData */ };
+
+async function loadTabs() {
+  const r = await fetch("/api/tabs"); const { tabs } = await r.json();
+  const tabBar = $("#tabs");
+  const panels = $("#panels");
+  tabBar.innerHTML = "";
+  panels.innerHTML = "";
+
+  tabs.forEach((tab, idx) => {
+    const btn = document.createElement("button");
+    btn.textContent = tab.label;
+    btn.dataset.tab = tab.id;
+    if (idx === 0) btn.classList.add("active");
+    btn.addEventListener("click", () => switchTab(tab.id));
+    tabBar.appendChild(btn);
+
+    const panel = document.createElement("div");
+    panel.className = "panel" + (idx === 0 ? " active" : "");
+    panel.dataset.panel = tab.id;
+    panels.appendChild(panel);
+
+    if (tab.subcategories) {
+      const subBar = document.createElement("nav");
+      subBar.className = "sub-tabs";
+      tab.subcategories.forEach((sub, sidx) => {
+        const sbtn = document.createElement("button");
+        sbtn.textContent = sub.replace("llms-", "").replace(/^./, c => c.toUpperCase());
+        sbtn.dataset.sub = sub;
+        if (sidx === 0) { sbtn.classList.add("active"); tabsState.sub[tab.id] = sub; }
+        sbtn.addEventListener("click", () => switchSub(tab.id, sub));
+        subBar.appendChild(sbtn);
+      });
+      panel.appendChild(subBar);
+      tab.subcategories.forEach((sub, sidx) => {
+        const subPanel = document.createElement("div");
+        subPanel.className = "sub-panel" + (sidx === 0 ? " active" : "");
+        subPanel.dataset.subPanel = sub;
+        if (sidx !== 0) subPanel.style.display = "none";
+        panel.appendChild(subPanel);
+        renderCategoryInto(sub, subPanel);
+      });
+    } else {
+      renderCategoryInto(tab.category, panel);
+    }
+
+    if (idx === 0) tabsState.current = tab.id;
+  });
+}
+
+function switchTab(tabId) {
+  $$("nav.tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
+  $$(".panel").forEach(p => p.classList.toggle("active", p.dataset.panel === tabId));
+  tabsState.current = tabId;
+}
+
+function switchSub(tabId, subId) {
+  const panel = $(`.panel[data-panel="${tabId}"]`);
+  panel.querySelectorAll("nav.sub-tabs button").forEach(b => b.classList.toggle("active", b.dataset.sub === subId));
+  panel.querySelectorAll(".sub-panel").forEach(p => {
+    const isActive = p.dataset.subPanel === subId;
+    p.classList.toggle("active", isActive);
+    p.style.display = isActive ? "" : "none";
+  });
+  tabsState.sub[tabId] = subId;
+}
+
+async function renderCategoryInto(catId, container) {
+  container.innerHTML = `<div class="card">
+    <div class="panel-header">
+      <h2 id="hdr-${catId}">${catId}</h2>
+      <div class="tagline" id="tagline-${catId}">Loading…</div>
+      <div class="totals" id="totals-${catId}"></div>
     </div>
-  `).join("");
-  $("#sizes").innerHTML = html + `
-    <div class="size-row" style="border-top:1px solid var(--border);font-weight:600">
-      <div class="name">Total cleanable</div>
-      <div class="bar"></div>
-      <div class="value">${fmt(d.total_gb)} GB</div>
-    </div>`;
+    <div class="scan-section" id="scan-${catId}">
+      <button class="scan-btn" data-scan="${catId}">Scan ${catId}</button>
+    </div>
+    <div class="actions-section" id="actions-${catId}" hidden>
+      <h3>Actions</h3>
+      <div id="action-list-${catId}"></div>
+    </div>
+  </div>`;
+  container.querySelector(`button[data-scan="${catId}"]`).addEventListener("click", () => scanAndRender(catId));
 }
 
-async function loadReport() {
-  const r = await fetch("/api/report");
-  const d = await r.json();
-  $("#rep-total").textContent = d.total_freed_gb ? fmt(d.total_freed_gb) : "—";
-  $("#rep-runs").textContent  = d.real_runs || "—";
-  $("#rep-max").textContent   = d.max_freed_gb ? fmt(d.max_freed_gb) : "—";
+async function scanAndRender(catId) {
+  const scanBtn = document.querySelector(`button[data-scan="${catId}"]`);
+  scanBtn.textContent = "Scanning…"; scanBtn.disabled = true;
 
-  const realRuns = d.runs.filter(r => r.mode === "real").map(r => r.freed);
-  if (realRuns.length > 0) {
-    const blocks = "▁▂▃▄▅▆▇█";
-    const mn = Math.min(...realRuns), mx = Math.max(...realRuns), rng = mx - mn || 1;
-    $("#sparkline").textContent = realRuns.slice(-40).map(v => blocks[Math.floor((v-mn)/rng*(blocks.length-1))]).join("");
-  } else {
-    $("#sparkline").innerHTML = '<span style="font-size:13px;color:var(--text-dim);letter-spacing:0;font-family:inherit">No real cleanup runs yet. Run one to start tracking.</span>';
+  const [scan, actions] = await Promise.all([
+    fetch(`/api/category/${catId}/scan`).then(r => r.json()),
+    fetch(`/api/category/${catId}/actions`).then(r => r.json()),
+  ]);
+  tabsState.scans[catId] = scan;
+
+  $(`#hdr-${catId}`).textContent = `${scan.icon || ""} ${scan.label}`;
+  $(`#tagline-${catId}`).textContent = scan.tagline || "";
+  $(`#totals-${catId}`).innerHTML = `
+    <span>safe <strong>${fmt(scan.totals.safe || 0)} GB</strong></span>
+    <span>opt-in <strong>${fmt(scan.totals.probably_safe || 0)} GB</strong></span>
+    <span>caution <strong>${fmt(scan.totals.caution || 0)} GB</strong></span>
+    <span>cleanable <strong>${fmt(scan.total_cleanable_gb)} GB</strong></span>
+  `;
+
+  let scanHtml = "";
+  for (const groupName of ["safe", "probably_safe", "caution"]) {
+    const group = scan.groups[groupName];
+    if (!group || !group.paths.length) continue;
+    const meta = CATEGORY_LABELS[groupName];
+    scanHtml += `<h3 class="${groupName}">${meta.label}</h3>
+      <div class="group-note">${meta.note}</div>`;
+    for (const p of group.paths.slice().sort((a,b) => b.size_gb - a.size_gb)) {
+      const sizeLabel = p.size_gb >= 0.01 ? `${fmt(p.size_gb)} GB`
+                       : p.size_kb >= 1024 ? `${Math.round(p.size_kb/1024)} MB`
+                       : p.size_kb > 0     ? `${p.size_kb} KB`
+                       :                     "—";
+      scanHtml += `<div class="path-row${!p.exists ? ' missing' : ''}">
+        <div class="name"><strong>${p.label}</strong><code>${p.path}</code></div>
+        <div class="value">${sizeLabel}</div>
+      </div>`;
+    }
   }
+  scanHtml += `<button class="scan-btn" style="margin-top: 14px" data-scan="${catId}">Re-scan</button>`;
+  $(`#scan-${catId}`).innerHTML = scanHtml;
+  $(`#scan-${catId}`).querySelector(`button[data-scan="${catId}"]`).addEventListener("click", () => scanAndRender(catId));
+
+  let actionsHtml = "";
+  for (const a of actions.actions) {
+    actionsHtml += `<div class="action-card${a.informational ? ' informational' : ''}">
+      <div class="head">
+        <div>
+          <div class="label">${a.label}</div>
+          <div class="desc">${a.desc}</div>
+        </div>
+      </div>
+      ${a.cost ? `<div class="cost">${a.cost}</div>` : ''}
+      ${a.sudo ? `<div class="cost" style="border-left-color: var(--red); color: var(--red); background: rgba(255,69,58,0.08)"><strong>sudo required:</strong> this surfaces info only. Run the printed commands in your Terminal to actually delete.</div>` : ''}
+      <button data-action="${a.id}" data-category="${catId}">${a.informational ? "Show details" : "Run"}</button>
+    </div>`;
+  }
+  $(`#action-list-${catId}`).innerHTML = actionsHtml;
+  $(`#actions-${catId}`).hidden = false;
+  $(`#actions-${catId}`).querySelectorAll("button[data-action]").forEach(btn => {
+    btn.addEventListener("click", () => runAction(btn.dataset.category, btn.dataset.action, btn.parentElement.querySelector(".label").textContent));
+  });
 }
 
-function setBusy(busy) {
-  $$("button").forEach(b => b.disabled = busy);
+async function runAction(catId, actionId, label) {
+  if (!confirm(`Run "${label}"?\n\nRead the cost note above before confirming.`)) return;
+  $$("button[data-action]").forEach(b => b.disabled = true);
+  $$("button[data-scan]").forEach(b => b.disabled = true);
+
+  const out = $("#output");
+  out.innerHTML = ""; out.classList.add("visible");
+  appendLine(`→ ${label}`, "dim");
+
+  const es = new EventSource(`/api/run?category=${encodeURIComponent(catId)}&action=${encodeURIComponent(actionId)}`);
+  es.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.event === "line") {
+      const line = msg.data;
+      let cls = "";
+      if (line.startsWith("▶") || line.startsWith("✓")) cls = "ok";
+      else if (line.startsWith("  cost:")) cls = "warn";
+      else if (line.toLowerCase().includes("error")) cls = "err";
+      appendLine(line, cls);
+    } else if (msg.event === "done") {
+      es.close();
+      const freed = msg.data.freed_gb;
+      appendLine(`✓ Done. Freed ${fmt(freed)} GB.`, "ok");
+      $$("button[data-action]").forEach(b => b.disabled = false);
+      $$("button[data-scan]").forEach(b => b.disabled = false);
+      loadStatus();
+      scanAndRender(catId);
+    }
+  };
+  es.onerror = () => {
+    es.close();
+    appendLine("✗ Connection lost.", "err");
+    $$("button[data-action]").forEach(b => b.disabled = false);
+    $$("button[data-scan]").forEach(b => b.disabled = false);
+  };
 }
 
-function appendLine(text, cls="") {
+function appendLine(text, cls = "") {
   const out = $("#output");
   if (!out.classList.contains("visible")) out.classList.add("visible");
   const span = document.createElement("span");
@@ -473,186 +571,7 @@ function appendLine(text, cls="") {
   out.scrollTop = out.scrollHeight;
 }
 
-async function runCleanup(mode) {
-  setBusy(true);
-  $("#output").innerHTML = "";
-  $("#output").classList.add("visible");
-  appendLine(`→ ${mode === "dry" ? "Dry run" : mode === "force" ? "Force clean" : "Cleaning"}…`, "dim");
-
-  const es = new EventSource(`/api/stream?mode=${mode}`);
-  es.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
-    if (msg.event === "status") {
-      // initial
-    } else if (msg.event === "line") {
-      const line = msg.data;
-      let cls = "";
-      if (line.startsWith("[")) cls = "ok";
-      else if (line.includes("DRY RUN")) cls = "warn";
-      else if (line.includes("OK")) cls = "ok";
-      appendLine(line, cls);
-    } else if (msg.event === "done") {
-      es.close();
-      if (mode === "dry") {
-        appendLine(`✓ Dry run complete`, "ok");
-      } else {
-        const freed = msg.data.freed_gb;
-        appendLine(`✓ Done. Freed ${fmt(freed)} GB.`, "ok");
-      }
-      setBusy(false);
-      loadStatus();
-      loadSizes();
-      loadReport();
-    }
-  };
-  es.onerror = () => {
-    es.close();
-    appendLine("✗ Connection lost.", "err");
-    setBusy(false);
-  };
-}
-
-$("#btn-dry").addEventListener("click",   () => runCleanup("dry"));
-$("#btn-real").addEventListener("click",  () => runCleanup("real"));
-$("#btn-force").addEventListener("click", () => {
-  if (!confirm("Force clean now? This will delete cache files even if your disk is healthy.")) return;
-  runCleanup("force");
-});
-
-// Deep-scan
-let deepActionsCache = null;
-async function loadDeepActions() {
-  if (deepActionsCache) return deepActionsCache;
-  const r = await fetch("/api/deep-actions");
-  deepActionsCache = (await r.json()).actions;
-  return deepActionsCache;
-}
-
-async function runDeepScan() {
-  setBusy(true);
-  $("#deep-results").style.display = "block";
-  $("#deep-results").innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:8px">Scanning ~15 Xcode-adjacent locations…</div>';
-  $("#btn-deep-scan").textContent = "Scanning…";
-
-  const [d, actions] = await Promise.all([
-    fetch("/api/deep-scan").then(r => r.json()),
-    loadDeepActions(),
-  ]);
-
-  const categoryMeta = {
-    safe: {
-      label: "✓ Safe to delete",
-      note: "These are the same caches the basic 'Clean now' button handles. Listed here for completeness.",
-    },
-    probably_safe: {
-      label: "⚠ Probably safe — opt in",
-      note: "Bigger reclaim, but you'll lose installed simulator apps + their data, CocoaPods caches, etc. Pick which to clean.",
-    },
-    caution: {
-      label: "⛔ Caution — review manually",
-      note: "Never auto-deleted. Archives are needed for App Store crash symbolication. Device backups are irreplaceable. Provisioning profiles can be re-downloaded but are fiddly.",
-    },
-  };
-
-  // Map each "probably_safe" path to its deep-action id (label-matched, simple heuristic)
-  const actionByLabel = {
-    "Simulator app data (all)":  "erase-simulators",
-    "Instruments traces":        "clear-instruments",
-    "CocoaPods cache":           "clear-cocoapods",
-    "CocoaPods specs":           "clear-cocoapods",
-  };
-  // Also: a single "Clear Xcode extras" button at the bottom of "safe" group
-  const safeExtrasAction = "clear-extras";
-
-  let html = "";
-  for (const cat of d.categories) {
-    const meta = categoryMeta[cat.name];
-    if (!meta) continue;
-    html += `<div class="deep-category ${cat.name}">
-      <div class="deep-category-header">
-        <span>${meta.label}</span>
-        <span class="deep-category-total">${fmt(cat.total_gb)} GB total</span>
-      </div>
-      <div class="deep-note">${meta.note}</div>
-      <div class="deep-paths">`;
-    for (const p of cat.paths.slice().sort((a,b) => b.size_gb - a.size_gb)) {
-      const sizeLabel = p.size_gb >= 0.1 ? `${fmt(p.size_gb)} GB`
-                       : p.size_kb >= 1024 ? `${fmt(p.size_kb/1024, 0)} MB`
-                       : `${p.size_kb} KB`;
-      html += `<div class="deep-path">
-        <div class="name">${p.label}<span class="path-detail">${p.path}</span></div>
-        <div class="value">${sizeLabel}</div>
-      </div>`;
-    }
-    html += `</div>`;
-    // Action buttons per category
-    if (cat.name === "safe" && cat.total_gb > 0.01) {
-      html += `<div class="deep-actions">
-        <button data-action="${safeExtrasAction}">Clear Xcode extras<span class="sub">Snapshots · IB · Logs · Products</span></button>
-      </div>`;
-    }
-    if (cat.name === "probably_safe") {
-      html += `<div class="deep-actions">`;
-      const seen = new Set();
-      for (const p of cat.paths) {
-        const aid = actionByLabel[p.label];
-        if (aid && !seen.has(aid) && p.size_gb > 0.001) {
-          const action = actions.find(a => a.id === aid);
-          if (action) {
-            html += `<button data-action="${aid}">${action.label}<span class="sub">${action.desc.length > 60 ? action.desc.slice(0,60) + '…' : action.desc}</span></button>`;
-            seen.add(aid);
-          }
-        }
-      }
-      html += `</div>`;
-    }
-    html += `</div>`;
-  }
-
-  $("#deep-results").innerHTML = html;
-  $("#btn-deep-scan").textContent = "Re-run deep scan";
-
-  // Wire up action buttons
-  $$('#deep-results button[data-action]').forEach(btn => {
-    btn.addEventListener("click", () => runDeepAction(btn.dataset.action, btn.textContent.trim()));
-  });
-
-  setBusy(false);
-}
-
-async function runDeepAction(actionId, label) {
-  if (!confirm(`Run "${label}"?
-
-This is irreversible. Sure?`)) return;
-  setBusy(true);
-  $("#output").innerHTML = "";
-  $("#output").classList.add("visible");
-  appendLine(`→ ${label}`, "dim");
-  const es = new EventSource(`/api/deep-action?id=${encodeURIComponent(actionId)}`);
-  es.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
-    if (msg.event === "line") {
-      appendLine(msg.data);
-    } else if (msg.event === "done") {
-      es.close();
-      const freed = msg.data.freed_gb;
-      appendLine(`✓ Done. Freed ${fmt(freed)} GB.`, "ok");
-      setBusy(false);
-      loadStatus(); loadSizes(); loadReport();
-      runDeepScan();   // refresh the deep view too
-    }
-  };
-  es.onerror = () => {
-    es.close();
-    appendLine("✗ Connection lost.", "err");
-    setBusy(false);
-  };
-}
-
-$("#btn-deep-scan").addEventListener("click", runDeepScan);
-
-// Initial load + periodic status refresh
-loadStatus(); loadSizes(); loadReport();
+loadStatus(); loadTabs();
 setInterval(loadStatus, 15000);
 </script>
 </body>

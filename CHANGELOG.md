@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.7.0 — 2026-05-12
+
+### Major: from one tool to four tabs
+
+This release turns the web UI from "Xcode cleanup" into a multi-category cleanup hub. Four tabs, each with its own scan + actions + cost-of-deletion notes:
+
+- **🛠 Xcode** (existing, reorganized as one tab)
+- **🤖 LLMs** — with sub-tabs for Claude, Cursor, ChatGPT
+- **🧹 Apps** — browsers (Chrome/Safari/Firefox/Brave/Arc), chat apps (Slack/Discord/Zoom/Teams), Spotify, Homebrew downloads, `~/Downloads/*.dmg`, Trash
+- **💾 System** — icon cache, Spotlight parser, help/CloudKit/iCloud Drive caches, Time Machine local snapshots, diagnostic reports, old macOS installers
+
+### Added
+- **`web/cleaners.py`** — single source of truth for all categories, paths, actions, and cost annotations. ~370 LOC, ~70 paths, 20+ actions across 6 categories (xcode, llms-claude, llms-cursor, llms-chatgpt, apps, system).
+- **Cost annotations** — every action has a `cost` field shown in the UI with an orange "Cost of doing this:" banner. Tells the user *exactly* what they lose. Examples: "First build after cleanup takes ~30s longer", "Chrome reloads pages from origin on next visit. Bookmarks/passwords safe", "Hard reset: you sign out of Claude Desktop and re-sign-in. Cloud conversation history re-syncs."
+- **Three safety tiers per tab**: ✓ Safe (regenerable, low-cost) / ⚠ Probably safe (opt-in, bigger reclaim) / ⛔ Caution (surfaces sizes only, never auto-deletes).
+- **`reset-claude-desktop` action** — explicit opt-in for the (often 10+ GB) Claude Desktop app state with full cost disclosure.
+- **Time Machine local snapshot deletion** — finds and clears local APFS snapshots (typically 5–20 GB of "purgeable" disk).
+- **Old macOS installer detection** + sudo-required actions surfaced informationally (web UI doesn't elevate).
+- **Tabbed UI** in `web/index.html` — top-level tabs with sub-tabs (LLMs has 3). Vanilla JS, no framework.
+- **Per-run logging** of UI-triggered cleanups to the CSV history (`mode=real-ui-<category>-<action>`).
+
+### Changed
+- **Server refactored** — `web/server.py` now imports `cleaners.py` for all category data. Endpoints unified under `/api/category/<id>/{scan,actions}` and `/api/run?category=&action=`. Old `/api/sizes`, `/api/deep-scan` endpoints removed (no external users — clean break).
+- **README headline broadened** — "Reclaim 10–40 GB your Mac is hoarding — Xcode, LLM tools, apps, system" (was Xcode-only).
+- Footer tagline now: "factory-fresh without losing your stuff."
+
+### Philosophy
+The app's design rule, baked into the UI: tell the user what each cleanup costs before they click. Cleanup actions are categorized by reversibility and impact. The goal is a fast, clean computer — not a factory wipe.
+
 ## v0.6.0 — 2026-05-12
 
 ### Added
