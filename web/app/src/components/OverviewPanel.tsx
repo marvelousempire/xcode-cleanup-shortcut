@@ -87,7 +87,7 @@ export function OverviewPanel() {
 
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
         {tabs.filter((t) => !t.meta).map((tab, idx) => {
-          let cleanableGb = 0, safe = 0, optin = 0, caution = 0;
+          let safe = 0, optin = 0, caution = 0;
           let tagline = "";
           let scanned = false;
           if (tab.subcategories) {
@@ -95,7 +95,6 @@ export function OverviewPanel() {
               const s = scans[sub]?.scan;
               if (!s) continue;
               scanned = true;
-              cleanableGb += s.total_cleanable_gb || 0;
               safe += s.totals.safe || 0;
               optin += s.totals.probably_safe || 0;
               caution += s.totals.caution || 0;
@@ -105,7 +104,6 @@ export function OverviewPanel() {
             const s = scans[tab.category]?.scan;
             if (s) {
               scanned = true;
-              cleanableGb = s.total_cleanable_gb || 0;
               safe = s.totals.safe || 0;
               optin = s.totals.probably_safe || 0;
               caution = s.totals.caution || 0;
@@ -124,29 +122,34 @@ export function OverviewPanel() {
               className="group w-full rounded-md border border-border/15 p-4 px-4.5 text-left transition-colors hover:border-accent shadow-sm"
               style={{ background: "hsl(var(--bg-2) / 0.78)" }}
             >
-              <div className="mb-2.5 flex items-center gap-2.5">
+              <div className="mb-2 flex items-center gap-2.5">
                 <TabIcon tabId={tab.id} className="h-4.5 w-4.5 text-accent" />
                 <span className="text-[14px] font-semibold tracking-[-0.005em]">{stripGlyph(tab.label)}</span>
               </div>
-              <div className={cn(
-                "mb-1 text-[28px] font-bold tabular leading-[1.1] tracking-[-0.02em]",
-                cleanableGb >= 0.01 ? "text-accent" : "text-fg-faint",
-              )}>
-                {cleanableGb >= 0.01 ? (
-                  <>{fmt(cleanableGb)} <span className="text-[14px] font-medium text-fg-dim">GB cleanable</span></>
-                ) : scanned ? (
-                  <span className="text-[14px] font-medium">nothing to clean</span>
-                ) : (
-                  <span className="text-[14px] font-medium">scanning…</span>
-                )}
-              </div>
-              <div className="mb-3 text-[12px] leading-[1.5] text-fg-dim">{tagline || "—"}</div>
-              <div className="flex flex-wrap gap-3 text-[11px] tabular text-fg-dim">
-                <DotPill tone="safe">safe <strong className="font-semibold text-fg">{fmt(safe)}</strong></DotPill>
-                <DotPill tone="warn">opt-in <strong className="font-semibold text-fg">{fmt(optin)}</strong></DotPill>
-                <DotPill tone="danger">caution <strong className="font-semibold text-fg">{fmt(caution)}</strong></DotPill>
-              </div>
-              <div className="mt-2.5 flex items-center justify-end gap-1 text-[11px] text-fg-faint transition-colors group-hover:text-accent">
+              <div className="mb-3.5 text-[12px] leading-[1.5] text-fg-dim">{tagline || "—"}</div>
+              {!scanned ? (
+                <div className="text-[13px] font-medium text-fg-faint">scanning…</div>
+              ) : safe < 0.001 && optin < 0.001 && caution < 0.001 ? (
+                <div className="text-[13px] font-medium text-fg-faint">nothing to clean</div>
+              ) : (
+                <>
+                  <div className="flex items-baseline gap-1.5 font-bold tabular tracking-[-0.015em] leading-[1.25] text-safe">
+                    <span className="text-[22px]">{fmt(safe)}</span>
+                    <span className="text-[12px] font-medium text-fg-dim">GB safe</span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5 font-bold tabular tracking-[-0.015em] leading-[1.25] text-warn">
+                    <span className="text-[22px]">{fmt(optin)}</span>
+                    <span className="text-[12px] font-medium text-fg-dim">GB opt-in</span>
+                  </div>
+                  {caution >= 0.01 && (
+                    <div className="mt-1.5 flex items-baseline gap-1.5 text-[11px] font-medium text-fg-faint">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-danger opacity-70" />
+                      <span><strong className="font-semibold">{fmt(caution)}</strong> GB caution (surface only)</span>
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="mt-3 flex items-center justify-end gap-1 text-[11px] text-fg-faint transition-colors group-hover:text-accent">
                 Open <ChevronRight className="h-3 w-3" />
               </div>
             </motion.button>
@@ -157,21 +160,3 @@ export function OverviewPanel() {
   );
 }
 
-function DotPill({ tone, children }: { tone: "safe" | "warn" | "danger"; children: React.ReactNode }) {
-  return (
-    <span className={cn(
-      "inline-flex items-center gap-1.5",
-      tone === "safe" && "text-safe",
-      tone === "warn" && "text-warn",
-      tone === "danger" && "text-danger",
-    )}>
-      <span className={cn(
-        "h-1.5 w-1.5 rounded-full",
-        tone === "safe" && "bg-safe",
-        tone === "warn" && "bg-warn",
-        tone === "danger" && "bg-danger",
-      )} />
-      {children}
-    </span>
-  );
-}
