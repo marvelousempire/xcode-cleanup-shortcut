@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.15.0] — 2026-05-12 15:59:58 Eastern · *full audit pass — pie polish, sidebar donuts, live SSE channel, terminal search, onboarding*
+
+The maintainer said "knock out the rest of the gaps and elevations." Everything from the v0.14.2 audit landed in one release except Phase 4 (production build → Python server), which is its own follow-up because it changes the deploy story.
+
+### Added — pie chart (elevations A, B, C, D + gap 7)
+- **Hover tooltip on every slice.** Cursor-following chip showing `{category} · {GB} · {N paths}`. Pulls the path count straight from the scan's `groups[tier].paths` so the number is real.
+- **Click-and-drill animation.** Clicking a slice (or its legend entry) `transform: scale(1.08)`'s the slice outward for 160ms before the tab transition runs. Reads as cause-and-effect instead of an instant jump.
+- **Spring-tween on slice angle changes.** When a scan completes and the layout shifts, the SVG paths tween via Motion's `M.animate` from their previous angles to the new ones over 600ms (cubic-bezier 0.22, 1, 0.36, 1). New slices start collapsed (start === end) at their insertion point and grow from nothing.
+- **Ghost slice + center number tween on cleans.** When the grand total *decreases* (something got cleaned), the previous pie layout renders as a 55%-opacity ghost group underneath, then fades to 0 opacity over 550ms. Simultaneously the center number tweens from its old value to the new value via `M.animate`. Visceral confirmation that the clean worked.
+- **`arcPath` 100% edge case fixed.** A single category at 100% used to draw `M cx cy L sx sy A r r 0 1 1 sx sy Z` (start === end) which renders as nothing in some SVG engines. Now detected and replaced with a single `<circle>` element of the slice's color.
+- **`#pie-tooltip`** is appended to `<body>` once and reused (no re-create churn on hover).
+
+### Added — sidebar mini-donuts (elevation H)
+- **Every left-nav tab now has a 16x16 donut** rendered inline next to its GB stat. Three concentric stroke-dasharray arcs visualize the safe/opt-in/caution split for that tab. Hidden until the tab has scanned data so first-load doesn't show six empty grey rings.
+- **`paintVtabMiniDonut()`** is called from `updateVtabStats()` so the donuts refresh on every scan completion alongside the GB labels.
+
+### Added — `/api/live` SSE channel (gap 2 + elevation F)
+- **New server endpoint.** `GET /api/live` opens a long-lived SSE connection that pushes:
+  - `{event: "status", data: <get_status() payload>}` on disk-status deltas (polls server-side every 2s, only emits when the JSON signature changes).
+  - `{event: "running", data: [{token, category, kind, started_at}, ...]}` on changes to the running-cleans registry.
+- **`:keepalive` SSE comment** every 25s so proxies/middleboxes don't idle-close the connection.
+- **Auto-reconnect with backoff** on the client side (1s → 1.6s → 2.6s → … capped at 15s) so a server restart heals without a hard reload.
+- **The 15s `setInterval(loadStatus, 15000)` poll is gone.** The hero free-GB number now ticks in real time when *anything* outside the app frees disk (e.g. macOS purging a snapshot, another browser tab running a clean, a Time Machine sweep).
+
+### Added — running-cleans widget (elevation G)
+- **New widget in the app header** (`#running-widget`). Hidden when nothing is running. When one or more clean SSE streams are in flight, shows: a spinning ring + "**N** cleans running" + per-category colored dots (using the same `PIE_COLORS` palette). Each dot tooltips the category id + active count.
+- **Pulsing teal box-shadow** at 1.8s cadence so it reads as live without becoming visual noise.
+- **Server-side `_RUNNING_CLEANS` registry** with a thread lock. Every `_stream_clean_*` and `_stream_action` method `_register_clean`s on entry and `_unregister_clean`s in a `finally` block — exception-safe.
+
+### Added — terminal search + ANSI (elevation E)
+- **Search box in the Activity pane toolbar** (`#terminal-search`). Filters visible lines as you type — non-matching lines get `.filtered-out` (opacity 0.18) instead of being removed, so the line numbering stays consistent. Matches are highlighted with a yellow `.hl` span.
+- **`Ctrl+F` / `Cmd+F` global shortcut** focuses the search box when the Overview tab is active. Escape clears the filter and blurs.
+- **`Clear` button** next to the search empties both terminals + resets the filter to the idle placeholder.
+- **Minimal ANSI escape parser.** Handles `\e[3xm` / `\e[9xm` fg colors + `\e[1m` bold + `\e[0m` reset. Maps codes to `.ansi-fg-red/green/yellow/blue/magenta/cyan/gray` and `.ansi-bold` CSS classes. 256-color and RGB modes pass through as plain text. Covers 95% of `rm -rf`, `docker`, and `pip` output.
+- **`parseAnsi()` + `buildLineWithHighlight()` helpers** decouple ANSI tokenizing from search-match wrapping so both work together without double-escaping.
+
+### Added — first-visit onboarding coachmark (elevation I)
+- **Single coachmark** that pulses an accent-tinted box-shadow around the Overview pie pane the first time the new layout loads. Label: *"New: click a slice to drill in"* on a teal pill above the pane.
+- **Dismisses** on a click on the pie or legend, OR after 12s, whichever comes first. Sets `cleanupHub.coachmark.v15` in `localStorage` so it never shows again.
+- **Re-anchors on window resize** so it stays aligned with the pie pane through layout shifts.
+
+### Changed
+- **`renderOverviewGrid()` wraps `renderPie()` in try/catch** so a pie-chart bug never aborts the per-category card grid render.
+- **`paintVtabMiniDonut()` uses `setAttribute("hidden", "")` / `removeAttribute("hidden")`** instead of the JS `.hidden` property — the latter is unreliable on SVG elements in some browsers.
+- **`appendLine()` stores raw text on `dataset.raw`** so the search filter can re-run against the original (post-ANSI-strip) text without re-parsing the rendered children.
+- **`applyTerminalFilter()`** re-renders existing lines through `buildLineWithHighlight()` when the query changes, so highlight spans stay in sync.
+
+### Why
+Maintainer: *"merge everything commit and push first and then we knock out the rest of the gaps and eleveations."* PRs #8 + #9 merged (v0.14.1 + v0.14.2 on `main`). This release is the post-merge audit pass — every visual/UX gap and elevation surfaced after v0.14.2 shipped in one go, except Phase 4 which is a deploy-layer refactor.
+
 ## [0.14.2] — 2026-05-12 15:05:24 Eastern · *Overview 3-pane top — hero · pie · terminal — plus copyright footer*
 
 ### Added

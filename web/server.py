@@ -18,12 +18,14 @@ Pure Python stdlib. No pip install. macOS only.
 
 import csv
 import http.server
+import itertools
 import json
 import os
 import shutil
 import socketserver
 import subprocess
 import sys
+import threading
 import webbrowser
 import concurrent.futures
 import socket
@@ -38,6 +40,34 @@ import cleaners  # noqa: E402
 REPO_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR  = REPO_DIR / "web"
 PREFERRED_PORT = int(os.environ.get("XCC_UI_PORT", "8765"))
+
+# ── Running-cleans registry (v0.15.0) ──────────────────────────────────────
+# Each in-flight clean stream registers itself here at start and unregisters at
+# done. The /api/live SSE stream snapshots this dict on every tick so the UI
+# can show "N cleans running" + per-category icons in the header. Protected by
+# a lock because ThreadingTCPServer dispatches each request to its own thread.
+_RUNNING_LOCK = threading.Lock()
+_RUNNING_CLEANS: dict = {}  # token -> {"category", "kind", "started_at"}
+_token_counter = itertools.count(1)
+
+def _next_token() -> str:
+    return f"t{next(_token_counter)}"
+
+def _register_clean(token: str, category: str, kind: str):
+    with _RUNNING_LOCK:
+        _RUNNING_CLEANS[token] = {
+            "category": category,
+            "kind": kind,
+            "started_at": time.time(),
+        }
+
+def _unregister_clean(token: str):
+    with _RUNNING_LOCK:
+        _RUNNING_CLEANS.pop(token, None)
+
+def _snapshot_running() -> list:
+    with _RUNNING_LOCK:
+        return [{"token": t, **info} for t, info in _RUNNING_CLEANS.items()]
 PORT_RANGE     = 20      # try preferred .. preferred + 19 before falling back
 HOST           = "127.0.0.1"   # localhost only
 
@@ -251,8 +281,57 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/api/clean-everything":
             tier = query.get("tier", ["safe"])[0]
             return self._stream_clean_everything(tier)
+        if path == "/api/live":
+            return self._stream_live()
 
         self.send_error(404)
+
+    # ── /api/live — long-lived SSE that pushes disk + running-cleans deltas ───
+    # Replaces the client's 15s poll. Emits two named events:
+    #   {event:"status",  data: <get_status() payload>}
+    #   {event:"running", data: [{token,category,kind,started_at}, ...]}
+    # Only sends when the signature changes (so quiet periods are quiet). Also
+    # writes a `:keepalive` SSE comment every ~25s so proxies/middleboxes don't
+    # idle-close the connection.
+    def _stream_live(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+        last_status_sig = None
+        last_running_sig = None
+        last_keepalive = time.time()
+        # Send initial snapshots immediately so the client doesn't sit on
+        # placeholder data until the first tick.
+        try:
+            status = get_status()
+            self._send_sse({"event": "status", "data": status})
+            last_status_sig = json.dumps(status, sort_keys=True)
+            running = _snapshot_running()
+            self._send_sse({"event": "running", "data": running})
+            last_running_sig = json.dumps(running, sort_keys=True)
+            while True:
+                time.sleep(2.0)
+                status = get_status()
+                sig = json.dumps(status, sort_keys=True)
+                if sig != last_status_sig:
+                    self._send_sse({"event": "status", "data": status})
+                    last_status_sig = sig
+                running = _snapshot_running()
+                r_sig = json.dumps(running, sort_keys=True)
+                if r_sig != last_running_sig:
+                    self._send_sse({"event": "running", "data": running})
+                    last_running_sig = r_sig
+                if time.time() - last_keepalive > 25:
+                    try:
+                        self.wfile.write(b":keepalive\n\n")
+                        self.wfile.flush()
+                    except (BrokenPipeError, ConnectionResetError):
+                        return
+                    last_keepalive = time.time()
+        except (BrokenPipeError, ConnectionResetError):
+            return
 
     def _serve_file(self, name: str, ctype: str):
         path = WEB_DIR / name
@@ -305,6 +384,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         import shlex
         cmd = ["bash", "-c", f"rm -rf {shlex.quote(expanded)}/* 2>&1; true"]
 
+        token = _next_token()
+        _register_clean(token, category_id, "clean-path")
         try:
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
             for line in proc.stdout:
@@ -320,6 +401,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._log_run(category_id, f"clean-path:{target_path}", freed, before["free_gb"], after["free_gb"])
         except (BrokenPipeError, ConnectionResetError):
             pass
+        finally:
+            _unregister_clean(token)
 
     def _stream_clean_all(self, category_id: str, tier: str):
         """Clean every path in the given tier (safe or probably_safe) for the category."""
@@ -348,25 +431,29 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self._send_sse({"event": "line", "data": f"▶ Clean all {tier} paths in {cat['label']} ({len(items)} paths)"})
 
         import shlex
-        for label, path in items:
-            expanded = os.path.expanduser(path)
-            self._send_sse({"event": "line", "data": f"  cleaning: {label}"})
-            try:
-                subprocess.run(
-                    ["bash", "-c", f"rm -rf {shlex.quote(expanded)}/* 2>/dev/null; true"],
-                    timeout=60,
-                )
-            except subprocess.TimeoutExpired:
-                self._send_sse({"event": "line", "data": f"    (timeout — skipped)"})
-
-        after = get_status()
-        freed = round(after["free_gb"] - before["free_gb"], 1)
-        self._send_sse({
-            "event": "done",
-            "data": {"code": 0, "before_gb": before["free_gb"],
-                     "after_gb": after["free_gb"], "freed_gb": freed},
-        })
-        self._log_run(category_id, f"clean-all-{tier}", freed, before["free_gb"], after["free_gb"])
+        token = _next_token()
+        _register_clean(token, category_id, f"clean-all-{tier}")
+        try:
+            for label, path in items:
+                expanded = os.path.expanduser(path)
+                self._send_sse({"event": "line", "data": f"  cleaning: {label}"})
+                try:
+                    subprocess.run(
+                        ["bash", "-c", f"rm -rf {shlex.quote(expanded)}/* 2>/dev/null; true"],
+                        timeout=60,
+                    )
+                except subprocess.TimeoutExpired:
+                    self._send_sse({"event": "line", "data": f"    (timeout — skipped)"})
+            after = get_status()
+            freed = round(after["free_gb"] - before["free_gb"], 1)
+            self._send_sse({
+                "event": "done",
+                "data": {"code": 0, "before_gb": before["free_gb"],
+                         "after_gb": after["free_gb"], "freed_gb": freed},
+            })
+            self._log_run(category_id, f"clean-all-{tier}", freed, before["free_gb"], after["free_gb"])
+        finally:
+            _unregister_clean(token)
 
     def _stream_clean_everything(self, tier: str):
         """Clean every <tier> path across every category in one streamed pass."""
@@ -386,34 +473,39 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         import shlex
         total_paths = 0
-        for cat_id, cat in cleaners.CATEGORIES.items():
-            items = cat["groups"].get(tier, [])
-            if not items:
-                continue
-            self._send_sse({"event": "line", "data": f""})
-            self._send_sse({"event": "line", "data": f"[{cat['label']}]"})
-            for label, path in items:
-                expanded = os.path.expanduser(path)
-                self._send_sse({"event": "line", "data": f"  cleaning: {label}"})
-                try:
-                    subprocess.run(
-                        ["bash", "-c", f"rm -rf {shlex.quote(expanded)}/* 2>/dev/null; true"],
-                        timeout=60,
-                    )
-                    total_paths += 1
-                except subprocess.TimeoutExpired:
-                    self._send_sse({"event": "line", "data": f"    (timeout — skipped)"})
+        token = _next_token()
+        _register_clean(token, "ALL", f"clean-everything-{tier}")
+        try:
+            for cat_id, cat in cleaners.CATEGORIES.items():
+                items = cat["groups"].get(tier, [])
+                if not items:
+                    continue
+                self._send_sse({"event": "line", "data": f""})
+                self._send_sse({"event": "line", "data": f"[{cat['label']}]"})
+                for label, path in items:
+                    expanded = os.path.expanduser(path)
+                    self._send_sse({"event": "line", "data": f"  cleaning: {label}"})
+                    try:
+                        subprocess.run(
+                            ["bash", "-c", f"rm -rf {shlex.quote(expanded)}/* 2>/dev/null; true"],
+                            timeout=60,
+                        )
+                        total_paths += 1
+                    except subprocess.TimeoutExpired:
+                        self._send_sse({"event": "line", "data": f"    (timeout — skipped)"})
 
-        after = get_status()
-        freed = round(after["free_gb"] - before["free_gb"], 1)
-        self._send_sse({"event": "line", "data": ""})
-        self._send_sse({"event": "line", "data": f"✓ Done. Cleaned {total_paths} paths across {len(cleaners.CATEGORIES)} categories."})
-        self._send_sse({
-            "event": "done",
-            "data": {"code": 0, "before_gb": before["free_gb"],
-                     "after_gb": after["free_gb"], "freed_gb": freed},
-        })
-        self._log_run("ALL", f"clean-everything-{tier}", freed, before["free_gb"], after["free_gb"])
+            after = get_status()
+            freed = round(after["free_gb"] - before["free_gb"], 1)
+            self._send_sse({"event": "line", "data": ""})
+            self._send_sse({"event": "line", "data": f"✓ Done. Cleaned {total_paths} paths across {len(cleaners.CATEGORIES)} categories."})
+            self._send_sse({
+                "event": "done",
+                "data": {"code": 0, "before_gb": before["free_gb"],
+                         "after_gb": after["free_gb"], "freed_gb": freed},
+            })
+            self._log_run("ALL", f"clean-everything-{tier}", freed, before["free_gb"], after["free_gb"])
+        finally:
+            _unregister_clean(token)
 
     def _stream_action(self, category_id: str, action_id: str):
         cat = cleaners.CATEGORIES.get(category_id)
@@ -446,6 +538,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._send_sse({"event": "done", "data": {"code": 0, "freed_gb": 0}})
             return
 
+        token = _next_token()
+        kind = "action-info" if action.get("informational") else "action"
+        _register_clean(token, category_id, kind)
         try:
             proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -473,6 +568,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         except (BrokenPipeError, ConnectionResetError):
             pass
+        finally:
+            _unregister_clean(token)
 
     def _log_run(self, category_id, action_id, freed_gb, before_gb, after_gb):
         try:

@@ -140,6 +140,40 @@
     color: var(--accent);
     flex-shrink: 0;
   }
+  /* Running-cleans widget — appears in the header when one or more SSE clean
+     streams are active. Pulses a small spinner + shows category dots. */
+  .running-widget {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-left: 14px;
+    padding: 4px 10px 4px 8px;
+    border-radius: 999px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    animation: running-pulse 1.8s var(--ease-in-out) infinite;
+  }
+  @keyframes running-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 hsl(var(--accent-h, 175 60% 40%) / 0.0); }
+    50%      { box-shadow: 0 0 0 4px hsl(var(--accent-h, 175 60% 40%) / 0.10); }
+  }
+  .running-widget .running-spinner {
+    width: 10px; height: 10px;
+    border: 1.5px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 999px;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .running-widget .running-label strong { color: var(--text); font-weight: 600; }
+  .running-widget .running-dots {
+    display: inline-flex; gap: 3px; margin-left: 2px;
+  }
+  .running-widget .running-dot {
+    width: 6px; height: 6px; border-radius: 999px;
+  }
+
   header.app-header h1 {
     margin: 0;
     font-size: 17px; font-weight: 600;
@@ -323,6 +357,133 @@
     transition: background var(--d-quick) var(--ease-out);
   }
   .pie-legend .legend-item:hover { background: var(--bg-3); color: var(--text); }
+
+  /* Slice hover affordance — slight outward bump on the underlying path. */
+  .pie-svg .pie-slices path,
+  .pie-svg .pie-slices circle {
+    transition: transform 0.18s var(--ease-out), filter 0.18s var(--ease-out);
+    transform-origin: 50px 50px;
+  }
+  .pie-svg .pie-slices path:hover,
+  .pie-svg .pie-slices circle:hover {
+    transform: scale(1.025);
+    filter: brightness(1.06);
+  }
+
+  /* Pie tooltip — fixed-positioned chip that follows the cursor on slice hover. */
+  .pie-tooltip {
+    position: fixed; top: 0; left: 0;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    font-size: 11px; line-height: 1.2;
+    color: var(--text);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 14px hsl(0 0% 0% / 0.18);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 1000;
+    transition: opacity 0.12s var(--ease-out);
+    will-change: transform, opacity;
+    font-variant-numeric: tabular-nums;
+  }
+  .pie-tooltip-dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+
+  /* First-visit onboarding coachmark (elevation I). Tiny accent pulse around
+     the pie pane the first time the new layout loads. Dismissed on any click
+     or after 12s, then never shown again (localStorage flag). */
+  .coachmark {
+    position: fixed; z-index: 999;
+    pointer-events: none;
+    border: 2px solid var(--accent);
+    border-radius: var(--r-lg);
+    box-shadow: 0 0 0 6px hsl(var(--accent-h, 175 60% 40%) / 0.18);
+    animation: coach-pulse 1.8s var(--ease-in-out) infinite;
+    transition: opacity 0.35s var(--ease-out);
+  }
+  @keyframes coach-pulse {
+    0%, 100% { box-shadow: 0 0 0 4px hsl(var(--accent-h, 175 60% 40%) / 0.18); }
+    50%      { box-shadow: 0 0 0 10px hsl(var(--accent-h, 175 60% 40%) / 0.08); }
+  }
+  .coachmark .coach-label {
+    position: absolute;
+    top: -34px; left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 11px;
+    background: var(--accent);
+    color: white;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px hsl(0 0% 0% / 0.18);
+  }
+  .coachmark .coach-label::after {
+    content: "";
+    position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%) rotate(45deg);
+    width: 8px; height: 8px; background: var(--accent);
+  }
+
+  /* Activity terminal search bar (elevation E) */
+  .terminal-pane .terminal-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
+  .terminal-pane .terminal-search {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #F4F4F2;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 4px;
+  }
+  .terminal-pane .terminal-search::placeholder { color: #6B6B73; }
+  .terminal-pane .terminal-clear {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #9B9BA3;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: color var(--d-quick) var(--ease-out), border-color var(--d-quick) var(--ease-out);
+  }
+  .terminal-pane .terminal-clear:hover { color: #F4F4F2; border-color: rgba(255,255,255,0.32); }
+  .terminal-pane .terminal-body .out-line.filtered-out {
+    opacity: 0.18;
+    transition: opacity 0.18s var(--ease-out);
+  }
+  .terminal-pane .terminal-body .out-line .hl {
+    background: hsl(45 100% 50% / 0.32);
+    color: #F4F4F2;
+    padding: 0 1px;
+    border-radius: 2px;
+  }
+
+  /* Minimal ANSI color classes — covers \e[3xm + \e[1m. */
+  .ansi-fg-red    { color: #EF4444; }
+  .ansi-fg-green  { color: #22C55E; }
+  .ansi-fg-yellow { color: #FBBF24; }
+  .ansi-fg-blue   { color: #60A5FA; }
+  .ansi-fg-magenta{ color: #C084FC; }
+  .ansi-fg-cyan   { color: #22D3EE; }
+  .ansi-fg-gray   { color: #9B9BA3; }
+  .ansi-bold      { font-weight: 700; }
+
+  /* Sidebar mini-donut — tiny per-tab usage breakdown next to the GB stat. */
+  .vtab-mini-donut {
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+    opacity: 0.92;
+    margin-left: 4px;
+  }
+  .vtab-mini-donut .vtab-track { fill: none; stroke: hsl(var(--border-h, 220 6% 80%) / 0.6); stroke-width: 4; }
+  .vtab-mini-donut .vtab-arc   { fill: none; stroke-linecap: butt; stroke-width: 4; }
   .pie-legend .legend-dot {
     width: 8px; height: 8px; border-radius: 999px;
     flex-shrink: 0;
@@ -1070,6 +1231,11 @@
       <path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>
     </svg>
     <h1>Cleanup Hub</h1>
+    <div class="running-widget" id="running-widget" hidden aria-live="polite">
+      <span class="running-spinner" aria-hidden="true"></span>
+      <span class="running-label" id="running-label">—</span>
+      <span class="running-dots" id="running-dots"></span>
+    </div>
     <button class="badge badge-btn" id="version" title="Click to view changelog">…</button>
   </header>
 
@@ -1294,7 +1460,7 @@ async function loadTabs() {
     btn.className = "vtab";
     btn.dataset.tab = tab.id;
     const label = stripLeadingGlyph(tab.label);
-    btn.innerHTML = `${iconFor(tab.id)}<span class="vtab-text">${label}</span><span class="vtab-stat" id="vtab-stat-${tab.id}"></span>`;
+    btn.innerHTML = `${iconFor(tab.id)}<span class="vtab-text">${label}</span><span class="vtab-stat" id="vtab-stat-${tab.id}"></span><svg class="vtab-mini-donut" id="vtab-donut-${tab.id}" viewBox="0 0 32 32" aria-hidden="true" hidden><circle class="vtab-track" cx="16" cy="16" r="13"/></svg>`;
     btn.addEventListener("click", () => switchTab(tab.id));
     nav.appendChild(btn);
   });
@@ -1447,6 +1613,10 @@ function buildOverviewPanel() {
       <div class="pane pane-terminal">
         <div class="pane-title">Activity</div>
         <div class="terminal-pane">
+          <div class="terminal-toolbar">
+            <input type="text" class="terminal-search" id="terminal-search" placeholder="Filter lines… (Ctrl+F)" autocomplete="off" spellcheck="false" />
+            <button type="button" class="terminal-clear" id="terminal-clear" title="Clear filter + output">Clear</button>
+          </div>
           <div class="terminal-body" id="output-host-top">
             <span class="terminal-idle" id="terminal-idle">Idle — nothing is running. Hit Scan or Clean to see live output.</span>
           </div>
@@ -1491,6 +1661,8 @@ function buildOverviewPanel() {
     if (tabsState.diskStatus) paintHero();
     if (tabsState.history) paintHistoryStrip();
     renderOverviewGrid();
+    wireTerminalToolbar();
+    maybeShowCoachmark();
   });
 
   return wrap;
@@ -1507,6 +1679,14 @@ const PIE_COLORS = {
   "system":   "#64748B", // slate
 };
 
+// Remembered between renders so we can:
+//  - spring slice angles from old → new when a scan completes (elevation C)
+//  - render a fading ghost of the previous slice when a clean shrinks it (elevation D)
+//  - tween the center number between renders
+let pieLastState = { slices: [], grandTotal: 0 };
+let pieCenterTween = null;
+let pieAngleTween = null;
+
 function renderPie() {
   const svg = $("#overview-pie");
   const legend = $("#pie-legend");
@@ -1514,73 +1694,280 @@ function renderPie() {
   if (!svg || !legend) return;
 
   // Collect per-tab totals (safe + opt-in + caution = what we've seen on disk).
-  // Note: vanilla tabsState.scans[id] holds the raw scan object directly
-  // (the React WIP wraps it in { scan, actions }; this one does not).
+  // Note: vanilla tabsState.scans[id] holds the raw scan object directly.
   const slices = [];
   let grandTotal = 0;
   for (const tab of tabsState.tabsManifest) {
     if (tab.meta) continue;
     let total = 0;
+    let pathCount = 0;
     if (tab.subcategories) {
       for (const sub of tab.subcategories) {
         const s = tabsState.scans[sub];
-        if (s) total += (s.totals.safe || 0) + (s.totals.probably_safe || 0) + (s.totals.caution || 0);
+        if (s) {
+          total += (s.totals.safe || 0) + (s.totals.probably_safe || 0) + (s.totals.caution || 0);
+          // scan.groups is {safe: {paths: [...]}, probably_safe: ..., caution: ...}
+          for (const tier of ["safe", "probably_safe", "caution"]) {
+            pathCount += (s.groups?.[tier]?.paths?.length || 0);
+          }
+        }
       }
     } else if (tab.category) {
       const s = tabsState.scans[tab.category];
-      if (s) total = (s.totals.safe || 0) + (s.totals.probably_safe || 0) + (s.totals.caution || 0);
+      if (s) {
+        total = (s.totals.safe || 0) + (s.totals.probably_safe || 0) + (s.totals.caution || 0);
+        for (const tier of ["safe", "probably_safe", "caution"]) {
+          pathCount += (s.groups?.[tier]?.paths?.length || 0);
+        }
+      }
     }
-    slices.push({ id: tab.id, label: stripLeadingGlyph(tab.label), total, color: PIE_COLORS[tab.id] || "#888" });
+    slices.push({
+      id: tab.id,
+      label: stripLeadingGlyph(tab.label),
+      total,
+      pathCount,
+      color: PIE_COLORS[tab.id] || "#888",
+    });
     grandTotal += total;
   }
 
-  if (centerNum) centerNum.textContent = grandTotal > 0 ? fmt(grandTotal) : "—";
+  // Tween the center number from the last value to this one.
+  if (centerNum) {
+    const from = pieLastState.grandTotal || 0;
+    const to = grandTotal;
+    if (pieCenterTween) { try { pieCenterTween.stop(); } catch {} pieCenterTween = null; }
+    if (M && M.animate && !PRM && Math.abs(from - to) > 0.05) {
+      const obj = { v: from };
+      pieCenterTween = M.animate(obj, { v: to }, {
+        duration: 0.55,
+        easing: [0.22, 1, 0.36, 1],
+        onUpdate: () => { centerNum.textContent = obj.v >= 0.01 ? fmt(obj.v) : "—"; },
+      });
+    } else {
+      centerNum.textContent = grandTotal >= 0.01 ? fmt(grandTotal) : "—";
+    }
+  }
 
-  // Build SVG arcs.
+  // Empty state — thin grey placeholder ring.
   svg.innerHTML = "";
   if (grandTotal < 0.01) {
-    // Empty state — show a thin grey ring so the pane never looks broken.
     svg.innerHTML = `<circle cx="50" cy="50" r="42" fill="none" stroke="hsl(0 0% 50% / 0.18)" stroke-width="2" />`;
-    legend.innerHTML = slices
-      .map((s) => `<span class="legend-item" data-tab="${s.id}"><span class="legend-dot" style="background:${s.color}"></span><span class="legend-name">${s.label}</span><span class="legend-gb">—</span></span>`)
-      .join("");
-    wireLegendClicks();
+    legend.innerHTML = renderLegendHTML(slices);
+    wirePieInteractions();
+    pieLastState = { slices, grandTotal };
     return;
   }
 
-  let startAngle = 0;
-  const cx = 50, cy = 50, r = 42;
-  for (const slice of slices) {
-    if (slice.total <= 0) continue;
-    const frac = slice.total / grandTotal;
-    const endAngle = startAngle + frac * Math.PI * 2;
-    const path = arcPath(cx, cy, r, startAngle, endAngle);
-    const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    el.setAttribute("d", path);
-    el.setAttribute("fill", slice.color);
-    el.setAttribute("data-tab", slice.id);
-    el.style.cursor = "pointer";
-    el.addEventListener("click", () => switchTab(slice.id));
-    svg.appendChild(el);
-    startAngle = endAngle;
+  // ── Ghost slices (elevation D) ─────────────────────────────────────────
+  // If the previous total was bigger than the new one, something got cleaned.
+  // Render the previous slice layout as low-opacity ghosts on a layer below
+  // the real slices, then fade them out over ~500ms. Visceral confirmation.
+  let ghostGroup = null;
+  if (pieLastState.grandTotal > grandTotal + 0.05) {
+    ghostGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    ghostGroup.setAttribute("class", "pie-ghosts");
+    let gAngle = 0;
+    for (const s of pieLastState.slices) {
+      if (s.total <= 0) continue;
+      const frac = s.total / pieLastState.grandTotal;
+      const end = gAngle + frac * Math.PI * 2;
+      const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      el.setAttribute("d", arcPath(50, 50, 42, gAngle, end));
+      el.setAttribute("fill", s.color);
+      el.setAttribute("opacity", "0.55");
+      el.style.transition = "opacity 0.55s cubic-bezier(0.22,1,0.36,1)";
+      ghostGroup.appendChild(el);
+      gAngle = end;
+    }
+    svg.appendChild(ghostGroup);
+    // Fade out on the next frame so the transition catches the change.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!ghostGroup) return;
+        for (const child of ghostGroup.children) child.setAttribute("opacity", "0");
+      });
+    });
+    // Reap after the transition finishes.
+    setTimeout(() => { if (ghostGroup && ghostGroup.parentNode) ghostGroup.parentNode.removeChild(ghostGroup); }, 700);
   }
-  // Donut hole — same bg color so the legend center shows through.
+
+  // ── Real slices (with spring on angle change for elevation C) ──────────
+  // Build a `<g class="pie-slices">` so we can group-manipulate as needed.
+  const sliceGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  sliceGroup.setAttribute("class", "pie-slices");
+  svg.appendChild(sliceGroup);
+
+  // Determine target end-angles per slice (cumulative).
+  const nonZeroSlices = slices.filter((s) => s.total > 0);
+  const targetAngles = [];
+  let cumulative = 0;
+  for (const s of nonZeroSlices) {
+    const frac = s.total / grandTotal;
+    cumulative += frac * Math.PI * 2;
+    targetAngles.push(cumulative);
+  }
+
+  // Special case: a single slice owns 100%. Drawing a full sweep with one arc
+  // path produces start === end (no visible wedge in most renderers). Use a
+  // <circle> instead — same visual, no math edge case.
+  if (nonZeroSlices.length === 1) {
+    const only = nonZeroSlices[0];
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("cx", "50"); c.setAttribute("cy", "50"); c.setAttribute("r", "42");
+    c.setAttribute("fill", only.color);
+    c.setAttribute("data-tab", only.id);
+    c.style.cursor = "pointer";
+    c.addEventListener("click", (e) => pieSliceClick(c, only.id, e));
+    c.addEventListener("mouseenter", (e) => showPieTooltip(only, e));
+    c.addEventListener("mousemove", (e) => movePieTooltip(e));
+    c.addEventListener("mouseleave", hidePieTooltip);
+    sliceGroup.appendChild(c);
+  } else {
+    // Build initial paths at the PREVIOUS layout, then tween them to the new
+    // target. Falls back to instant snap if Motion is unavailable or PRM.
+    const prevAngles = computePrevAngles(slices, pieLastState);
+    let startAngle = 0;
+    for (let i = 0; i < nonZeroSlices.length; i++) {
+      const slice = nonZeroSlices[i];
+      const targetEnd = targetAngles[i];
+      const prevStart = prevAngles[i].start;
+      const prevEnd = prevAngles[i].end;
+      const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      el.setAttribute("d", arcPath(50, 50, 42, prevStart, prevEnd));
+      el.setAttribute("fill", slice.color);
+      el.setAttribute("data-tab", slice.id);
+      el.style.cursor = "pointer";
+      el.style.transition = "transform 0.22s cubic-bezier(0.22,1,0.36,1)";
+      el.style.transformOrigin = "50px 50px";
+      el.addEventListener("click", (e) => pieSliceClick(el, slice.id, e));
+      el.addEventListener("mouseenter", (e) => showPieTooltip(slice, e));
+      el.addEventListener("mousemove", (e) => movePieTooltip(e));
+      el.addEventListener("mouseleave", hidePieTooltip);
+      sliceGroup.appendChild(el);
+      el.__sliceMeta = { startAngleSnapshot: startAngle, targetEnd };
+      startAngle = targetEnd;
+    }
+    // Spring-tween: animate every slice end-angle from prev → target together.
+    if (pieAngleTween) { try { pieAngleTween.stop(); } catch {} pieAngleTween = null; }
+    if (M && M.animate && !PRM) {
+      const obj = { t: 0 };
+      pieAngleTween = M.animate(obj, { t: 1 }, {
+        duration: 0.6,
+        easing: [0.22, 1, 0.36, 1],
+        onUpdate: () => {
+          let acc = 0;
+          for (let i = 0; i < nonZeroSlices.length; i++) {
+            const el = sliceGroup.children[i];
+            if (!el) continue;
+            const prev = prevAngles[i];
+            const target = targetAngles[i];
+            const prevSpan = prev.end - prev.start;
+            const targetSpan = target - (i === 0 ? 0 : targetAngles[i - 1]);
+            const span = prevSpan + (targetSpan - prevSpan) * obj.t;
+            el.setAttribute("d", arcPath(50, 50, 42, acc, acc + span));
+            acc += span;
+          }
+        },
+      });
+    }
+  }
+
+  // Donut hole — bg-tinted so the center label reads cleanly.
   const hole = document.createElementNS("http://www.w3.org/2000/svg", "circle");
   hole.setAttribute("cx", "50");
   hole.setAttribute("cy", "50");
   hole.setAttribute("r", "22");
-  hole.setAttribute("fill", "hsl(0 0% 100%)");
-  hole.style.fill = "var(--bg-2, white)";
+  hole.setAttribute("fill", "var(--bg-2)");
+  hole.style.pointerEvents = "none";
   svg.appendChild(hole);
 
   // Legend.
-  legend.innerHTML = slices
-    .map((s) => `<span class="legend-item" data-tab="${s.id}"><span class="legend-dot" style="background:${s.color}"></span><span class="legend-name">${s.label}</span><span class="legend-gb">${s.total >= 0.01 ? fmt(s.total) + " GB" : "—"}</span></span>`)
-    .join("");
-  wireLegendClicks();
+  legend.innerHTML = renderLegendHTML(slices);
+  wirePieInteractions();
+  pieLastState = { slices: slices.map((s) => ({ ...s })), grandTotal };
 }
 
-function wireLegendClicks() {
+function renderLegendHTML(slices) {
+  return slices
+    .map((s) => `<span class="legend-item" data-tab="${s.id}"><span class="legend-dot" style="background:${s.color}"></span><span class="legend-name">${s.label}</span><span class="legend-gb">${s.total >= 0.01 ? fmt(s.total) + " GB" : "—"}</span></span>`)
+    .join("");
+}
+
+// Map this render's slice order to the previous render's angles, so we can
+// interpolate from "where they were" to "where they should be." If the same
+// slice id existed previously, use its angles; otherwise start it collapsed
+// (start === end) at the current insertion point so it grows out of nothing.
+function computePrevAngles(currentSlices, prev) {
+  const nonZero = currentSlices.filter((s) => s.total > 0);
+  const result = [];
+  // Cumulative angles for the previous layout, keyed by slice id.
+  const prevById = {};
+  if (prev && prev.grandTotal > 0.01) {
+    let a = 0;
+    for (const s of prev.slices) {
+      if (s.total <= 0) continue;
+      const frac = s.total / prev.grandTotal;
+      const end = a + frac * Math.PI * 2;
+      prevById[s.id] = { start: a, end };
+      a = end;
+    }
+  }
+  let cursor = 0;
+  for (const s of nonZero) {
+    if (prevById[s.id]) {
+      result.push({ start: prevById[s.id].start, end: prevById[s.id].end });
+    } else {
+      // New slice — collapse it at the cursor so it grows in place.
+      result.push({ start: cursor, end: cursor });
+    }
+    cursor += result[result.length - 1].end - result[result.length - 1].start;
+  }
+  return result;
+}
+
+// ── Click-and-drill (elevation B) ─────────────────────────────────────────
+// Briefly "explode" the clicked slice outward via transform: scale() before
+// the tab transition kicks in. Reads as cause-and-effect.
+function pieSliceClick(el, tabId, ev) {
+  if (PRM) {
+    switchTab(tabId);
+    return;
+  }
+  el.style.transformOrigin = "50px 50px";
+  el.style.transform = "scale(1.08)";
+  setTimeout(() => {
+    el.style.transform = "";
+    switchTab(tabId);
+  }, 160);
+}
+
+// ── Pie hover tooltip (elevation A) ───────────────────────────────────────
+function showPieTooltip(slice, ev) {
+  let tip = $("#pie-tooltip");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = "pie-tooltip";
+    tip.className = "pie-tooltip";
+    document.body.appendChild(tip);
+  }
+  const paths = slice.pathCount >= 1 ? ` · ${slice.pathCount} path${slice.pathCount === 1 ? "" : "s"}` : "";
+  tip.innerHTML = `<span class="pie-tooltip-dot" style="background:${slice.color}"></span><strong>${slice.label}</strong> · ${slice.total >= 0.01 ? fmt(slice.total) + " GB" : "—"}${paths}`;
+  tip.style.opacity = "1";
+  movePieTooltip(ev);
+}
+function movePieTooltip(ev) {
+  const tip = $("#pie-tooltip");
+  if (!tip) return;
+  const x = ev.clientX + 14;
+  const y = ev.clientY + 14;
+  tip.style.transform = `translate(${x}px, ${y}px)`;
+}
+function hidePieTooltip() {
+  const tip = $("#pie-tooltip");
+  if (tip) tip.style.opacity = "0";
+}
+
+function wirePieInteractions() {
   $$("#pie-legend .legend-item").forEach((el) => {
     el.addEventListener("click", () => {
       const id = el.dataset.tab;
@@ -1606,7 +1993,9 @@ function renderOverviewGrid() {
   if (!grid) return;
   grid.innerHTML = "";
   // Pie refresh follows the same lifecycle as the cards — both consume scans.
-  renderPie();
+  // Guard against pie errors so the cards still render even if Motion's API
+  // signature mismatches in an old browser.
+  try { renderPie(); } catch (e) { console.warn("[pie] renderPie failed:", e); }
 
   // Build one card per top-level tab (skip the meta Overview itself).
   for (const tab of tabsState.tabsManifest) {
@@ -1674,24 +2063,83 @@ function renderOverviewGrid() {
 }
 
 function updateVtabStats() {
-  // Per-tab cleanable-GB shown next to the left-nav label.
+  // Per-tab cleanable-GB shown next to the left-nav label + a tiny donut that
+  // visualises the safe/opt-in/caution breakdown for the tab (elevation H).
   for (const tab of tabsState.tabsManifest) {
     if (tab.meta) continue;
     const el = $(`#vtab-stat-${tab.id}`);
     if (!el) continue;
     let cleanable = 0;
+    let safe = 0, optin = 0, caution = 0;
     if (tab.subcategories) {
       for (const sub of tab.subcategories) {
-        const s = tabsState.scans[sub]; if (s) cleanable += s.total_cleanable_gb || 0;
+        const s = tabsState.scans[sub];
+        if (s) {
+          cleanable += s.total_cleanable_gb || 0;
+          safe += s.totals.safe || 0;
+          optin += s.totals.probably_safe || 0;
+          caution += s.totals.caution || 0;
+        }
       }
     } else if (tab.category) {
-      const s = tabsState.scans[tab.category]; if (s) cleanable = s.total_cleanable_gb || 0;
+      const s = tabsState.scans[tab.category];
+      if (s) {
+        cleanable = s.total_cleanable_gb || 0;
+        safe = s.totals.safe || 0;
+        optin = s.totals.probably_safe || 0;
+        caution = s.totals.caution || 0;
+      }
     }
     el.textContent = cleanable >= 0.01 ? `${fmt(cleanable)} GB` : "";
+    paintVtabMiniDonut(tab.id, safe, optin, caution);
   }
   // Also refresh the right-sub-nav stats if it's open.
   const cur = tabsState.tabsManifest.find(t => t.id === tabsState.current);
   if (cur?.subcategories) populateSubNav(cur);
+}
+
+// Paint a tiny 32x32-viewBox donut next to a vtab label. Three concentric arcs:
+// safe (green) / opt-in (amber) / caution (red), drawn as stroke-dasharray
+// segments around a 13-radius circle (circumference ≈ 81.7). Hidden when the
+// tab has zero scanned data so we don't show six grey rings on first load.
+function paintVtabMiniDonut(tabId, safe, optin, caution) {
+  const svg = $(`#vtab-donut-${tabId}`);
+  if (!svg) return;
+  const total = safe + optin + caution;
+  if (total < 0.01) {
+    svg.setAttribute("hidden", "");
+    return;
+  }
+  // SVG ignores the `.hidden` JS property in some browsers — use the
+  // attribute API directly so it's reliably gone once we have data.
+  svg.removeAttribute("hidden");
+  // Strip any old arcs (keep the track circle which is index 0).
+  while (svg.children.length > 1) svg.removeChild(svg.lastChild);
+  const r = 13;
+  const C = 2 * Math.PI * r;
+  let offset = 0;
+  const SEG_COLOR = { safe: "var(--safe)", optin: "var(--warn)", caution: "var(--danger)" };
+  const segments = [
+    { v: safe, color: SEG_COLOR.safe },
+    { v: optin, color: SEG_COLOR.optin },
+    { v: caution, color: SEG_COLOR.caution },
+  ];
+  for (const seg of segments) {
+    if (seg.v <= 0) continue;
+    const frac = seg.v / total;
+    const len = frac * C;
+    const arc = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    arc.setAttribute("class", "vtab-arc");
+    arc.setAttribute("cx", "16");
+    arc.setAttribute("cy", "16");
+    arc.setAttribute("r", String(r));
+    arc.setAttribute("stroke", seg.color);
+    arc.setAttribute("stroke-dasharray", `${len} ${C - len}`);
+    arc.setAttribute("stroke-dashoffset", String(-offset));
+    arc.setAttribute("transform", "rotate(-90 16 16)");
+    svg.appendChild(arc);
+    offset += len;
+  }
 }
 
 // ── Render a category panel ────────────────────────────────
@@ -1965,29 +2413,134 @@ async function runAction(catId, actionId, label, costText) {
   };
 }
 
+// Minimal ANSI parser — covers the \e[3xm fg color codes + \e[1m bold + \e[0m
+// reset that 95% of CLI tools emit. Returns an array of {text, classes:[]}.
+// Skips 256-color (\e[38;5;...m) and RGB (\e[38;2;...m) modes — those fall
+// through as plain text. Good enough for our localhost utility's output.
+const ANSI_FG = { "30": "ansi-fg-gray", "31": "ansi-fg-red", "32": "ansi-fg-green",
+                  "33": "ansi-fg-yellow", "34": "ansi-fg-blue", "35": "ansi-fg-magenta",
+                  "36": "ansi-fg-cyan", "37": "ansi-fg-gray", "90": "ansi-fg-gray",
+                  "91": "ansi-fg-red", "92": "ansi-fg-green", "93": "ansi-fg-yellow",
+                  "94": "ansi-fg-blue", "95": "ansi-fg-magenta", "96": "ansi-fg-cyan" };
+function parseAnsi(text) {
+  if (!text || text.indexOf("\x1b[") === -1) return [{ text, classes: [] }];
+  const out = [];
+  let classes = [];
+  const re = /\x1b\[([0-9;]*)m/g;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push({ text: text.slice(last, m.index), classes: [...classes] });
+    const codes = (m[1] || "0").split(";");
+    for (const code of codes) {
+      if (code === "0" || code === "") classes = [];
+      else if (code === "1") { if (!classes.includes("ansi-bold")) classes.push("ansi-bold"); }
+      else if (ANSI_FG[code]) classes = classes.filter((c) => !c.startsWith("ansi-fg-")).concat([ANSI_FG[code]]);
+    }
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push({ text: text.slice(last), classes: [...classes] });
+  return out;
+}
+
+// Highlight any matches of `query` within `text` by wrapping them in a span.
+function buildLineWithHighlight(text, query) {
+  const segments = parseAnsi(text);
+  const frag = document.createDocumentFragment();
+  const lower = query.toLowerCase();
+  for (const seg of segments) {
+    if (!query) {
+      const s = document.createElement("span");
+      if (seg.classes.length) s.className = seg.classes.join(" ");
+      s.textContent = seg.text;
+      frag.appendChild(s);
+      continue;
+    }
+    // Highlight matches within the segment.
+    const t = seg.text;
+    let i = 0;
+    while (i < t.length) {
+      const found = t.toLowerCase().indexOf(lower, i);
+      if (found === -1) {
+        const tail = document.createElement("span");
+        if (seg.classes.length) tail.className = seg.classes.join(" ");
+        tail.textContent = t.slice(i);
+        frag.appendChild(tail);
+        break;
+      }
+      if (found > i) {
+        const pre = document.createElement("span");
+        if (seg.classes.length) pre.className = seg.classes.join(" ");
+        pre.textContent = t.slice(i, found);
+        frag.appendChild(pre);
+      }
+      const hl = document.createElement("span");
+      hl.className = "hl" + (seg.classes.length ? " " + seg.classes.join(" ") : "");
+      hl.textContent = t.slice(found, found + query.length);
+      frag.appendChild(hl);
+      i = found + query.length;
+    }
+  }
+  return frag;
+}
+
 function appendLine(text, cls = "") {
   // Two render targets:
   //   - bottom #output (always present, visible on non-overview tabs)
   //   - top #output-host-top (Overview's terminal pane, present only when overview is mounted)
-  // Both stay in sync so cleans triggered from any tab show in whichever pane the user is viewing.
+  // Both stay in sync so cleans triggered from any tab show in whichever pane
+  // the user is viewing. Each line stores the raw text on dataset.raw so the
+  // search-filter can re-run against the original (post-ANSI-strip) text.
   const targets = [];
   const bottom = $("#output");
   if (bottom) targets.push(bottom);
   const topHost = $("#output-host-top");
   if (topHost) targets.push(topHost);
 
-  // Hide the idle placeholder once we start emitting real output.
   const idle = $("#terminal-idle");
   if (idle) idle.style.display = "none";
+
+  const query = ($("#terminal-search")?.value || "").trim();
+  const rawForSearch = text.replace(/\x1b\[[0-9;]*m/g, "");
+  const matchesFilter = !query || rawForSearch.toLowerCase().includes(query.toLowerCase());
 
   for (const out of targets) {
     if (out.id === "output" && !out.classList.contains("visible")) out.classList.add("visible");
     const span = document.createElement("span");
-    span.className = "out-line" + (cls ? " " + cls : "");
-    span.textContent = text;
+    span.className = "out-line" + (cls ? " " + cls : "") + (matchesFilter ? "" : " filtered-out");
+    span.dataset.raw = rawForSearch;
+    span.appendChild(buildLineWithHighlight(text, query));
     out.appendChild(span);
     safeAnimate(span, { opacity: [0, 1], y: [-3, 0] }, { duration: 0.18, easing: [0.22, 1, 0.36, 1] });
     out.scrollTop = out.scrollHeight;
+  }
+}
+
+// Re-filter every existing line in both terminal targets when the search input
+// changes. Cheap — at most a few hundred spans typically.
+function applyTerminalFilter() {
+  const query = ($("#terminal-search")?.value || "").trim();
+  const lower = query.toLowerCase();
+  const targets = ["#output", "#output-host-top"];
+  for (const sel of targets) {
+    const host = $(sel);
+    if (!host) continue;
+    for (const span of host.querySelectorAll(".out-line")) {
+      const raw = span.dataset.raw || span.textContent || "";
+      const ok = !query || raw.toLowerCase().includes(lower);
+      span.classList.toggle("filtered-out", !ok);
+      // Re-build highlights only when the query changed materially.
+      if (query) {
+        const child = span.firstChild;
+        // Skip if it's already rendered with highlights we'd duplicate — for
+        // simplicity, just clear and re-render.
+        while (span.firstChild) span.removeChild(span.firstChild);
+        span.appendChild(buildLineWithHighlight(raw, query));
+      } else {
+        // No query — re-render plain so any stale highlight spans are stripped.
+        while (span.firstChild) span.removeChild(span.firstChild);
+        span.appendChild(buildLineWithHighlight(raw, ""));
+      }
+    }
   }
 }
 
@@ -2186,10 +2739,145 @@ $("#changelog-modal").addEventListener("click", (ev) => { if (ev.target.id === "
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !$("#changelog-modal").hidden) closeChangelog(); });
 $("#footer-changelog")?.addEventListener("click", (ev) => { ev.preventDefault(); openChangelog(); });
 
+// ── /api/live SSE subscription (v0.15.0, elevations F + G) ────────────────
+// One persistent connection. Auto-reconnects with backoff on disconnect.
+let liveES = null;
+let liveBackoffMs = 1000;
+function subscribeLive() {
+  try { if (liveES) liveES.close(); } catch {}
+  liveES = new EventSource("/api/live");
+  liveES.onopen = () => { liveBackoffMs = 1000; };
+  liveES.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.event === "status") {
+        tabsState.diskStatus = msg.data;
+        paintHero();
+      } else if (msg.event === "running") {
+        tabsState.runningCleans = msg.data || [];
+        renderRunningWidget();
+      }
+    } catch {}
+  };
+  liveES.onerror = () => {
+    try { liveES.close(); } catch {}
+    setTimeout(subscribeLive, liveBackoffMs);
+    liveBackoffMs = Math.min(liveBackoffMs * 1.6, 15000);
+  };
+}
+
+function renderRunningWidget() {
+  const widget = $("#running-widget");
+  const label  = $("#running-label");
+  const dots   = $("#running-dots");
+  if (!widget || !label || !dots) return;
+  const list = tabsState.runningCleans || [];
+  if (list.length === 0) {
+    widget.hidden = true;
+    return;
+  }
+  widget.hidden = false;
+  // Group by category for the visible dot rail.
+  const byCat = {};
+  for (const r of list) byCat[r.category] = (byCat[r.category] || 0) + 1;
+  const n = list.length;
+  label.innerHTML = `<strong>${n}</strong> clean${n === 1 ? "" : "s"} running`;
+  dots.innerHTML = Object.keys(byCat).map((cat) => {
+    const color = PIE_COLORS[cat] || "#888";
+    const title = `${cat}: ${byCat[cat]} active`;
+    return `<span class="running-dot" style="background:${color}" title="${title}"></span>`;
+  }).join("");
+}
+
+// Terminal toolbar wiring (added after panels mount, since the toolbar lives
+// inside the Overview panel and is built by buildOverviewPanel).
+function wireTerminalToolbar() {
+  const search = $("#terminal-search");
+  const clear = $("#terminal-clear");
+  if (search && !search.dataset.wired) {
+    search.dataset.wired = "1";
+    search.addEventListener("input", applyTerminalFilter);
+    search.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { search.value = ""; applyTerminalFilter(); search.blur(); }
+    });
+  }
+  if (clear && !clear.dataset.wired) {
+    clear.dataset.wired = "1";
+    clear.addEventListener("click", () => {
+      if (typeof clearOutput === "function") clearOutput();
+      if (search) { search.value = ""; applyTerminalFilter(); }
+    });
+  }
+}
+
+// Global Ctrl+F / Cmd+F → focus the terminal search box (when Overview is active).
+document.addEventListener("keydown", (e) => {
+  if ((e.key === "f" || e.key === "F") && (e.metaKey || e.ctrlKey)) {
+    const search = $("#terminal-search");
+    if (search && tabsState.current === "overview") {
+      e.preventDefault();
+      search.focus();
+      search.select();
+    }
+  }
+});
+
+// First-visit coachmark on the pie pane (elevation I).
+function maybeShowCoachmark() {
+  try {
+    if (localStorage.getItem("cleanupHub.coachmark.v15") === "1") return;
+  } catch { return; }
+  // Defer until the pie pane is in the DOM.
+  const tryShow = (attempt = 0) => {
+    const pieEl = $("#overview-pie")?.closest(".pane-pie");
+    if (!pieEl) {
+      if (attempt < 30) setTimeout(() => tryShow(attempt + 1), 200);
+      return;
+    }
+    const rect = pieEl.getBoundingClientRect();
+    const coach = document.createElement("div");
+    coach.className = "coachmark";
+    coach.style.left = rect.left + "px";
+    coach.style.top = rect.top + "px";
+    coach.style.width = rect.width + "px";
+    coach.style.height = rect.height + "px";
+    coach.innerHTML = `<div class="coach-label">New: click a slice to drill in</div>`;
+    document.body.appendChild(coach);
+    const dismiss = () => {
+      coach.style.opacity = "0";
+      setTimeout(() => coach.remove(), 380);
+      try { localStorage.setItem("cleanupHub.coachmark.v15", "1"); } catch {}
+      const pie = $("#overview-pie");
+      if (pie) {
+        pie.removeEventListener("click", dismiss, true);
+        $("#pie-legend")?.removeEventListener("click", dismiss, true);
+      }
+    };
+    // Auto-dismiss after 12s, or when the user actually clicks the thing the
+    // coachmark is pointing at (a slice or a legend item — both wired below).
+    setTimeout(dismiss, 12000);
+    setTimeout(() => {
+      $("#overview-pie")?.addEventListener("click", dismiss, true);
+      $("#pie-legend")?.addEventListener("click", dismiss, true);
+    }, 400);
+    // Re-anchor on resize.
+    window.addEventListener("resize", () => {
+      const r = pieEl.getBoundingClientRect();
+      coach.style.left = r.left + "px"; coach.style.top = r.top + "px";
+      coach.style.width = r.width + "px"; coach.style.height = r.height + "px";
+    });
+  };
+  tryShow();
+}
+
 loadStatus();
 loadHistory();
 loadTabs();
-setInterval(loadStatus, 15000);
+// Replaces the v0.14 setInterval(loadStatus, 15000) poll. The /api/live SSE
+// stream emits {event:"status"} on disk-status deltas + {event:"running"} on
+// in-flight clean changes, so the hero ticks in real time and the running-
+// widget surfaces multi-tab activity without per-second fetch churn.
+subscribeLive();
 </script>
 </body>
 </html>
