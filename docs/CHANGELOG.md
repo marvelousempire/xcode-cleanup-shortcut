@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.20.2] — 2026-05-13 14:30:00 Eastern · *Quick CLI command sheet in README — one-shot terminal commands, no app needed*
+
+### Added — ⚡ Quick CLI section in README
+
+A new prominent README section immediately after Quick Start gives you copy-paste terminal commands for every major cleanup scenario — no Dustpan app, no `git clone`, just open GitHub and grab what you need.
+
+**Sections:**
+- **The big one** — single multiline command covering all safe caches (typically frees 5–25 GB)
+- **By category table** — 15 rows with target, expected reclaim, and one-line command each: Xcode DerivedData, DeviceSupport, simulators, browsers + WebKit, Telegram, Slack, Discord, Spotify, VS Code, npm, pip, Cargo, Gradle, CocoaPods, Trash
+- **All browser caches + WebKit** — complete multiline block for all browsers
+- **iCloud Drive eviction** — `brctl evict` block with explanation that files stay on iCloud
+- **Scan first** — `du -sh` commands to see what's eating space before deleting (Caches, Application Support, iOS backups, dev caches, biggest files in Downloads/Documents)
+- **Safe Xcode full clean** — step-by-step block for pre-build or broken-build cleanup
+- **Check your disk** — `df -h /` bookend to measure before/after
+
+Footer note explains these are the same commands Dustpan runs in the dashboard.
+
+### kVersion
+`0.20.1` → `0.20.2`
+
+---
+
 ## [0.20.1] — 2026-05-13 14:00:00 Eastern · *Plan 0007 — Space Eaters: fix stale browser paths, add Telegram/WhatsApp/Signal/iCloud Drive/iOS backups/dev caches*
 
 ### Fixed — Browsers showing 0 GB

@@ -67,6 +67,170 @@ Same dashboard. Only your Mac can reach it. Use this when you're on a coffee-sho
 
 ---
 
+## ⚡ Quick CLI — one-shot commands (no app needed)
+
+Copy any of these into Terminal and run. No Dustpan install needed.
+Every command here is **safe** — it only deletes caches that macOS or the app rebuilds automatically. Nothing you created is touched.
+
+> **Shortcut:** Bookmark this section. When your Mac slows down or your disk is full, open this README on GitHub, grab a command, paste it into Terminal.
+
+---
+
+### 🏆 The big one — all safe caches in one shot
+
+Typically frees **5–25 GB**. Safe on any Mac. Everything below is included.
+
+```sh
+rm -rf \
+  ~/Library/Developer/Xcode/DerivedData \
+  ~/Library/Developer/Xcode/iOS\ DeviceSupport \
+  ~/Library/Developer/Xcode/watchOS\ DeviceSupport \
+  ~/Library/Developer/Xcode/tvOS\ DeviceSupport \
+  ~/Library/Caches/com.apple.dt.Xcode \
+  ~/Library/Caches/org.swift.swiftpm \
+  ~/Library/org.swift.swiftpm \
+  ~/Library/Caches/Google/Chrome \
+  "~/Library/Application Support/Google/Chrome/Default/Code Cache" \
+  "~/Library/Containers/com.apple.Safari/Data/Library/Caches" \
+  ~/Library/WebKit \
+  ~/Library/Caches/com.apple.WebKit.WebContent \
+  ~/Library/Caches/Firefox \
+  ~/Library/Caches/BraveSoftware \
+  "~/Library/Caches/Microsoft Edge" \
+  "~/Library/Application Support/Slack/Cache" \
+  "~/Library/Application Support/Slack/Code Cache" \
+  "~/Library/Application Support/discord/Cache" \
+  ~/Library/Caches/us.zoom.xos \
+  ~/Library/Caches/com.spotify.client \
+  ~/Library/Caches/CocoaPods \
+  ~/Library/Caches/pip \
+  ~/.cache/pip \
+  2>/dev/null
+xcrun simctl delete unavailable 2>/dev/null
+echo "✓ Done. Run: df -h /"
+```
+
+---
+
+### By category — grab just what you need
+
+| Target | What it frees | Command |
+|---|---|---|
+| **Xcode DerivedData** | 5–20 GB | `rm -rf ~/Library/Developer/Xcode/DerivedData` |
+| **Xcode DeviceSupport** | 2–10 GB | `rm -rf ~/Library/Developer/Xcode/iOS\ DeviceSupport ~/Library/Developer/Xcode/watchOS\ DeviceSupport ~/Library/Developer/Xcode/tvOS\ DeviceSupport` |
+| **Xcode + SwiftPM caches** | 0.5–3 GB | `rm -rf ~/Library/Caches/com.apple.dt.Xcode ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm` |
+| **Unavailable simulators** | 1–5 GB | `xcrun simctl delete unavailable` |
+| **All browser caches + WebKit** | 1–10 GB | see block below |
+| **Telegram media cache** | 2–20 GB | `rm -rf "~/Library/Group Containers/6N38VWS5BX.ru.keepcoder.Telegram/stable/postbox/media"` |
+| **Slack all caches** | 0.5–3 GB | `rm -rf "~/Library/Application Support/Slack/Cache" "~/Library/Application Support/Slack/Code Cache" "~/Library/Application Support/Slack/GPUCache"` |
+| **Discord all caches** | 0.5–2 GB | `rm -rf "~/Library/Application Support/discord/Cache" "~/Library/Application Support/discord/Code Cache" "~/Library/Application Support/discord/blob_storage"` |
+| **Spotify cache** | 1–8 GB | `rm -rf ~/Library/Caches/com.spotify.client "~/Library/Application Support/Spotify/PersistentCache" "~/Library/Application Support/Spotify/Storage"` |
+| **VS Code cache** | 0.5–3 GB | `rm -rf "~/Library/Application Support/Code/Cache" "~/Library/Application Support/Code/CachedData" "~/Library/Application Support/Code/GPUCache"` |
+| **npm cache** | 0.5–5 GB | `npm cache clean --force && rm -rf ~/.npm` |
+| **pip cache** | 0.2–2 GB | `rm -rf ~/Library/Caches/pip ~/.cache/pip` |
+| **Cargo cache (Rust)** | 1–10 GB | `rm -rf ~/.cargo/registry ~/.cargo/git` |
+| **Gradle cache** | 0.5–5 GB | `rm -rf ~/.gradle/caches` |
+| **CocoaPods cache** | 0.5–3 GB | `rm -rf ~/Library/Caches/CocoaPods` |
+| **QuickLook thumbnails** | 0.2–1 GB | `rm -rf ~/Library/Caches/com.apple.QuickLook.thumbnailcache` |
+| **Empty Trash** | varies | `rm -rf ~/.Trash/*` |
+| **iCloud Drive local cache** | 1–50 GB | see block below |
+
+---
+
+### 🌐 All browser caches + WebKit offline storage
+
+```sh
+rm -rf \
+  ~/Library/Caches/Google/Chrome \
+  "~/Library/Application Support/Google/Chrome/Default/Cache" \
+  "~/Library/Application Support/Google/Chrome/Default/Code Cache" \
+  "~/Library/Application Support/Google/Chrome/Default/GPUCache" \
+  ~/Library/Caches/com.apple.Safari \
+  "~/Library/Containers/com.apple.Safari/Data/Library/Caches" \
+  ~/Library/WebKit \
+  ~/Library/Caches/com.apple.WebKit.WebContent \
+  ~/Library/Caches/Firefox \
+  "~/Library/Caches/Microsoft Edge" \
+  "~/Library/Application Support/Microsoft Edge/Default/Cache" \
+  "~/Library/Caches/BraveSoftware/Brave-Browser" \
+  "~/Library/Caches/Company Browser, Inc." \
+  ~/Library/Caches/Vivaldi \
+  2>/dev/null
+echo "✓ Browser caches cleared. First page-load per site will be slightly slower once."
+```
+
+---
+
+### ☁️ iCloud Drive — reclaim local space safely
+
+Files are **not deleted**. They stay on iCloud and re-download when you open them.
+This is exactly what macOS "Optimize Mac Storage" does, triggered on demand.
+
+```sh
+# See how much is locally cached right now
+du -sh ~/Library/Mobile\ Documents/ 2>/dev/null
+
+# Evict local copies — files stay on iCloud, become cloud-only stubs
+find ~/Library/Mobile\ Documents -not -name '*.icloud' -type f 2>/dev/null \
+  | while read f; do brctl evict "$f" 2>/dev/null && echo "Evicted: $f"; done
+echo "✓ Done. iCloud files are now cloud-only. They re-download when opened."
+```
+
+---
+
+### 🔍 Scan first — see what's eating space before deleting anything
+
+```sh
+# What's biggest in ~/Library/Caches?
+du -sh ~/Library/Caches/* 2>/dev/null | sort -rh | head -20
+
+# What's eating space in Application Support?
+du -sh ~/Library/Application\ Support/* 2>/dev/null | sort -rh | head -20
+
+# iOS/iPadOS device backups (often 10–80 GB, forgotten)
+du -sh ~/Library/Application\ Support/MobileSync/Backup/* 2>/dev/null | sort -rh
+
+# Developer caches (npm / pip / cargo / gradle)
+for p in ~/.npm "~/Library/Caches/pip" ~/.cargo/registry ~/.gradle/caches ~/go/pkg/mod/cache; do
+  [ -d "$p" ] && printf "%-30s  %s\n" "$p" "$(du -sh "$p" 2>/dev/null | cut -f1)"
+done
+
+# 25 biggest files in ~/Downloads + ~/Documents
+find ~/Downloads ~/Documents -maxdepth 4 -type f -size +100M 2>/dev/null \
+  | while read f; do du -sh "$f" 2>/dev/null; done | sort -rh | head -25
+```
+
+---
+
+### 🩹 Safe Xcode full clean (use before a big build or when builds act weird)
+
+```sh
+rm -rf ~/Library/Developer/Xcode/DerivedData
+rm -rf ~/Library/Developer/Xcode/iOS\ DeviceSupport
+rm -rf ~/Library/Developer/Xcode/watchOS\ DeviceSupport
+rm -rf ~/Library/Developer/Xcode/tvOS\ DeviceSupport
+rm -rf ~/Library/Caches/com.apple.dt.Xcode
+rm -rf ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm
+xcrun simctl delete unavailable 2>/dev/null
+echo "✓ Xcode cleaned. First build will be slower (re-downloads caches). That's normal."
+```
+
+---
+
+### 📊 Check your disk right now
+
+```sh
+df -h /
+```
+
+Run before and after any cleanup block to see what you actually freed.
+
+---
+
+> All of these are the same commands Dustpan runs when you click the Clean buttons in the dashboard. If you want the guided experience with sizes shown before you delete, run `make ui` from the repo.
+
+---
+
 ## 🛠️ Requirements
 
 ### Hardware
