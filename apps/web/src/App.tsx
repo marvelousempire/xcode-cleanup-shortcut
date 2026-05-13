@@ -10,7 +10,8 @@ import { RunningWidget } from "./components/RunningWidget";
 import { OnboardingCoachmark } from "./components/OnboardingCoachmark";
 import { SUB_LABELS } from "./components/SidebarRight";
 import { cn } from "./lib/utils";
-import { motion, AnimatePresence } from "motion/react";
+// `motion` / `AnimatePresence` removed in v0.18.4 — see comment on the panel
+// switch below. Individual components still import Motion as needed.
 
 export default function App() {
   return (
@@ -77,25 +78,28 @@ function AppBody() {
             </div>
           )}
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab + ":" + (currentSub || "")}
-              initial={{ opacity: 0, x: 6 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -6 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {tab?.meta && tab.id === "overview" ? (
-                <OverviewPanel />
-              ) : hasSub && currentSub ? (
-                <CategoryPanel catId={currentSub} displayLabel={SUB_LABELS[currentSub]} />
-              ) : tab?.category ? (
-                <CategoryPanel catId={tab.category} />
-              ) : (
-                <div className="text-center text-fg-faint py-12">Loading…</div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+          {/* v0.18.4 — removed the `<AnimatePresence mode="wait"><motion.div
+              initial={{opacity:0,x:6}} animate={{opacity:1,x:0}}>` wrapper. On
+              some environments Motion was leaving the wrapper stuck at the
+              initial opacity-0 state, which made the entire main viewport
+              invisible — exactly the bug the maintainer hit ("big dark side,
+              only the sidebar shows"). A non-animating div is a tiny UX
+              downgrade compared to "the page is missing." Tab switches are
+              instant now. If we want the slide-in back later, drive it from
+              the leaving/entering panel themselves (each one knows when it
+              mounts) instead of an outer AnimatePresence that depends on a
+              composite key. */}
+          <div key={activeTab + ":" + (currentSub || "")}>
+            {tab?.meta && tab.id === "overview" ? (
+              <OverviewPanel />
+            ) : hasSub && currentSub ? (
+              <CategoryPanel catId={currentSub} displayLabel={SUB_LABELS[currentSub]} />
+            ) : tab?.category ? (
+              <CategoryPanel catId={tab.category} />
+            ) : (
+              <div className="text-center text-fg-faint py-12">Loading…</div>
+            )}
+          </div>
 
           {/* On Overview, the terminal lives inside the 3-pane top — don't
               render a second copy at the bottom of the viewport. On every

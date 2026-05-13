@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.18.4] — 2026-05-13 08:06:18 Eastern · *fix: main panel was stuck invisible (opacity 0) — and "theme switch doesn't work" was a symptom of that*
+
+### Fixed
+- **The main viewport is no longer invisible.** The panel-switch animation wrapper (`<AnimatePresence mode="wait"><motion.div initial={{opacity:0,x:6}} animate={{opacity:1,x:0}}>`) was leaving the wrapper stuck at its `initial` state on some environments — `opacity: 0; transform: translateX(6px);` — so the entire main column rendered invisible. The maintainer reported *"a big dark side and only a side ball on the left, I see nothing else"* — sidebar visible, nothing else.
+- **The theme switch was working, but invisibly.** Clicking Auto/Light/Dark correctly set `data-theme` on `<html>` and wrote to `localStorage` — `prefers-color-scheme` and the explicit-override CSS did the right thing — but the user couldn't *see* any visual change because the entire main panel was at `opacity: 0`. Their inferred "doesn't work" was a downstream symptom of the panel-invisible bug, not the switch logic itself.
+- **"Stuck on dark mode"** was the same symptom: when the user clicked Light, the data attribute updated but the invisible main column couldn't render the lighter palette, so it looked stuck.
+
+### Why the wrapper broke
+`AnimatePresence mode="wait"` waits for an "exit" animation before mounting the "entering" child. On first mount there's no previous child, so the entering one should animate from `initial` to `animate`. In practice, depending on Motion 11.x's internal scheduling + how often the wrapper's `key` recomputed during the first few renders (it's `activeTab + ":" + (currentSub || "")`, both of which change as `tabs` loads), the animation never advanced. The wrapper froze at `initial`.
+
+### What changed
+- Replaced the `<AnimatePresence>` + `<motion.div>` wrapper around the panel switch with a plain `<div key={activeTab + ":" + (currentSub || "")}>`. Tab switches are now instant (no slide-in). That's a minor UX downgrade compared to *"the page is missing,"* and it's a defect class we can't have in a localhost utility.
+- Dropped the unused `motion` / `AnimatePresence` imports from `App.tsx`. Individual components (`OverviewPanel`, `PieChart`, `ChangelogModal`, `OutputConsole`, `RunningWidget`, `OnboardingCoachmark`) still use Motion locally — that's not affected by this fix.
+
+### Why this is the right shape of fix
+The animation wasn't load-bearing. Tab transitions don't need a slide. The page rendering does. Trading a tiny motion flourish for guaranteed render correctness is the right call. If we want the slide back later, we'll drive it from the entering panel itself (it knows when it mounts), not from a key-based AnimatePresence wrapper that depends on a composite key that mutates during initial data load.
+
+### Verified end-to-end
+At 1280×900, fresh load with `localStorage` cleared:
+- Page renders the full Overview at opacity 1 — hero, pie (42.9 GB scanned), Activity terminal, history strip, mega-buttons, cards grid.
+- Click **Dark** → background turns dark, cards translucent, text light. Theme toggle pill flips.
+- Click **Light** → background returns to cream, theme toggle pill flips, Activity terminal stays dark (intentional CLI surface).
+- Click a sidebar tab (Xcode/LLMs/Browsers/etc) → the new panel renders instantly. No invisible wrappers.
+
 ## [0.18.3] — 2026-05-13 07:50:01 Eastern · *Theme switch in the sidebar — Auto · Light · Dark*
 
 ### Added
