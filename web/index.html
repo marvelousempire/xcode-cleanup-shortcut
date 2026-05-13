@@ -592,6 +592,9 @@
     white-space: pre-wrap;
     word-break: break-word;
     min-height: 180px;
+    /* v0.18.7 — cap height so output scrolls inside the pane instead of
+       stretching the Activity panel (and the whole Overview) taller. */
+    max-height: 320px;
   }
   .terminal-pane .terminal-idle {
     color: #6B6B73;

@@ -115,12 +115,13 @@ export function OutputConsole({ embedded = false, className, fillHeight = false,
   const body = (
     <div
       ref={scrollRef}
-      className={cn(
-        "overflow-y-auto px-5 py-4 font-mono text-[12px] leading-[1.6]",
-        fillHeight && "h-full",
-      )}
+      className="overflow-y-auto px-5 py-4 font-mono text-[12px] leading-[1.6]"
       style={{
-        maxHeight: fillHeight ? undefined : 360,
+        // v0.18.7 — always cap the height so the terminal scrolls inside
+        // instead of stretching the parent pane (and the whole page).
+        // fillHeight keeps the min-height so the pane doesn't collapse when
+        // idle; the max-height is the hard cap regardless of output volume.
+        maxHeight: fillHeight ? 320 : 360,
         minHeight: fillHeight ? 180 : undefined,
         color: "#F4F4F2",
         whiteSpace: "pre-wrap",

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.18.7] — 2026-05-13 08:41:31 Eastern · *Activity terminal scrolls inside — no longer stretches the page*
+
+### Fixed
+- **The Activity (terminal) pane in the Overview now has a fixed maximum height of 320px.** Previously the terminal body had `maxHeight: undefined` when `fillHeight=true` (the embedded Overview terminal), so each new output line pushed the pane — and the whole Overview — taller. After a long scan or clean, the page could stretch by hundreds of pixels while the hero/pie/cards continued growing below it.
+- **Now the terminal caps at 320px and scrolls internally.** Output auto-scrolls to the latest line as before; the pane itself stays fixed-height. The history strip, action buttons, and per-category cards below all stay in place regardless of how much output streams in.
+- Fix applied in both UIs: `OutputConsole.tsx` (React, `maxHeight: 320` in embedded mode) and `web/index.html` (vanilla, `.terminal-pane .terminal-body { max-height: 320px }`).
+
+### Verified
+At 1280×900 with 40 injected output lines: terminal body `clientHeight: 320`, `scrollHeight: 2335`, `isScrollable: true`. The 3-pane row, history strip, mega-buttons, and category cards remain at fixed positions below.
+
+### Why
+Maintainer: *"the terminal screen gets longer when the text is filling it up. it should let me scroll inside instead of stretching the screen out"*
+
 ## [0.18.6] — 2026-05-13 08:34:10 Eastern · *fix: Confirm modal centered (same flex-overlay pattern as ChangelogModal)*
 
 ### Fixed
