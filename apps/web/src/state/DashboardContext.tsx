@@ -52,6 +52,9 @@ interface DashboardState {
   output: OutputLine[];
   outputVisible: boolean;
   busy: boolean;
+  /** True while scanEverything() is in flight. Separate from `busy` so the
+   * scan button can show a spinner without also blocking the clean buttons. */
+  scanning: boolean;
   overviewAutoScanned: boolean;
   showChangelog: boolean;
   confirm: ConfirmOptions | null;
@@ -93,6 +96,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [output, setOutput] = useState<OutputLine[]>([]);
   const [outputVisible, setOutputVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [overviewAutoScanned, setOverviewAutoScanned] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
@@ -217,7 +221,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const scanEverythingRef = useRef<(() => Promise<void>) | null>(null);
   const scanEverything = useCallback(async () => {
     if (!allCategories.length) return;
-    await Promise.all(allCategories.map((c) => scanCategory(c)));
+    setScanning(true);
+    try {
+      await Promise.all(allCategories.map((c) => scanCategory(c)));
+    } finally {
+      setScanning(false);
+    }
   }, [allCategories, scanCategory]);
   scanEverythingRef.current = scanEverything;
 
@@ -393,6 +402,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       output,
       outputVisible,
       busy,
+      scanning,
       overviewAutoScanned,
       showChangelog,
       confirm,
@@ -411,7 +421,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }),
     [
       status, history, tabs, allCategories, scans, runningCleans, activeTab, activeSub,
-      output, outputVisible, busy, overviewAutoScanned, showChangelog, confirm,
+      output, outputVisible, busy, scanning, overviewAutoScanned, showChangelog, confirm,
       setActiveTab, setActiveSub, scanCategory, scanEverything, cleanPath,
       cleanAllTier, cleanEverywhere, runAction, openConfirm, closeOutput,
     ],

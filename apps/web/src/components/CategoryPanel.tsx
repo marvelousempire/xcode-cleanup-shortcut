@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../state/DashboardContext";
 import type { Tier } from "../lib/types";
 import { PathRow } from "./PathRow";
 import { ActionCard } from "./ActionCard";
-import { TabIcon, Info, ArrowUp, ArrowDown } from "./icons";
+import { TabIcon, Info, ArrowUp, ArrowDown, RefreshCw } from "./icons";
 import { cn, fmt } from "../lib/utils";
 
 // Row-table filter + sort state (v0.17.0). Kept locally per CategoryPanel
@@ -53,6 +53,17 @@ export function CategoryPanel({ catId, displayLabel }: Props) {
   const [sortBy, setSortBy] = useState<SortBy>("size");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
+  // Local scanning flag for the manual Re-scan button.
+  const [localScanning, setLocalScanning] = useState(false);
+  const handleRescan = useCallback(async () => {
+    setLocalScanning(true);
+    try {
+      await scanCategory(catId);
+    } finally {
+      setLocalScanning(false);
+    }
+  }, [catId, scanCategory]);
+
   // Auto-scan on first mount if no cache.
   useEffect(() => {
     if (!cached) scanCategory(catId);
@@ -90,11 +101,12 @@ export function CategoryPanel({ catId, displayLabel }: Props) {
         <div className="mt-3.5 flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={busy}
-            onClick={() => scanCategory(catId)}
-            className="flex-1 min-w-0 rounded-md border border-transparent bg-accent px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-accent-strong disabled:opacity-40"
+            disabled={busy || localScanning}
+            onClick={handleRescan}
+            className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 rounded-md border border-transparent bg-accent px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-accent-strong disabled:opacity-40"
           >
-            {scan ? "Re-scan" : "Scan"}
+            <RefreshCw className={cn("h-3 w-3", localScanning && "animate-spin")} />
+            {localScanning ? "Scanning…" : scan ? "Re-scan" : "Scan"}
           </button>
           <TierButton catId={catId} tier="safe" />
           <TierButton catId={catId} tier="probably_safe" />

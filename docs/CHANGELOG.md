@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.19.8] — 2026-05-13 12:30:00 Eastern · *Fix: Re-scan button now shows spinner + "Scanning…" so users can see it running*
+
+### Fixed — Re-scan button had no visual feedback
+
+The Re-scan button (Overview and per-category) ran the scan correctly in the background but showed zero visible feedback — no spinner, no label change, no disabled state. Users couldn't tell the button had done anything. Clean worked fine because it pipes output through the SSE terminal stream; scan is a simple fetch that returned silently.
+
+**What changed:**
+
+- **`DashboardContext`** — new `scanning: boolean` state exposed from context. `scanEverything()` sets `scanning = true` before firing all category scans in parallel, and `scanning = false` when they all complete. Separate from `busy` so clean buttons stay unaffected while a manual re-scan is running.
+
+- **`OverviewPanel`** — Re-scan button is now `disabled={busy || scanning}`, shows a spinning `RefreshCw` icon and the label changes to `"Scanning…"` while the scan is in flight. Status line below the buttons also reads `"Re-scanning N categories in parallel…"` during a re-scan.
+
+- **`CategoryPanel`** — new `localScanning` state (per-component, so independent tabs don't affect each other). `handleRescan` wraps `scanCategory(catId)` with `setLocalScanning(true/false)`. The Re-scan button shows the same spinning icon + `"Scanning…"` label. The auto-scan on first mount is unaffected.
+
+### kVersion bump
+`0.19.7` → `0.19.8`
+
+---
+
 ## [0.19.7] — 2026-05-13 12:17:00 Eastern · *Terminal theme support — white bg on light, dark bg on dark; WCAG-correct contrast for all status + ANSI colors*
 
 ### Changed — `OutputConsole` theme support (plan 0005)

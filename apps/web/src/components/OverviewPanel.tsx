@@ -11,7 +11,7 @@ function stripGlyph(s: string) {
 }
 
 export function OverviewPanel() {
-  const { status, history, tabs, scans, allCategories, scanEverything, cleanEverywhere, setActiveTab, busy } = useDashboard();
+  const { status, history, tabs, scans, allCategories, scanEverything, cleanEverywhere, setActiveTab, busy, scanning } = useDashboard();
 
   const totals = allCategories.reduce(
     (acc, c) => {
@@ -68,12 +68,12 @@ export function OverviewPanel() {
         <div className="flex flex-wrap gap-2.5">
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || scanning}
             onClick={() => scanEverything()}
             className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 rounded-md border border-border/20 bg-[hsl(var(--bg-2)/0.55)] px-4 py-2.5 text-[13px] font-semibold transition-colors hover:border-accent disabled:opacity-40"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
-            {totals.scanned > 0 ? "Re-scan everything" : "Scan everything"}
+            <RefreshCw className={cn("h-3.5 w-3.5", scanning && "animate-spin")} />
+            {scanning ? "Scanning…" : totals.scanned > 0 ? "Re-scan everything" : "Scan everything"}
           </button>
           <button
             type="button"
@@ -95,7 +95,9 @@ export function OverviewPanel() {
           </button>
         </div>
         <div className="mt-3 text-[12px] leading-[1.55] tabular text-fg-dim">
-          {totals.scanned === 0 ? (
+          {scanning ? (
+            <>Re-scanning {allCategories.length} categories in parallel…</>
+          ) : totals.scanned === 0 ? (
             "Scanning every category in parallel…"
           ) : totals.scanned < allCategories.length ? (
             <>Scanning {allCategories.length} categories… <strong className="font-semibold text-fg">{totals.scanned}/{allCategories.length}</strong></>
