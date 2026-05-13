@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.18.5] — 2026-05-13 08:24:19 Eastern · *`make ui` now builds only the Vite app (~6s) — no more stale build risk*
+
+### Fixed
+- **`make ui` previously used `pnpm turbo run build` which rebuilt both the Vite app AND the Next.js static export (~2 min combined).** If Next.js failed or the user killed the terminal early, the server would start serving whatever stale build was already on disk — which was the broken v0.18.3 build with the invisible AnimatePresence main panel. That's what caused the "none of the buttons are clickable / big dark side, only a side ball" reports even after v0.18.4 shipped.
+- **`make ui` now runs only `pnpm --filter @cleanup-hub/web build` (~6s) then launches the server.** The Vite app is the canonical UI. The Next.js static export is opt-in.
+
+### New make targets
+- `make ui` — build `@cleanup-hub/web` (Vite, ~6s) + serve. **This is the default you want.**
+- `make ui-all` — build **both** apps via Turbo then serve. Use when you want `/next/` too.
+- `make ui-legacy` — serve vanilla `web/index.html`, no build.
+- `make ui-next` — build Next.js only + serve.
+- `make ui-dev` — `pnpm turbo run dev` (Vite :5174 + Next :5175 in parallel).
+
+### To recover
+```sh
+git pull && pnpm install && make ui
+```
+Wait ~6s for the Vite build, then open `http://127.0.0.1:8765`. Full dashboard — hero, pie, theme toggle, all tabs — visible and clickable.
+
 ## [0.18.4] — 2026-05-13 08:06:18 Eastern · *fix: main panel was stuck invisible (opacity 0) — and "theme switch doesn't work" was a symptom of that*
 
 ### Fixed

@@ -2,7 +2,7 @@ SHORTCUT_NAME := Xcode Cleanup
 SCRIPT        := xcode-cleanup.applescript
 
 .DEFAULT_GOAL := help
-.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-legacy ui-react ui-next ui-dev clean-docker
+.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-all ui-legacy ui-react ui-next ui-dev clean-docker
 
 help: ## Show this help
 	@echo "Xcode Cleanup Shortcut — Make targets"
@@ -144,27 +144,33 @@ package-shortcut: ## Sign an exported .shortcut bundle as 'Anyone Mode' for shar
 report: ## Sparkline of freed-GB across recent real cleanup runs
 	@python3 scripts/report.py
 
-ui: ## Open the web UI at http://127.0.0.1:8765 (pnpm + Turbo build both apps)
-	@# v0.18.0: pnpm workspace + Turbo orchestration. Builds the Vite app
-	@# (apps/web → dist/) and the Next.js static export (apps/web-next → out/)
-	@# in one pass. The Python server picks based on the URL:
-	@#   /         → Vite (default)
-	@#   ?next=1   → Next.js (redirects to /next/)
-	@#   ?legacy=1 → vanilla web/index.html
+ui: ## Open the web UI at http://127.0.0.1:8765 (rebuilds the Vite app in ~6s)
+	@# v0.18.5: `make ui` now builds ONLY the Vite app (@cleanup-hub/web, ~6s).
+	@# Previously it ran `pnpm turbo run build` which also built the Next.js
+	@# static export (~2 min). If Next failed or the user killed it early, the
+	@# server kept serving whatever stale build was on disk — which caused the
+	@# "buttons not clickable / page invisible" bug when an old build remained.
+	@#
+	@# URL routing:
+	@#   /          → Vite React (canonical, always rebuilt here)
+	@#   ?legacy=1  → vanilla web/index.html
+	@#   /next/     → Next.js (build separately with `make ui-all` or `make ui-next`)
 	@if command -v pnpm >/dev/null 2>&1; then \
-		echo "▶ Building both frontends via Turbo (pnpm turbo run build)…"; \
-		pnpm install --silent && pnpm turbo run build || echo "⚠ Build failed — server will fall back to whatever's available."; \
+		echo "▶ Building Vite UI (apps/web)…"; \
+		pnpm install --silent && pnpm --filter @cleanup-hub/web build \
+		  && echo "✓ Built apps/web/dist/ — serving at http://127.0.0.1:8765" \
+		  || { echo "⚠ Vite build failed — falling back to vanilla UI."; }; \
 	else \
-		echo "ℹ pnpm not installed — serving vanilla UI. Install pnpm + run 'make ui' to get the modern UIs."; \
+		echo "ℹ pnpm not installed — serving vanilla UI. Install pnpm to get the React build."; \
 	fi
 	@python3 web/server.py
 
-ui-legacy: ## Force the vanilla web/index.html UI even if a React build exists
-	@XCC_LEGACY_UI=1 python3 web/server.py
-
-ui-react: ## Build + serve the Vite React app (apps/web) only
-	@pnpm install --silent && pnpm --filter @cleanup-hub/web build
+ui-all: ## Build ALL frontends (Vite + Next.js) via Turbo then serve
+	@pnpm install --silent && pnpm turbo run build
 	@python3 web/server.py
+
+ui-legacy: ## Force the vanilla web/index.html UI (no build required)
+	@XCC_LEGACY_UI=1 python3 web/server.py
 
 ui-next: ## Build + serve the Next.js static export (apps/web-next) only
 	@pnpm install --silent && pnpm --filter @cleanup-hub/web-next build
