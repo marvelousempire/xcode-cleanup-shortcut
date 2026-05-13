@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.19.2] — 2026-05-13 10:30:16 Eastern · *README rewritten at 12-year-old reading level + claude-chat-reader presentation wins*
+
+### Changed
+- **Entire README rewritten in plain English.** Every technical term is now either explained inline or replaced with a metaphor. No assumed knowledge. A 12-year-old (or a non-developer) can read the whole thing and understand what Dustpan does, why, and how. The previous README assumed familiarity with Docker, pip, SSE, Vite, Turbo, and a dozen other terms that don't help a first-time reader.
+- **Every `make` target now has a plain-English explanation in a table** — not just a one-line comment. Example: `make dry-run` → *"Practice mode. Counts up how much space would be freed, but doesn't actually delete anything."*
+- **Every category now has a plain-English description** in the "What Dustpan actually cleans" table. Example: *"Xcode — Apple's app for making iPhone/Mac apps. When you build a project it makes a LOT of working files. They pile up over months."*
+
+### Added (presentation polish, inspired by `marvelousempire/claude-chat-reader`)
+- **Multi-color badge row** — replaces the all-teal palette. Python blue for backend, Vite purple for build, pnpm orange, license green, macOS gray, "no telemetry" still teal. Releases badge in violet.
+- **New blockquote tagline at the top** in parallel structure: *"Your Xcode caches, your Docker volumes, your browser data, your forgotten downloads — every cleanup tells you what it will cost before you click."*
+- **`📦 What's in the box` emoji-led feature table** — leads each row with a topical emoji (🥧 📊 🪟 🌗 📶 ⚡ 🚦 💬 🛡️ 🔌) so the feature pitch reads at a glance. Sits above the category table.
+- **`🧱 How Dustpan is built` section now has a flow diagram** showing what happens when you click "Clean ALL safe" — browser → `/api/clean-all-safe` → `cleaners.py` → `rm -rf` → SSE stream → activity terminal. The directory-tree view stays underneath.
+- **`🐣 What a category looks like in code` section** — shows a real `cleaners.py` `browsers` slice so contributors can see the pattern at a glance. Three keys: `groups` (paths by safety), `actions` (one-click cleanups with `cost` spelled out), `tagline` (the one-liner on the card).
+- **`🌐 Running Dustpan on a different Mac` section** — pre-empts the obvious next question. Three options laid out: SSH + `make ui`, `make install-launchd` for hourly auto-clean, single-line SSH cleanup with no install.
+- **`🪟 Three versions of the dashboard, one engine` section** — explicit table mapping URL → dashboard variant → when to use it.
+
+### Why
+Maintainer: *"make the entire thing read with that level of explaining and words — a 12 year old."* — done. Also adopted the strong elements from the maintainer's `claude-chat-reader` GitHub presentation (variegated badges, emoji-led feature table, flow-diagram architecture, code-shape example, "deploying elsewhere" section) without losing anything from v0.18.9's overhaul.
+
 ## [0.19.1] — 2026-05-13 10:21:04 Eastern · *`make ui` now binds localhost + Wi-Fi by default — one command*
 
 ### Changed
