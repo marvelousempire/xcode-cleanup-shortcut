@@ -2,7 +2,7 @@ SHORTCUT_NAME := Xcode Cleanup
 SCRIPT        := xcode-cleanup.applescript
 
 .DEFAULT_GOAL := help
-.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-network ui-all ui-legacy ui-react ui-next ui-dev clean-docker
+.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-local ui-all ui-legacy ui-react ui-next ui-dev clean-docker
 
 help: ## Show this help
 	@echo "Xcode Cleanup Shortcut — Make targets"
@@ -144,12 +144,10 @@ package-shortcut: ## Sign an exported .shortcut bundle as 'Anyone Mode' for shar
 report: ## Sparkline of freed-GB across recent real cleanup runs
 	@python3 scripts/report.py
 
-ui: ## Open the web UI at http://127.0.0.1:8765 (rebuilds the Vite app in ~6s)
-	@# v0.18.5: `make ui` now builds ONLY the Vite app (@cleanup-hub/web, ~6s).
-	@# Previously it ran `pnpm turbo run build` which also built the Next.js
-	@# static export (~2 min). If Next failed or the user killed it early, the
-	@# server kept serving whatever stale build was on disk — which caused the
-	@# "buttons not clickable / page invisible" bug when an old build remained.
+ui: ## Build Vite UI (~6s) + serve on localhost AND Wi-Fi + browser auto-opens
+	@# v0.19.1 — `make ui` now serves on 0.0.0.0 by default. One command,
+	@# both URLs (Local + Network) shown at startup. Want localhost-only?
+	@# Run `make ui-local` or `XCC_HOST=127.0.0.1 make ui`.
 	@#
 	@# URL routing:
 	@#   /          → Vite React (canonical, always rebuilt here)
@@ -158,22 +156,19 @@ ui: ## Open the web UI at http://127.0.0.1:8765 (rebuilds the Vite app in ~6s)
 	@if command -v pnpm >/dev/null 2>&1; then \
 		echo "▶ Building Vite UI (apps/web)…"; \
 		pnpm install --silent && pnpm --filter @cleanup-hub/web build \
-		  && echo "✓ Built apps/web/dist/ — serving at http://127.0.0.1:8765" \
+		  && echo "✓ Built apps/web/dist/" \
 		  || { echo "⚠ Vite build failed — falling back to vanilla UI."; }; \
 	else \
 		echo "ℹ pnpm not installed — serving vanilla UI. Install pnpm to get the React build."; \
 	fi
-	@python3 web/server.py
+	@XCC_HOST=0.0.0.0 python3 web/server.py
 
-ui-network: ## Build Vite UI + serve on ALL network interfaces (0.0.0.0) — share on Wi-Fi
-	@# ⚠  NETWORK MODE: every device on your Wi-Fi can scan and trigger cleanups.
-	@# Use on a trusted home network. Stop with Ctrl+C when done.
+ui-local: ## Build + serve localhost only (no Wi-Fi visibility)
 	@if command -v pnpm >/dev/null 2>&1; then \
 		echo "▶ Building Vite UI (apps/web)…"; \
-		pnpm install --silent && pnpm --filter @cleanup-hub/web build \
-		  || { echo "⚠ Vite build failed — falling back to vanilla UI."; }; \
+		pnpm install --silent && pnpm --filter @cleanup-hub/web build || true; \
 	fi
-	@XCC_HOST=0.0.0.0 python3 web/server.py
+	@XCC_HOST=127.0.0.1 python3 web/server.py
 
 ui-all: ## Build ALL frontends (Vite + Next.js) via Turbo then serve
 	@pnpm install --silent && pnpm turbo run build
