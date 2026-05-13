@@ -1,25 +1,31 @@
 <p align="center">
-  <img src="assets/icon-hero.svg" width="96" height="96" alt="Cleanup Hub">
+  <img src="assets/icon-hero.svg" width="80" height="80" alt="Cleanup Hub">
 </p>
 
-<h1 align="center">Reclaim 10–25 GB Xcode is hoarding. One click.</h1>
+<h1 align="center">🧹 Cleanup Hub</h1>
 
 <p align="center">
-  <em>Plus Docker, Adobe, DaVinci Resolve, Final Cut, Logic, LLM tool caches, browser caches, system junk — anything macOS quietly fills with. On a working creative-pro Mac the across-all-categories reclaim usually lands at 50–150 GB.<br>
-  Every action tells you the cost before you click. No subscription. No telemetry. <a href="./xcode-cleanup.applescript">~250 readable lines</a>.</em>
+  <strong>Reclaim 50–150 GB on your Mac. Three lines. No Docker. No subscription. No telemetry.</strong>
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-16a34a" alt="MIT License"></a>
+  <em>A local-first disk-cleanup dashboard purpose-built for Mac developers and creative pros.<br>
+  11 categories · 17 sub-tools · 58 annotated actions · three frontends · one Python file to serve them all.</em>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-16a34a" alt="MIT"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-0f766e" alt="macOS 14+">
-  <img src="https://img.shields.io/badge/Xcode-15%2B-0f766e" alt="Xcode 15+">
+  <img src="https://img.shields.io/badge/no%20Docker-required-0f766e" alt="No Docker">
+  <img src="https://img.shields.io/badge/no%20pip%20install-required-0f766e" alt="No pip">
   <img src="https://img.shields.io/badge/no%20telemetry-✓-0f766e" alt="No telemetry">
+  <a href="https://github.com/marvelousempire/xcode-cleanup-shortcut/releases"><img src="https://img.shields.io/github/v/release/marvelousempire/xcode-cleanup-shortcut?color=0f766e" alt="Latest release"></a>
   <a href="https://github.com/marvelousempire/xcode-cleanup-shortcut/actions/workflows/check.yml"><img src="https://github.com/marvelousempire/xcode-cleanup-shortcut/actions/workflows/check.yml/badge.svg" alt="CI"></a>
 </p>
 
 ---
 
-## 60 seconds, three lines
+## ⚡ Three lines. Browser opens. Start cleaning.
 
 ```sh
 git clone https://github.com/marvelousempire/xcode-cleanup-shortcut.git
@@ -27,170 +33,304 @@ cd xcode-cleanup-shortcut
 make ui
 ```
 
-Your browser opens a localhost dashboard. You see a big *free GB* number, four tabs (Xcode · LLMs · Apps · System), and one button: **Scan every category**. Click it. Read the cost annotations. Decide what to clean.
+> **No Docker. No `pip install`. No Node runtime.** The server is pure Python 3 stdlib.
+> `pnpm` is used to build the React UI once (~6 seconds) and is not required to run the server.
+> If `pnpm` is not installed, `make ui` falls back to the pre-built vanilla dashboard automatically.
 
-Nothing is deleted until you say so. Nothing is sent to a server. The cleanup logic is one [AppleScript file](./xcode-cleanup.applescript) you can read end-to-end in five minutes.
+Want it on your iPad or another machine on the same Wi-Fi?
+
+```sh
+make ui-network   # binds 0.0.0.0 — prints your LAN URL alongside localhost
+```
 
 ---
 
-## What it finds
+## 🖥️ What you see when it opens
 
-Six tabs. Every path tagged with a safety tier (✓ safe · ⚠ opt-in · ⛔ caution). Every action carries a cost annotation — *exactly* what you lose when you click.
+The Overview tab loads first. Three panels across the top — then the full category grid below.
 
-| Tab | What it finds | Typical reclaim |
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│  ← Sidebar                          Main viewport                         │
+│  ┌──────────┐                                                              │
+│  │ Overview │  ┌──── Hero ────┐  ┌── Disk pie ──┐  ┌── Activity ──────┐  │
+│  │ Xcode    │  │  12.1 GB free│  │   42.8 GB    │  │ Filter lines…    │  │
+│  │ LLMs     │  │  94% used    │  │   scanned    │  │ → Scanning…      │  │
+│  │ Docker   │  │  ▓▓▓▓▓▓▓▓▓░ │  │  🟢🟣🔵🟡🟤 │  │ ✓ Done. 6.4 GB  │  │
+│  │ Apps     │  │  Factory-    │  │  Xcode 2.2GB │  │ freed in 3.1s    │  │
+│  │ Browsers │  │  fresh w/o   │  │  Docker 14.6 │  │                  │  │
+│  │ Downloads│  │  losing your │  │  LLMs  12.4  │  │ [Auto][Light][🌙]│  │
+│  │ Creative │  │  stuff       │  │  …           │  │                  │  │
+│  │ Temp     │  └──────────────┘  └──────────────┘  └──────────────────┘  │
+│  │ Archives │                                                              │
+│  │ System   │  ── Re-scan everything ── ✓ Clean ALL safe · 6.4 GB ──────  │
+│  │──────────│                                                              │
+│  │  THEME   │  ┌ Xcode ──────┐  ┌ LLMs ───────┐  ┌ Docker ─────────┐   │
+│  │[Auto][☀][🌙]│ 6.4 GB safe │  │ 0.0 GB safe │  │ 0.0 GB safe     │   │
+│  └──────────┘  │ 0.2 GB opt-in│  │ 12.4 GB opt │  │ 0.0 GB opt-in   │   │
+│                │ ● 2.0 caution│  │             │  │ ● 14.6 caution  │   │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Left sidebar** — 11 tabs, each showing its total recoverable GB + a color-coded mini-donut (green = safe / amber = opt-in / red = caution). Theme toggle pinned at the bottom.
+
+**Three-pane top row:**
+- **Hero** — live free GB counter (updates via SSE, no poll), used % progress bar
+- **Disk pie** — SVG donut where each slice is a category, sized by total footprint. Click any slice to jump to that tab.
+- **Activity terminal** — live streaming output as scans and cleans run. Search with `Ctrl+F`. Fixed height — scrolls inside, never stretches the page.
+
+**Below the top row** — action buttons + a card grid of all 11 categories. Each card shows safe / opt-in / caution GB separately so the math is obvious before you click anything.
+
+---
+
+## 🗂️ 11 categories — 58 annotated actions
+
+Every path is tagged with a safety tier. Every action tells you the exact cost before you click.
+
+| Category | Sub-tools | Typical reclaim |
 |---|---|---|
-| **Xcode** | DerivedData, DeviceSupport (iOS/watchOS/tvOS/visionOS), SwiftPM caches, simulator app data, IB caches, Instruments traces, CocoaPods | **10–25 GB** |
-| **LLM tools** | Claude Desktop updater, Claude Code session transcripts, Cursor extension/GPU caches, ChatGPT cache + logs | 1–15 GB |
-| **Docker** | Build cache (`buildx prune`), dangling images, stopped containers, unused volumes (with pre-flight check), `docker system df` widget. Surfaces Docker.raw size + shows how to actually shrink the VM disk. | **5–60 GB** |
-| **Everyday apps** | Chrome/Safari/Firefox/Brave/Arc caches, Slack/Discord/Zoom/Teams/Spotify, `~/Downloads/*.dmg`, Trash, Homebrew | 0.5–5 GB |
-| **Creative** *(6 sub-cards)* | **Adobe** (Premiere + AE Media Cache, Photoshop, Camera Raw, per-catalog Lightroom previews) · **DaVinci Resolve** (Render Cache + Optimized Media + CacheClip) · **Final Cut Pro** (per-library render + transcoded media + backups) · **Logic Pro** (caches, Apple Loops info) · **Blender** (per-version Cycles cache + autosave) · **OBS Studio** (logs, crashes, browser-source cache) | **5–80 GB** for working video editors / photographers |
-| **macOS system** | Icon cache, Spotlight parser, Time Machine local snapshots, diagnostic reports, old installers | 0.1–20 GB |
+| **Xcode** | — | 10–25 GB |
+| **LLMs** | Claude Desktop · Cursor · ChatGPT | 1–15 GB |
+| **Docker** | — | 5–60 GB |
+| **Apps** | — | 0.5–5 GB |
+| **Browsers** | Chrome · Safari · Firefox · Edge · Brave · Arc · Vivaldi | 2–20 GB |
+| **Downloads** | Installer scanner · age-based surfacing | 0–50 GB |
+| **Creative** | Adobe · DaVinci Resolve · Final Cut · Logic · Blender · OBS | 5–80 GB |
+| **Temp files** | `/private/tmp` · `/var/folders` · QuickLook · Trash | 0.5–10 GB |
+| **Archives** | `.zip` · `.dmg` · `.iso` · `.tar.gz` surfacing across disk | 0–? GB |
+| **System** | Icon cache · Spotlight · Time Machine snapshots · diagnostics | 0.1–20 GB |
 
-**Never auto-deletes:** Xcode Archives (App Store crash symbolication), iOS device backups, provisioning profiles, active simulators, Docker.raw + unattached volumes (unless you explicitly run the aggressive prune after the pre-flight), Lightroom catalogs, DaVinci project databases, Final Cut library structure, Logic projects, OBS scenes. Surfaced for review only.
+**Safety tiers:**
+- ✅ **Safe** — caches that auto-regenerate. Near-zero cost to delete.
+- ⚠️ **Opt-in** — bigger reclaim, something re-fetches or rebuilds. Each action explains exactly what.
+- 🚫 **Caution** — never auto-deleted. Surfaced for review (sizes, paths) so you can decide in Finder.
 
----
-
-## How it compares
-
-|  | Cleanup Hub | CleanMyMac | DevCleaner | `rm -rf` from memory |
-|---|---|---|---|---|
-| **Open source / auditable** | ✓ MIT, ~250 readable lines | ✗ closed binary | ✗ closed | n/a |
-| **Xcode-specific knowledge** | ✓ | partial | ✓ | up to you |
-| **Tells you the cost of each action** | ✓ | ✗ | ✗ | ✗ |
-| **Dry-run / measure-before-delete** | ✓ | partial | ✗ | ✗ |
-| **Touches Archives safely (won't break crash symbolication)** | ✓ skipped by default | ?  | ✓ | risky |
-| **Multi-modal (CLI / Shortcut / launchd / SwiftBar / SSH)** | ✓ all five | ✗ | ✗ | shell only |
-| **No telemetry / no auto-update phone-home** | ✓ | ✗ | ✗ | n/a |
-| **Price** | $0 | $30–50/yr | $5 one-time | $0 |
-
-The moat is the first row. CleanMyMac will never let you read what it does; we will never *not* let you.
+**Never touched automatically:**
+Xcode Archives · iOS device backups · provisioning profiles · Docker.raw · unattached Docker volumes · Lightroom catalogs · DaVinci project databases · Final Cut library structure · Logic projects · OBS scenes/profiles.
 
 ---
 
-## Install paths — pick one (or stack)
+## 🎨 Three frontends — one Python backend
 
-All five paths share the same source script. The choice is about ergonomics, not capability.
+All three hit the same `/api/*` endpoints. Switch between them without restarting anything.
+
+| Frontend | URL | When to use |
+|---|---|---|
+| **Vite + React** *(default)* | `http://127.0.0.1:8765` | The full experience — pie chart, live SSE, animated sidebar, theme toggle |
+| **Vanilla HTML** | `http://127.0.0.1:8765/?legacy=1` or `/legacy` | Works in any browser, zero JS framework. Identical features, different engine. |
+| **Next.js** | `http://127.0.0.1:8765/next/` | Experimental App Router surface. Build with `make ui-all`. |
+
+---
+
+## 🚀 Make targets
+
+```
+make ui            Build React UI (~6s) + serve localhost + browser auto-opens
+make ui-network    Same but binds 0.0.0.0 — shows LAN URL for Wi-Fi access
+make ui-dev        Vite HMR (:5174) + Next HMR (:5175) in parallel
+make ui-all        Build both Vite + Next.js via Turbo, then serve
+make ui-legacy     Serve vanilla HTML only — no build required
+make ui-next       Build + serve Next.js static export only
+
+make run           AppleScript cleanup (with confirmation + progress bar)
+make dry-run       Measure freeable space — no files deleted
+make force         Run even when disk looks healthy (skip 50 GB threshold)
+make history       Last 20 run-log entries
+make report        Sparkline of freed GB over time
+make check         Verify AppleScript syntax
+make install-cli   Symlink xcc to ~/.local/bin/
+make help          Everything
+```
+
+---
+
+## 🏗️ Architecture
+
+No Docker required. No cloud. Everything runs on your Mac.
+
+```
+xcode-cleanup-shortcut/
+│
+├── web/
+│   ├── server.py          Python 3 stdlib HTTP server — zero pip deps
+│   ├── cleaners.py        Single source of truth: 11 categories, 17 sub-tools,
+│   │                      58 annotated actions, all safety tiers defined here
+│   └── index.html         Vanilla HTML/JS dashboard (fallback + legacy)
+│
+├── apps/
+│   ├── web/               @cleanup-hub/web — Vite + React + TypeScript (canonical UI)
+│   └── web-next/          @cleanup-hub/web-next — Next.js 14 App Router (experimental)
+│
+├── xcode-cleanup.applescript  Standalone cleanup script — runs via Shortcuts / CLI / launchd
+├── Makefile               All make targets
+├── package.json           pnpm workspace root
+├── turbo.json             Turbo build pipeline (build / dev / typecheck / lint)
+│
+├── scripts/               report.py (CSV history sparkline), remote-cleanup.sh
+├── bin/                   xcc CLI wrapper
+├── launchd/               com.example.xcode-cleanup.plist
+├── swiftbar/              menu bar plugin
+└── docs/                  CHANGELOG · HANDOFF · PRD · SHORTCUTS · Design-System
+```
+
+### How the server decides what to serve
+
+```
+GET /              →  apps/web/dist/index.html  (React, if built)
+                      ↳  web/index.html         (vanilla, fallback)
+GET /assets/*      →  apps/web/dist/assets/*    (hashed, 1-year cache)
+GET /next/         →  apps/web-next/out/         (Next.js static export)
+GET /?legacy=1     →  web/index.html             (always vanilla)
+GET /api/*         →  web/server.py              (scan, clean, SSE streams)
+```
+
+### Real-time: the `/api/live` SSE channel
+
+The dashboard subscribes to a single long-lived server-sent events stream. No polling.
+- Server pushes `status` deltas whenever your free disk changes (another app deletes something, Time Machine runs, etc.)
+- Server pushes `running` events when a clean starts or finishes — the header widget shows live
+- Client auto-reconnects with backoff if the connection drops
+
+---
+
+## 📦 Install paths — pick your ergonomic preference
+
+All paths share the same `cleaners.py` source. Choose based on how you want to interact.
 
 <details open>
-<summary><strong>I want a GUI</strong> — web dashboard, Apple Shortcut, or menu bar</summary>
+<summary><strong>Web UI</strong> — the full dashboard experience</summary>
 
-<br>
+```sh
+git clone https://github.com/marvelousempire/xcode-cleanup-shortcut.git
+cd xcode-cleanup-shortcut
+make ui
+# → http://127.0.0.1:8765
+```
 
-| Surface | Setup | What you get |
-|---|---|---|
-| **Web UI** ⭐ | `make ui` | Localhost dashboard at `127.0.0.1:8765`. Live disk meter, per-path sizes, four-tab scan, cost annotations on every action, streaming output. Zero deps (Python stdlib). |
-| **Apple Shortcut** | `make install-shortcut` | Drops the AppleScript into a new Shortcut. Pin to menu bar, bind a hotkey, or schedule via Automations. |
-| **SwiftBar plugin** | `brew install --cask swiftbar && make install-swiftbar` | Menu-bar widget shows `🧹 12 GB`. Click → Run / Dry run / Force / History / Report. |
+Requires: Python 3.9+ (pre-installed on every Mac since Monterey). `pnpm` optional — auto-falls-back to vanilla if absent.
+
+For Wi-Fi access from your iPad or another laptop:
+```sh
+make ui-network
+# → prints both http://127.0.0.1:8765 and http://192.168.X.X:8765
+```
 
 </details>
 
 <details>
-<summary><strong>I want a CLI</strong> — terminal, hourly daemon, or remote Mac over SSH</summary>
-
-<br>
-
-| Surface | Setup | What you get |
-|---|---|---|
-| **`xcc` CLI** | `make install-cli` | Symlinks to `~/.local/bin/xcc`. Flags: `--dry-run`, `--force`, `--history`, `--report`, `--patterns`. |
-| **launchd hourly agent** | `make install-launchd` | Runs every hour. Threshold-gated — silent no-op when disk is healthy. `make uninstall-launchd` to remove. |
-| **Remote Mac via SSH** | See [`docs/SHORTCUTS.md`](./docs/SHORTCUTS.md) | Paste-ready *Run Script Over SSH* block. Clean a build server without SSHing in and `rm -rf`ing from memory. |
+<summary><strong>Apple Shortcut</strong> — one tap from Siri / menu bar / hotkey</summary>
 
 ```sh
-# No-clone version — just measure, deletes nothing
+make install-shortcut
+```
+
+Drops the AppleScript into a new Shortcut. Pin it to the menu bar, bind a keyboard shortcut, or trigger it from an Automation. Works offline, no server needed.
+
+</details>
+
+<details>
+<summary><strong>SwiftBar menu-bar plugin</strong></summary>
+
+```sh
+brew install --cask swiftbar
+make install-swiftbar
+```
+
+Menu bar shows `🧹 12 GB`. Click for: Run · Dry run · Force · History · Report.
+
+</details>
+
+<details>
+<summary><strong>CLI + launchd hourly agent</strong></summary>
+
+```sh
+make install-cli      # → xcc in your PATH
+make install-launchd  # → runs every hour, silent when disk is healthy
+```
+
+Flags: `--dry-run`, `--force`, `--history`, `--report`, `--patterns`
+
+Or without cloning:
+```sh
 bash <(curl -fsSL https://raw.githubusercontent.com/marvelousempire/xcode-cleanup-shortcut/main/scripts/remote-cleanup.sh) --dry-run
 ```
 
 </details>
 
----
+<details>
+<summary><strong>Remote Mac over SSH</strong></summary>
 
-## Why this and not the alternatives
+See [`docs/SHORTCUTS.md`](./docs/SHORTCUTS.md) for a paste-ready *Run Script Over SSH* block. Clean a build server or CI Mac without SSHing in and `rm -rf`ing from memory.
 
-- **Auditable.** [One AppleScript](./xcode-cleanup.applescript). ~250 lines. Read it. You can't read CleanMyMac.
-- **Specific.** Knows which Xcode paths are safe (skip Archives, only wipe *unavailable* simulators, never touch active project state). That knowledge *is* the product.
-- **Cost-aware.** Every action surfaces what you lose. "First build takes ~30s longer." "Chrome reloads pages from origin on next visit." "Conversation history with Claude Code gone." You decide.
-- **Quiet.** The 50 GB threshold means the launchd agent does nothing on days you don't need it.
-- **Multi-modal.** GUI for the casual session. CLI for the build server. Menu bar for the live indicator. Same script under all of them.
-
-Pricing comparison: this is free. CleanMyMac is $30–50/yr. After two years a paid cleaner has cost you ~$100. This won't.
+</details>
 
 ---
 
-## Customize
-
-### `/tmp` orphan patterns
-
-The shipped defaults are example patterns from the maintainer's Red-E Play workflow (`redeplay-*`, `RedEPlay-*`, etc.) — they'll match nothing for other users and phase 4 will safely no-op.
-
-```sh
-# One-off
-XCODE_CLEANUP_TMP_PATTERNS="/private/tmp/myproject-* /private/tmp/build-cache-*" make run
-
-# Skip phase 4 entirely
-XCODE_CLEANUP_TMP_PATTERNS="" make run
-
-# Permanent: edit kDefaultTmpPatterns at the top of xcode-cleanup.applescript
-```
-
-### Add cleanup phases
-
-The script is one self-contained AppleScript. Common additions:
-
-- Simulator app/data state: `xcrun simctl erase all`
-- Homebrew downloads: `brew cleanup -s`
-- Package manager caches: `pnpm store prune`, `npm cache clean --force`, `yarn cache clean`
-
-### Environment flags
+## ⚙️ Environment flags
 
 | Variable | Effect |
 |---|---|
-| `XCODE_CLEANUP_DRY_RUN=1` | Measure phase sizes; no files deleted. |
-| `XCODE_CLEANUP_DEMO=1` | Sleep instead of deleting. For screen recording. |
-| `XCODE_CLEANUP_FORCE=1` | Skip the 50 GB free threshold check. |
-| `XCODE_CLEANUP_AUTO_CONFIRM=1` | Skip the confirmation alert. For scripted invocation only. |
-| `XCODE_CLEANUP_TMP_PATTERNS=…` | Override `/private/tmp` orphan globs. |
-| `XCODE_CLEANUP_NO_UPDATE_CHECK=1` | Skip the once-daily GitHub release check. |
+| `XCODE_CLEANUP_DRY_RUN=1` | Measure phase sizes; no files deleted |
+| `XCODE_CLEANUP_DEMO=1` | Sleep instead of deleting — for screen recording |
+| `XCODE_CLEANUP_FORCE=1` | Skip the 50 GB free-space threshold gate |
+| `XCODE_CLEANUP_AUTO_CONFIRM=1` | Skip the confirmation alert — for scripted invocation |
+| `XCODE_CLEANUP_TMP_PATTERNS=…` | Override `/private/tmp` orphan globs (`""` to skip phase 4) |
+| `XCODE_CLEANUP_NO_UPDATE_CHECK=1` | Skip the once-daily GitHub release check |
+| `XCC_UI_PORT=9000` | Change the server port (default 8765) |
+| `XCC_HOST=0.0.0.0` | Bind to all interfaces (same as `make ui-network`) |
+| `XCC_LEGACY_UI=1` | Force vanilla HTML even when a React build exists |
 
 ---
 
-## Makefile targets
+## 🆚 How it compares
 
-```sh
-make ui              # Localhost dashboard (recommended)
-make run             # Run cleanup (with alert + progress + notification)
-make dry-run         # Measure freeable space; delete nothing
-make force           # Run even if disk looks healthy
-make history         # Last 20 run-log entries
-make report          # ▁▂▃▄▅▆▇ sparkline of freed GB
-make demo            # Simulate phases (for screen recording)
-make check           # Verify AppleScript compiles
-make install-cli     # Symlink xcc to ~/.local/bin/
-make install-shortcut
-make install-launchd
-make install-swiftbar
-make help            # Everything
-```
+|  | Cleanup Hub | CleanMyMac | DevCleaner | `rm -rf` from memory |
+|---|---|---|---|---|
+| **Open source / auditable** | ✓ MIT | ✗ closed | ✗ closed | n/a |
+| **Xcode-specific knowledge** | ✓ | partial | ✓ | up to you |
+| **Cost annotation per action** | ✓ | ✗ | ✗ | ✗ |
+| **Dry-run before deleting** | ✓ | partial | ✗ | ✗ |
+| **Browsers / Downloads / Archives** | ✓ | partial | ✗ | manual |
+| **Live disk meter (SSE, no poll)** | ✓ | ✗ | ✗ | ✗ |
+| **Wi-Fi network mode** | ✓ | ✗ | ✗ | ✗ |
+| **Three frontends (React / vanilla / Next)** | ✓ | ✗ | ✗ | ✗ |
+| **Multi-modal (web · Shortcut · CLI · launchd · SwiftBar · SSH)** | ✓ all six | ✗ | ✗ | shell only |
+| **No Docker / no pip / no subscription / no telemetry** | ✓ | ✗ | partial | ✓ |
+| **Price** | **$0** | $30–50/yr | $5 | $0 |
 
----
-
-## Files
-
-- [`xcode-cleanup.applescript`](./xcode-cleanup.applescript) — the canonical cleanup script
-- [`web/cleaners.py`](./web/cleaners.py) — single source of truth for what the dashboard scans
-- [`web/index.html`](./web/index.html) — the dashboard UI
-- [`docs/Design-System.md`](./docs/Design-System.md) — design tokens and rationale for the v0.11 redesign
-- [`docs/Redesign-Brief.md`](./docs/Redesign-Brief.md) — the brief that drove this redesign
-- [`HANDOFF.md`](./HANDOFF.md) — current state for fresh sessions
-- [`CHANGELOG.md`](./CHANGELOG.md) — version history
-- [`PRD.md`](./PRD.md) — product requirements (F1–F29)
-- [`docs/SHORTCUTS.md`](./docs/SHORTCUTS.md) — paste-ready Apple-Shortcuts blocks (Run Shell Script · Run Script Over SSH · Run AppleScript)
+The moat is the first row. You can read every line of what this does. You cannot read CleanMyMac.
 
 ---
 
-## Credits
+## 🗺️ Repo files
 
-Icon: [Lucide](https://lucide.dev) `wand-sparkles` (ISC). See [`assets/ATTRIBUTION.md`](./assets/ATTRIBUTION.md). Animation primitives: [Motion](https://motion.dev) (MIT), loaded via CDN — no install required.
+| Path | What |
+|---|---|
+| `xcode-cleanup.applescript` | Standalone AppleScript — the original single-file tool |
+| `web/server.py` | Python HTTP server + SSE streams + `/api/live` channel |
+| `web/cleaners.py` | All 11 categories, 17 sub-tools, 58 actions — the data layer |
+| `web/index.html` | Vanilla dashboard (no bundler, zero deps) |
+| `apps/web/` | `@cleanup-hub/web` — Vite + React + TypeScript + Motion |
+| `apps/web-next/` | `@cleanup-hub/web-next` — Next.js 14 App Router (experimental) |
+| `Makefile` | All make targets |
+| `package.json` | pnpm workspace root |
+| `turbo.json` | Turbo build pipeline |
+| `docs/CHANGELOG.md` | Version history with timestamps |
+| `docs/HANDOFF.md` | Current session state and open work |
+| `docs/SHORTCUTS.md` | Paste-ready Apple Shortcuts blocks |
+| `docs/Design-System.md` | Design tokens and visual language |
+| `scripts/report.py` | CSV history sparkline |
+| `scripts/remote-cleanup.sh` | curl-pipe-to-bash remote runner |
+| `bin/xcc` | CLI wrapper |
+| `launchd/` | launchd plist for hourly automation |
+| `swiftbar/` | SwiftBar menu-bar plugin |
 
-## License
+---
 
-MIT. See [`LICENSE`](./LICENSE).
+## Credits & License
+
+**Animation:** [Motion](https://motion.dev) (MIT) · **Icons:** [Lucide](https://lucide.dev) (ISC) · **Components:** [Radix UI](https://radix-ui.com) (MIT) · **Build:** [Vite](https://vitejs.dev) + [Turbo](https://turbo.build) (MIT)
+
+**© 2026 Learn Mappers LLC DBA AVERY GOODMAN · All rights reserved · Intellectual property · UCC 1-308**
+
+MIT License — see [`LICENSE`](./LICENSE).
