@@ -33,16 +33,7 @@ export function OverviewPanel() {
 
   return (
     <div>
-      {/* ── 0a. Rescue banner — disk critically/dangerously low; fires without scan */}
-      <RescueBanner />
-
-      {/* ── 0b. Permission banner — macOS TCC blocking du */}
-      <PermissionBanner />
-
-      {/* ── 0c. Habit alerts — categories near growth threshold */}
-      <HabitBanner />
-
-      {/* ── 1. Action buttons (top) + Quick Wins below them ─────────────── */}
+      {/* ── 1. Action buttons — pinned at top, always first ───────────────── */}
       <section className="glass mb-4 rounded-lg border border-border/20 p-4 shadow-sm">
         <div className="flex flex-wrap gap-2.5">
           <button
@@ -92,10 +83,16 @@ export function OverviewPanel() {
         </div>
       </section>
 
-      {/* ── 1b. Quick Wins — top safe items ranked by size across all categories */}
+      {/* ── 2. Space breakdown bar chart ─────────────────────────────────── */}
+      <SpaceBarChart />
+
+      {/* ── 3. Banners — rescue (disk low) · permission (FDA) · habits · quick wins */}
+      <RescueBanner />
+      <PermissionBanner />
+      <HabitBanner />
       <QuickWins />
 
-      {/* ── 2. 3-pane: hero · pie · terminal ─────────────────────────────── */}
+      {/* ── 4. 3-pane: hero · pie · terminal ─────────────────────────────── */}
       <div className="mb-3.5 grid gap-3.5 overview-top">
         <div className="overflow-hidden rounded-lg border border-border/15 shadow-md" style={{ background: "hsl(var(--bg-2))" }}>
           <Hero status={status} embedded />
@@ -116,7 +113,7 @@ export function OverviewPanel() {
         </div>
       </div>
 
-      {/* ── 3. History banner ────────────────────────────────────────────── */}
+      {/* ── 5. History banner ────────────────────────────────────────────── */}
       {history?.real_runs ? (
         <div
           className="mt-1 mb-4 flex items-center justify-center gap-2 rounded-full border border-border/10 px-4 py-2.5 text-[12px] tabular"
@@ -130,9 +127,6 @@ export function OverviewPanel() {
           </span>
         </div>
       ) : null}
-
-      {/* ── 4. Horizontal space bar chart ────────────────────────────────── */}
-      <SpaceBarChart />
 
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
         {tabs.filter((t) => !t.meta).map((tab, idx) => {

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.20.7] — 2026-05-13 18:30:00 Eastern · *Overview layout: buttons top → bar chart → banners → 3-pane → history → cards*
+
+### Changed — Overview page layout order
+
+Reordered sections per user direction. Top-to-bottom is now:
+
+1. **Action buttons** (Scan / Clean ALL safe / Clean ALL opt-in) — pinned at the very top, always first
+2. **Space breakdown bar chart** (SpaceBarChart with color-coded bars + delete buttons)
+3. **Banners** in order: Rescue (low disk) · Permission (FDA) · Habits · Quick Wins
+4. **3-pane row** (disk hero · pie chart · activity terminal)
+5. **History banner** (total freed across all runs)
+6. **Category cards grid**
+
+### kVersion
+`0.20.6` → `0.20.7`
+
+---
+
 ## [0.20.6] — 2026-05-13 18:00:00 Eastern · *Plan 0009: Disk Doctor — Quick Wins, Rescue Mode, Xcode DocumentationIndex, active diagnosis*
 
 ### The problem this solves
