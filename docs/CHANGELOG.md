@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.18.3] — 2026-05-13 07:50:01 Eastern · *Theme switch in the sidebar — Auto · Light · Dark*
+
+### Added
+- **Three-state theme switcher pinned to the bottom of the sidebar** (both React and vanilla UIs). One segmented control: `Auto · Light · Dark`. Each option has its own Lucide icon (Monitor / Sun / Moon) so the chosen state reads at a glance.
+- **`Auto` follows the OS** via `prefers-color-scheme: dark`. **`Light` and `Dark` override the OS** by setting `data-theme="light"` or `data-theme="dark"` on `<html>`. The CSS was already wired for both activation paths from v0.14 — this PR adds the UI and the JS to drive it.
+- **Preference persists in `localStorage` under `cleanupHub.theme.v18`.** Both UIs read the same key, so the theme follows you across `/` (Vite) and `/legacy` (vanilla) without re-selecting.
+- **Pre-paint inline script in `<head>`** applies the saved theme before either UI's markup renders. Avoids the classic "light flash on a dark-mode user's first paint" problem on cold load.
+
+### Changed
+- **`web/index.html`** restructured to split the dark-mode tokens between an explicit `:root[data-theme="dark"]` block and an `@media (prefers-color-scheme: dark) :root:not([data-theme="light"]):not([data-theme="dark"])` block. The media query no longer wins when the user has made an explicit choice. Same restructure for the `body` background gradients so the dark-mode gradient follows whichever activation path is active.
+
+### Verified
+At 1280×900, all three modes round-trip:
+- Default load: `Auto` selected, theme follows OS (the preview environment renders light by default).
+- Click `Dark` → `data-theme="dark"` on `<html>`, `localStorage.cleanupHub.theme.v18="dark"`. Background turns dark, cards glass-translucent, text light, mega-buttons brighten.
+- Click `Light` → `data-theme="light"`, `localStorage="light"`. Background returns to cream, cards light, the Activity terminal stays dark on purpose (it's a CLI surface).
+- Click `Auto` → `data-theme` attribute removed, `localStorage` cleared. Back to following the OS.
+
+### Why
+Maintainer: *"fix auto/light/dark mode switch in sidebar too"* — added. Both UIs.
+
 ## [0.18.2] — 2026-05-13 07:36:37 Eastern · *layout: don't hide the main panel below 1024px*
 
 ### Fixed

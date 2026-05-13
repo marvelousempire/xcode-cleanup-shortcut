@@ -1,5 +1,6 @@
 import { useDashboard } from "../state/DashboardContext";
 import { TabIcon } from "./icons";
+import { ThemeToggle } from "./ThemeToggle";
 import { cn, fmt } from "../lib/utils";
 
 function stripGlyph(s: string) {
@@ -103,6 +104,13 @@ export function SidebarLeft() {
             </button>
           );
         })}
+        {/* v0.18.3 — Auto / Light / Dark theme switcher sits at the bottom of
+            the category nav. The CSS already supports both the
+            prefers-color-scheme media query and the [data-theme] attribute,
+            so this just toggles the attribute (and localStorage). */}
+        <div className="mt-1.5 border-t border-border/10 pt-1.5">
+          <ThemeToggle />
+        </div>
       </nav>
     </aside>
   );

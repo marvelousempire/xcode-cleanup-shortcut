@@ -71,8 +71,45 @@
     --sidebar-w-right: 220px;
   }
 
+  /* v0.18.3 — dark-mode tokens.
+     Two activation paths so the user's manual choice (data-theme=dark) wins
+     over the OS preference, and an explicit data-theme=light forces light
+     even when the OS is set to dark. */
+  :root[data-theme="dark"],
+  :root:not([data-theme="light"]) {
+    /* placeholder — actual rules below are gated by the @media query so they
+       only apply in "Auto" mode when the OS is dark, OR via the
+       :root[data-theme="dark"] selector below. */
+  }
+  :root[data-theme="dark"] {
+    --bg-1: #0B0B0C;
+    --bg-2: rgba(22,22,24,0.78);
+    --bg-3: rgba(34,34,38,0.55);
+    --border: rgba(255,255,255,0.10);
+    --border-2: rgba(255,255,255,0.06);
+    --border-strong: rgba(255,255,255,0.16);
+    --text: #F4F4F2;
+    --text-dim: #9B9BA3;
+    --text-faint: #6C6C76;
+
+    --accent: #2DD4BF;
+    --accent-strong: #5EEAD4;
+    --accent-soft: rgba(45,212,191,0.12);
+
+    --safe: #22C55E;
+    --safe-soft: rgba(34,197,94,0.14);
+    --warn: #FBBF24;
+    --warn-soft: rgba(251,191,36,0.14);
+    --danger: #EF4444;
+    --danger-soft: rgba(239,68,68,0.14);
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-md: 0 2px 4px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.7);
+    --shadow: var(--shadow-sm);
+  }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
       --bg-1: #0B0B0C;
       --bg-2: rgba(22,22,24,0.78);
       --bg-3: rgba(34,34,38,0.55);
@@ -117,8 +154,13 @@
       radial-gradient(at 80% 100%, rgba(22,163,74,0.05)  0, transparent 50%);
     padding: 28px 24px 96px;
   }
+  :root[data-theme="dark"] body {
+    background-image:
+      radial-gradient(at 20% 0%,   rgba(45,212,191,0.08) 0, transparent 50%),
+      radial-gradient(at 80% 100%, rgba(34,197,94,0.05)  0, transparent 50%);
+  }
   @media (prefers-color-scheme: dark) {
-    body {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) body {
       background-image:
         radial-gradient(at 20% 0%,   rgba(45,212,191,0.08) 0, transparent 50%),
         radial-gradient(at 80% 100%, rgba(34,197,94,0.05)  0, transparent 50%);
@@ -225,6 +267,44 @@
     border-radius: var(--r-lg);
     padding: 6px;
     display: flex; flex-direction: column; gap: 2px;
+  }
+  /* v0.18.3 — three-state theme toggle pinned below the category list. */
+  .theme-toggle {
+    margin-top: 10px;
+    padding: 8px 6px 4px;
+    border-top: 1px solid var(--border-2);
+  }
+  .theme-toggle-label {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-faint);
+    padding: 0 6px 6px;
+  }
+  .theme-toggle-segments {
+    display: flex; gap: 2px;
+    padding: 2px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+  }
+  .theme-seg {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    appearance: none; border: none;
+    padding: 4px 6px;
+    background: transparent;
+    color: var(--text-dim);
+    font: inherit; font-size: 11px; font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background var(--d-quick) var(--ease-out), color var(--d-quick) var(--ease-out);
+  }
+  .theme-seg svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .theme-seg:hover { background: var(--bg-3); color: var(--text); }
+  .theme-seg[aria-checked="true"] {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
   }
   .vnav .vnav-title {
     font-size: 10px;
@@ -1254,6 +1334,19 @@
     }
   }
 </style>
+<script>
+  // v0.18.3 — apply the saved theme before <body> renders so there's no
+  // flash. Reads the same key the React app uses (cleanupHub.theme.v18)
+  // so both UIs share a preference.
+  (function () {
+    try {
+      var v = localStorage.getItem("cleanupHub.theme.v18");
+      if (v === "light" || v === "dark") {
+        document.documentElement.setAttribute("data-theme", v);
+      }
+    } catch (e) { /* private mode — fall through to OS default */ }
+  })();
+</script>
 </head>
 <body>
 <div class="app-shell">
@@ -1277,6 +1370,25 @@
 
     <aside class="sidebar-left">
       <nav class="vnav" id="vtabs"></nav>
+      <!-- v0.18.3 — three-state theme switcher. JS at the bottom of <script>
+           wires it up + persists to localStorage. -->
+      <div class="theme-toggle" role="radiogroup" aria-label="Theme">
+        <div class="theme-toggle-label">Theme</div>
+        <div class="theme-toggle-segments">
+          <button class="theme-seg" data-theme-set="auto"  role="radio" aria-checked="true"  title="Follow system">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            <span>Auto</span>
+          </button>
+          <button class="theme-seg" data-theme-set="light" role="radio" aria-checked="false" title="Light theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <span>Light</span>
+          </button>
+          <button class="theme-seg" data-theme-set="dark"  role="radio" aria-checked="false" title="Dark theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span>Dark</span>
+          </button>
+        </div>
+      </div>
     </aside>
 
     <main class="viewport" id="viewport">
@@ -3038,6 +3150,45 @@ function maybeShowCoachmark() {
   };
   tryShow();
 }
+
+// v0.18.3 — wire the three-state theme switcher (Auto / Light / Dark).
+// The CSS already supports both prefers-color-scheme AND [data-theme="..."],
+// so we just toggle the attribute and persist. The early script in <head>
+// applies the saved value before paint so there's no flash on load.
+(function wireThemeToggle() {
+  const segments = document.querySelectorAll(".theme-seg");
+  if (!segments.length) return;
+  const STORAGE_KEY = "cleanupHub.theme.v18";
+
+  const readMode = () => {
+    try {
+      const v = localStorage.getItem(STORAGE_KEY);
+      return (v === "light" || v === "dark") ? v : "auto";
+    } catch { return "auto"; }
+  };
+  const apply = (mode) => {
+    const root = document.documentElement;
+    if (mode === "auto") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", mode);
+  };
+  const reflect = (mode) => {
+    segments.forEach((b) => {
+      const active = b.dataset.themeSet === mode;
+      b.setAttribute("aria-checked", active ? "true" : "false");
+    });
+  };
+  const choose = (mode) => {
+    apply(mode);
+    reflect(mode);
+    try {
+      if (mode === "auto") localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, mode);
+    } catch { /* private mode */ }
+  };
+
+  reflect(readMode());
+  segments.forEach((b) => b.addEventListener("click", () => choose(b.dataset.themeSet)));
+})();
 
 loadStatus();
 loadHistory();
