@@ -42,7 +42,7 @@ writing them into the repo we get:
 |---|---|---|---|
 | [0001](0001-cleanup-hub-v1-redesign.md) | Cleanup Hub v1 redesign — design system + dashboard restructure + motion polish + README rewrite | shipped | v0.11.x – v0.13.x |
 | [0002](0002-dustpan-readme-under-the-hood.md) | Dustpan README — add "🛠️ Under the hood" tech-stack section | shipped | v0.19.3 |
-| [0003](0003-database-tier-guide-for-future-apps.md) | Database tier guide for future apps — SQLite / Docker Postgres / Homebrew Postgres decision tree + Makefile templates | in progress | v0.19.5 |
+| [0003](0003-database-tier-guide-for-future-apps.md) | Database tier guide for future apps — SQLite / Docker Postgres / Homebrew Postgres decision tree + Makefile templates | shipped | v0.19.5 |
 
 ## When to add a plan
 
