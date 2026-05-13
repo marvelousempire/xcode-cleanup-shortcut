@@ -112,6 +112,12 @@ export function OutputConsole({ embedded = false, className, fillHeight = false,
     return output.map((l) => l.text.toLowerCase().includes(q));
   }, [output, query]);
 
+  // v0.19.7 — all terminal colors read from CSS vars so they flip with the
+  // active theme. Light mode: white bg + near-black text. Dark mode: near-black
+  // bg + near-white text. ANSI + status colors also swap for WCAG contrast.
+  const terminalBg = "hsl(var(--terminal-bg))";
+  const terminalBorder = "hsl(var(--terminal-border))";
+
   const body = (
     <div
       ref={scrollRef}
@@ -123,13 +129,13 @@ export function OutputConsole({ embedded = false, className, fillHeight = false,
         // idle; the max-height is the hard cap regardless of output volume.
         maxHeight: fillHeight ? 320 : 360,
         minHeight: fillHeight ? 180 : undefined,
-        color: "#F4F4F2",
+        color: "hsl(var(--terminal-fg))",
         whiteSpace: "pre-wrap",
         wordBreak: "break-word",
       }}
     >
       {output.length === 0 ? (
-        <span className="italic text-[#6B6B73]">
+        <span className="console-dim italic">
           Idle — nothing is running. Hit Scan or Clean to see live output.
         </span>
       ) : (
@@ -141,10 +147,10 @@ export function OutputConsole({ embedded = false, className, fillHeight = false,
             transition={{ duration: 0.18 }}
             className={cn(
               "block",
-              line.cls === "ok" && "text-[#22C55E]",
-              line.cls === "warn" && "text-[#FBBF24]",
-              line.cls === "err" && "text-[#EF4444]",
-              line.cls === "dim" && "text-[#9B9BA3]",
+              line.cls === "ok" && "console-ok",
+              line.cls === "warn" && "console-warn",
+              line.cls === "err" && "console-err",
+              line.cls === "dim" && "console-dim",
             )}
           >
             {renderLine(line.text, query.trim())}
@@ -157,7 +163,7 @@ export function OutputConsole({ embedded = false, className, fillHeight = false,
   const toolbar = withToolbar ? (
     <div
       className="flex items-center gap-1.5 border-b px-2 py-1"
-      style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}
+      style={{ borderColor: terminalBorder, background: "transparent" }}
     >
       <input
         ref={searchRef}
@@ -168,15 +174,16 @@ export function OutputConsole({ embedded = false, className, fillHeight = false,
           if (e.key === "Escape") { setQuery(""); searchRef.current?.blur(); }
         }}
         placeholder="Filter lines… (Ctrl+F)"
-        className="flex-1 border-0 bg-transparent px-1 py-0.5 font-mono text-[11px] text-[#F4F4F2] outline-none placeholder:text-[#6B6B73]"
+        className="flex-1 border-0 bg-transparent px-1 py-0.5 font-mono text-[11px] outline-none"
+        style={{ color: "hsl(var(--terminal-fg))", caretColor: "hsl(var(--terminal-fg))" }}
         autoComplete="off"
         spellCheck={false}
       />
       <button
         type="button"
         onClick={() => setQuery("")}
-        className="rounded border px-2 py-0.5 text-[10px] text-[#9B9BA3] transition-colors hover:text-[#F4F4F2]"
-        style={{ borderColor: "rgba(255,255,255,0.12)" }}
+        className="console-dim rounded border px-2 py-0.5 text-[10px] transition-colors hover:opacity-80"
+        style={{ borderColor: terminalBorder }}
         title="Clear filter"
       >
         Clear
@@ -188,11 +195,11 @@ export function OutputConsole({ embedded = false, className, fillHeight = false,
     return (
       <div
         className={cn(
-          "flex flex-col overflow-hidden rounded-md border border-white/[0.06]",
+          "flex flex-col overflow-hidden rounded-md border",
           fillHeight && "h-full flex-1",
           className,
         )}
-        style={{ background: "hsl(240 5% 4% / 0.92)" }}
+        style={{ background: terminalBg, borderColor: terminalBorder }}
       >
         {toolbar}
         {body}
@@ -208,8 +215,8 @@ export function OutputConsole({ embedded = false, className, fillHeight = false,
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className={cn("mt-5 overflow-hidden rounded-lg border border-white/[0.06]", className)}
-          style={{ background: "hsl(240 5% 4% / 0.92)" }}
+          className={cn("mt-5 overflow-hidden rounded-lg border", className)}
+          style={{ background: terminalBg, borderColor: terminalBorder }}
         >
           {body}
         </motion.div>

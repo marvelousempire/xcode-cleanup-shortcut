@@ -26,6 +26,25 @@
     --warn-soft: 32 95% 44%;
     --danger: 0 75% 42%;            /* #B91C1C */
     --danger-soft: 0 75% 42%;
+
+    /* ── Terminal / OutputConsole — light mode ── */
+    --terminal-bg:      0 0% 100%;        /* white background          */
+    --terminal-fg:      240 4% 9%;        /* #151518 — near-black text  */
+    --terminal-fg-dim:  240 5% 38%;       /* muted body text            */
+    --terminal-fg-idle: 240 5% 52%;       /* idle placeholder + filter  */
+    --terminal-border:  240 5% 88%;       /* light gray border          */
+    --terminal-ok:      142 71% 29%;      /* dark green  — 4.6:1 ✓     */
+    --terminal-warn:    32 95% 35%;       /* dark amber  — 4.5:1 ✓     */
+    --terminal-err:     0 75% 42%;        /* dark red    — 5.2:1 ✓     */
+    --terminal-dim:     240 5% 50%;       /* dim lines                  */
+    /* ANSI FG — dark variants, readable on white */
+    --ansi-red:         0 75% 42%;
+    --ansi-green:       142 71% 29%;
+    --ansi-yellow:      32 95% 35%;
+    --ansi-blue:        221 83% 45%;
+    --ansi-magenta:     270 67% 47%;
+    --ansi-cyan:        191 97% 33%;
+    --ansi-gray:        240 5% 42%;
   }
 
   [data-theme="dark"], html.dark {
@@ -44,6 +63,25 @@
     --safe: 142 71% 45%;
     --warn: 43 96% 56%;
     --danger: 0 84% 60%;
+
+    /* ── Terminal / OutputConsole — dark mode ── */
+    --terminal-bg:      240 5% 4%;        /* #0A0A0E — near-black bg    */
+    --terminal-fg:      60 9% 95%;        /* #F4F4F2 — near-white text  */
+    --terminal-fg-dim:  240 5% 62%;
+    --terminal-fg-idle: 240 4% 42%;
+    --terminal-border:  0 0% 18%;         /* subtle dark border         */
+    --terminal-ok:      142 71% 45%;      /* vivid green on dark ✓      */
+    --terminal-warn:    43 96% 56%;       /* vivid amber on dark ✓      */
+    --terminal-err:     0 84% 60%;        /* vivid red on dark ✓        */
+    --terminal-dim:     240 4% 42%;
+    /* ANSI FG — vivid, high contrast on near-black */
+    --ansi-red:         0 84% 60%;
+    --ansi-green:       142 71% 45%;
+    --ansi-yellow:      43 96% 56%;
+    --ansi-blue:        213 93% 67%;
+    --ansi-magenta:     270 76% 70%;
+    --ansi-cyan:        186 94% 59%;
+    --ansi-gray:        240 4% 60%;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -63,6 +101,24 @@
       --safe: 142 71% 45%;
       --warn: 43 96% 56%;
       --danger: 0 84% 60%;
+
+      /* ── Terminal / OutputConsole — system-dark ── */
+      --terminal-bg:      240 5% 4%;
+      --terminal-fg:      60 9% 95%;
+      --terminal-fg-dim:  240 5% 62%;
+      --terminal-fg-idle: 240 4% 42%;
+      --terminal-border:  0 0% 18%;
+      --terminal-ok:      142 71% 45%;
+      --terminal-warn:    43 96% 56%;
+      --terminal-err:     0 84% 60%;
+      --terminal-dim:     240 4% 42%;
+      --ansi-red:         0 84% 60%;
+      --ansi-green:       142 71% 45%;
+      --ansi-yellow:      43 96% 56%;
+      --ansi-blue:        213 93% 67%;
+      --ansi-magenta:     270 76% 70%;
+      --ansi-cyan:        186 94% 59%;
+      --ansi-gray:        240 4% 60%;
     }
   }
 
@@ -109,16 +165,25 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ANSI color classes — used by OutputConsole's parseAnsi() to render piped
-   CLI output that emits \e[3xm/\e[9xm color codes. Match the vanilla palette. */
-.ansi-fg-red    { color: #EF4444; }
-.ansi-fg-green  { color: #22C55E; }
-.ansi-fg-yellow { color: #FBBF24; }
-.ansi-fg-blue   { color: #60A5FA; }
-.ansi-fg-magenta{ color: #C084FC; }
-.ansi-fg-cyan   { color: #22D3EE; }
-.ansi-fg-gray   { color: #9B9BA3; }
+   CLI output that emits \e[3xm/\e[9xm color codes. Values read from
+   --ansi-* CSS vars so they flip correctly between light and dark themes. */
+.ansi-fg-red    { color: hsl(var(--ansi-red));     }
+.ansi-fg-green  { color: hsl(var(--ansi-green));   }
+.ansi-fg-yellow { color: hsl(var(--ansi-yellow));  }
+.ansi-fg-blue   { color: hsl(var(--ansi-blue));    }
+.ansi-fg-magenta{ color: hsl(var(--ansi-magenta)); }
+.ansi-fg-cyan   { color: hsl(var(--ansi-cyan));    }
+.ansi-fg-gray   { color: hsl(var(--ansi-gray));    }
 .ansi-bold      { font-weight: 700; }
-.hl             { background: hsl(45 100% 50% / 0.32); color: #F4F4F2; padding: 0 1px; border-radius: 2px; }
+
+/* Terminal status-line semantic colors — theme-aware. */
+.console-ok   { color: hsl(var(--terminal-ok));   }
+.console-warn { color: hsl(var(--terminal-warn));  }
+.console-err  { color: hsl(var(--terminal-err));   }
+.console-dim  { color: hsl(var(--terminal-dim));   }
+
+/* Search highlight — adapts hue to readable contrast on either bg. */
+.hl { background: hsl(var(--ansi-yellow) / 0.28); color: inherit; padding: 0 1px; border-radius: 2px; }
 
 /* Pulsing ring used by the OnboardingCoachmark to draw the eye to the pie pane. */
 @keyframes coach-pulse {

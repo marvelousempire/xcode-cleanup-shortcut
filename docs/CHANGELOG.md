@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.19.7] — 2026-05-13 12:17:00 Eastern · *Terminal theme support — white bg on light, dark bg on dark; WCAG-correct contrast for all status + ANSI colors*
+
+### Changed — `OutputConsole` theme support (plan 0005)
+
+The terminal now reads its colors from CSS custom properties (`--terminal-*`, `--ansi-*`) instead of hardcoded dark-mode hex values. It adapts cleanly to whichever theme is active.
+
+**Light mode:** white (`#FFFFFF`) background, near-black (`#151518`) body text, muted idle placeholder, dark-variant green/amber/red status colors — all tested for ≥ 4.5:1 WCAG AA contrast on white.
+
+**Dark mode:** near-black (`#0A0A0E`) background, near-white (`#F4F4F2`) body text, vivid green/amber/red status colors (unchanged from before).
+
+**Auto mode:** follows the OS system preference, and the in-app Dark/Light/Auto toggle flips the terminal along with the rest of the page.
+
+### Technical detail
+- New `--terminal-bg`, `--terminal-fg`, `--terminal-fg-dim`, `--terminal-fg-idle`, `--terminal-border`, `--terminal-ok`, `--terminal-warn`, `--terminal-err`, `--terminal-dim` CSS variables added to `index.css` for all three theme blocks (`:root` light, `[data-theme="dark"]`, `@media (prefers-color-scheme: dark)`).
+- New `--ansi-red/green/yellow/blue/magenta/cyan/gray` variables replace the hardcoded ANSI hex colors — two value sets, one per theme.
+- `.ansi-fg-*` classes now use `hsl(var(--ansi-*))` instead of literal hex.
+- New `.console-ok`, `.console-warn`, `.console-err`, `.console-dim` CSS classes for line-type coloring — used in the JSX instead of `text-[#hex]` arbitrary values.
+- `.hl` (search highlight) uses `hsl(var(--ansi-yellow) / 0.28)` for the background so it adapts to either theme.
+- Toolbar border + Clear button colors use `hsl(var(--terminal-border))`.
+- Inline `placeholder:` Tailwind class replaced with a `style` prop so the placeholder color reads the CSS var at paint time.
+
+### kVersion bump
+`0.19.6` → `0.19.7`
+
+---
+
 ## [0.19.6] — 2026-05-13 12:02:25 Eastern · *Plan 0004 shipped — Canonical Docker stack template (cloned from claude-chat-reader). Supersedes plan 0003's four-tier tree with one binary rule: state = Docker, no state = no Docker.*
 
 ### Added — plan 0004 in `plans/`
