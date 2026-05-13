@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.19.6] — 2026-05-13 12:02:25 Eastern · *Plan 0004 shipped — Canonical Docker stack template (cloned from claude-chat-reader). Supersedes plan 0003's four-tier tree with one binary rule: state = Docker, no state = no Docker.*
+
+### Added — plan 0004 in `plans/`
+- **`plans/0004-canonical-docker-stack-template.md`** — supersedes plan 0003. The user asked for *"the claude reader app... cloned and fully implemented"* as the default for any future app that needs a database. Plan codifies the binary rule, the seven-file template, service inventory, networking, healthchecks, HTTPS via Caddy, and the `./go` one-shot bootstrap.
+- **`plans/README.md` index** updated with the new row. Plan 0003's status line annotated `superseded by 0004`.
+
+### Added — canonical Docker stack template in `ai-skills-library`
+Pushed to `marvelousempire/ai-skills-library` (PR #5, merged):
+
+- **`rules/library/app-launch-workflow/templates/docker-stack/`** — seven files ready for `cp -r`:
+  - `docker-compose.yml` — `app + db (pgvector/pg16) + caddy` services, plus commented optional `watcher` / `metabase` patterns
+  - `Dockerfile` — multi-stage `deps → builder → runner [→ watcher]`
+  - `Caddyfile` — HTTPS reverse proxy with HSTS + security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`)
+  - `.env.example` — `POSTGRES_*`, `CADDY_HOST`, optional API keys
+  - `go` — one-shot bootstrap (Docker check → `.env` copy → `./data/` mkdir → build → up → health-wait → browser open)
+  - `Makefile.docker.snippet` — `make go / docker-up / docker-down / docker-logs / backup / restore / reset / export`
+  - `README.md` — template usage docs
+
+### Changed — Part 8 of the `app-launch-workflow` skill
+- Replaced the v0.19.5 four-tier decision tree (SQLite / Docker Postgres / Homebrew Postgres / embedded-postgres) with a single binary rule: **needs state → Docker; no state → no Docker.**
+- Old per-tier Makefile templates removed from the skill body — they're replaced by the one canonical `templates/docker-stack/` reference.
+- New sub-sections: "Why this is the right default" · service inventory · bootstrap recipe · HTTPS one-time setup · `make` targets · API surface · data persistence · required README "Data" section.
+
+### Changed — Cursor rule mirror
+- `~/.cursor/rules/app-launch-workflow.mdc` Part 8 condensed to the binary rule + bootstrap recipe + `make` targets + HTTPS note.
+
+### Changed — Dustpan README
+- New `🐳 Future apps that need state` callout under `🛠️ Under the hood`. Dustpan itself stays stateless — the callout points future-app maintainers at the canonical template so they don't reinvent the stack.
+
+### Why this matters
+The previous four-tier tree gave too many escape hatches. Every new project picked a different path; we had three Makefile templates to maintain. The new rule means every DB-needing app starts with the same stack (`app + db + caddy`, HTTPS via Caddy, Postgres+pgvector), the same templates, and the same `./go` UX. One canonical pattern across every project — for humans and AIs reading the code six months from now.
+
+Dustpan itself is unchanged — it's stateless. This is purely a contract for every future app shipped from this org.
+
+---
+
 ## [0.19.5] — 2026-05-13 11:06:55 Eastern · *Plan 0003 shipped — Database tier guide for every future app · `app-launch-workflow` skill grew a new Part 8 with per-tier Makefile templates*
 
 ### Added — plan 0003 in `plans/`

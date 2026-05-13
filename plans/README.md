@@ -42,7 +42,8 @@ writing them into the repo we get:
 |---|---|---|---|
 | [0001](0001-cleanup-hub-v1-redesign.md) | Cleanup Hub v1 redesign — design system + dashboard restructure + motion polish + README rewrite | shipped | v0.11.x – v0.13.x |
 | [0002](0002-dustpan-readme-under-the-hood.md) | Dustpan README — add "🛠️ Under the hood" tech-stack section | shipped | v0.19.3 |
-| [0003](0003-database-tier-guide-for-future-apps.md) | Database tier guide for future apps — SQLite / Docker Postgres / Homebrew Postgres decision tree + Makefile templates | shipped | v0.19.5 |
+| [0003](0003-database-tier-guide-for-future-apps.md) | Database tier guide for future apps — SQLite / Docker Postgres / Homebrew Postgres decision tree + Makefile templates | shipped — superseded by 0004 | v0.19.5 |
+| [0004](0004-canonical-docker-stack-template.md) | Canonical Docker stack template (cloned from claude-chat-reader) — binary rule: state = Docker, no state = no Docker | shipped | v0.19.6 |
 
 ## When to add a plan
 

@@ -355,6 +355,26 @@ The complete tech stack. Six surfaces, each built for its own constraints. If yo
 
 ---
 
+### 🐳 Future apps that need state
+
+Dustpan is **stateless** — it scans your disk and shells out to `rm`. There's nothing to persist, so it ships without Docker. That's the whole reason `make ui` is one line.
+
+If you're cloning Dustpan as a starter for a *new* app that **does** need a database, don't add SQLite or Homebrew Postgres alongside this code. The org convention is binary:
+
+> **Needs state? → Docker. No state? → no Docker.**
+
+The canonical Docker stack (cloned from [`marvelousempire/claude-chat-reader`](https://github.com/marvelousempire/claude-chat-reader)) lives in the `app-launch-workflow` skill and is ready to copy-paste:
+
+```sh
+mkdir my-new-app && cd my-new-app
+cp -r ~/Developer/ai-skills-library/rules/library/app-launch-workflow/templates/docker-stack/* .
+./go
+```
+
+What you get: `app + db + caddy` services, **HTTPS out of the box** (one-time `caddy trust` for localhost, automatic Let's Encrypt in prod), Postgres + pgvector ready for both regular SQL and AI/RAG, security headers (HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy), and the same `make backup / restore / reset / export` UX. Full template + docs: [`ai-skills-library/.../templates/docker-stack/`](https://github.com/marvelousempire/ai-skills-library/tree/main/rules/library/app-launch-workflow/templates/docker-stack).
+
+---
+
 > **When this section changes.** Update this section whenever a dependency is added/removed, or a major version of any tool changes (React 18 → 19, Vite 6 → 7, Tailwind 3 → 4, etc.). Treat it as a living document — the README is the prototype for every future app shipped from this org, and this section is the contract for what each one's tech stack inventory should look like.
 
 ---
