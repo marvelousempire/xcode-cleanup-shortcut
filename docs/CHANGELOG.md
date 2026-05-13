@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.18.9] — 2026-05-13 09:25:02 Eastern · *README overhaul + repo cleanup*
+
+### Changed
+- **README completely rewritten** to reflect everything built since v0.14. Previous README described "four tabs" and called it a dashboard; the new one captures all 11 categories, 17 sub-tools, 58 actions, three frontends, the three-pane Overview layout, SSE live channel, Wi-Fi network mode, the pnpm workspace + Turbo build system, and the complete architecture diagram. Formatted for a compelling GitHub landing page.
+- **Explicitly answers "Does it require Docker?"** — the answer is no, clearly stated at the top: *No Docker. No `pip install`. No subscription. No telemetry.* The server is pure Python 3 stdlib. pnpm is optional (falls back to vanilla if absent).
+- **Directory cleanup:** `HANDOFF.md` and `PRD.md` moved from repo root into `docs/` so the root only contains what a contributor or user would immediately need (`README`, `LICENSE`, `Makefile`, `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `xcode-cleanup.applescript`, `apps/`, `web/`, `docs/`, `assets/`, `bin/`, `launchd/`, `scripts/`, `swiftbar/`).
+- **Repo files table** updated to reflect current layout.
+
 ## [0.18.8] — 2026-05-13 08:51:20 Eastern · *network mode (`make ui-network`) + auto-opens browser on start*
 
 ### Added
