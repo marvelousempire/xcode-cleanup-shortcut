@@ -1,4 +1,4 @@
-Status: in progress
+Status: shipped (commit ba87ab7, v0.19.5)
 
 # Plan 0003 — Database tier guide for future apps
 
