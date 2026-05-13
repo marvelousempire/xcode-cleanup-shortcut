@@ -48,9 +48,23 @@ from urllib.parse import parse_qs, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import cleaners  # noqa: E402
 
-# Plan 0006 optional modules — gracefully absent when running without Docker.
+# ── Persistence layer (v0.20.4) ────────────────────────────────────────────────
+#
+# Priority order:
+#   1. Postgres via db.py      — when DATABASE_URL is set (Docker mode)
+#   2. SQLite via sqlite_store — always available (stdlib), default for make ui
+#
+# `_store` is the active module; _db_available() checks it.
+
+_store: "Any" = None  # type: ignore
+
 try:
-    import db as _db
+    import sqlite_store as _sqlite  # stdlib sqlite3 — always works
+except ImportError:
+    _sqlite = None  # type: ignore
+
+try:
+    import db as _db  # psycopg2 — only in Docker mode
 except ImportError:
     _db = None  # type: ignore
 
@@ -59,11 +73,28 @@ try:
 except ImportError:
     _ai = None  # type: ignore
 
+def _init_store():
+    """Pick the best available store. Called once at startup."""
+    global _store
+    # Postgres takes priority when DATABASE_URL is set
+    if _db is not None and os.environ.get("DATABASE_URL"):
+        _store = _db
+        return
+    # SQLite default — always available
+    if _sqlite is not None:
+        _store = _sqlite
+        return
+    _store = None
+
 def _db_available() -> bool:
-    return _db is not None and _db.is_available()
+    return _store is not None and _store.is_available()
 
 def _no_db_response() -> dict:
-    return {"error": "no_db", "message": "Enable Docker mode for this feature. Run ./docker/go to start the full stack."}
+    # This only fires for features that need Postgres (encrypted key vault, etc.)
+    return {
+        "error": "no_db",
+        "message": "Enable Docker mode for this feature (encrypted key vault, AI). Run ./docker/go to start the full stack.",
+    }
 
 REPO_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR  = REPO_DIR / "web"
@@ -436,7 +467,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     result = scan_category(cid)
                     if result and _db_available():
                         try:
-                            _db.record_snapshot(cid, result)
+                            _store.record_snapshot(cid, result)
                         except Exception:
                             pass  # never fail a scan because of DB write
                     return self._serve_json(result) if result else self.send_error(404)
@@ -464,7 +495,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         # ── Plan 0006: AI + DB endpoints ──────────────────────────────────
         if path == "/api/ai/status":
-            providers = _db.list_key_providers() if _db_available() else []
+            providers = _store.list_key_providers() if _db_available() else []
             return self._serve_json({
                 "docker_mode": _db_available(),
                 "providers": providers,
@@ -473,13 +504,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/api/settings/keys":
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
-            return self._serve_json({"providers": _db.list_key_providers()})
+            return self._serve_json({"providers": _store.list_key_providers()})
 
         if path.startswith("/api/settings/keys/"):
             provider = path[len("/api/settings/keys/"):]
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
-            return self._serve_json({"has_key": provider in _db.list_key_providers()})
+            return self._serve_json({"has_key": provider in _store.list_key_providers()})
 
         if path == "/api/settings/ollama":
             if not _db_available():
@@ -488,18 +519,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     "url":   _os.environ.get("OLLAMA_URL", "http://localhost:11434"),
                     "model": _os.environ.get("OLLAMA_MODEL", "llama3.2"),
                 })
-            return self._serve_json(_db.get_ollama_settings())
+            return self._serve_json(_store.get_ollama_settings())
 
         if path == "/api/habits":
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
-            return self._serve_json({"habits": _db.compute_habits()})
+            return self._serve_json({"habits": _store.compute_habits()})
 
         if path == "/api/runs":
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
             limit = int(query.get("limit", ["50"])[0])
-            rows = _db.fetchall(
+            rows = _store.fetchall(
                 "SELECT id, ts, mode, category, tier, freed_gb, duration_ms, "
                 "disk_before_gb, disk_after_gb FROM runs ORDER BY ts DESC LIMIT %s",
                 (limit,),
@@ -518,7 +549,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             provider = path[len("/api/settings/keys/"):]
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
-            _db.delete_api_key(provider)
+            _store.delete_api_key(provider)
             return self._serve_json({"ok": True, "provider": provider})
 
         self.send_error(404)
@@ -541,7 +572,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._serve_json_status(400, {"error": "provider and key required"})
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
-            _db.save_api_key(provider, key)
+            _store.save_api_key(provider, key)
             return self._serve_json({"ok": True, "provider": provider})
 
         if path == "/api/settings/ollama":
@@ -551,7 +582,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self._serve_json_status(400, {"error": "url required"})
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
-            _db.save_ollama_settings(ollama_url, ollama_model or "llama3.2")
+            _store.save_ollama_settings(ollama_url, ollama_model or "llama3.2")
             return self._serve_json({"ok": True})
 
         if path == "/api/ai/summary":
@@ -563,13 +594,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
             # Resolve provider + key
             if _db_available():
-                providers = _db.list_key_providers()
+                providers = _store.list_key_providers()
                 provider  = body.get("provider") or (providers[0] if providers else None)
                 if not provider:
                     return self._serve_json_status(400, {"error": "no AI provider configured"})
-                api_key = _db.get_api_key(provider) or ""
+                api_key = _store.get_api_key(provider) or ""
                 if provider == "ollama":
-                    ollama = _db.get_ollama_settings()
+                    ollama = _store.get_ollama_settings()
                     base_url = ollama["url"]
                     model    = ollama["model"]
                 else:
@@ -592,7 +623,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # Optionally include habit data
             habit = None
             if _db_available():
-                habits = _db.compute_habits()
+                habits = _store.compute_habits()
                 habit  = next((h for h in habits if h["category"] == category), None)
 
             prompt = _ai.build_scan_prompt(category, scan_result, habit)
@@ -606,7 +637,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 )
                 # Persist recommendation
                 if _db_available():
-                    _db.execute(
+                    _store.execute(
                         "INSERT INTO habits (category, recommendation, computed_at) "
                         "VALUES (%s, %s, now()) "
                         "ON CONFLICT (category) DO UPDATE "
@@ -959,12 +990,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 def main():
-    # Plan 0006: run DB migrations on startup (no-op when DB not configured)
-    if _db is not None:
+    # v0.20.4: init persistence (SQLite default, Postgres when DATABASE_URL set)
+    _init_store()
+    if _store is not None:
         try:
-            _db.migrate()
+            _store.migrate()
         except Exception as e:
-            print(f"[db] startup migration error (non-fatal): {e}", file=sys.stderr)
+            print(f"[store] startup migration error (non-fatal): {e}", file=sys.stderr)
 
     port = find_open_port(PREFERRED_PORT)
     if port != PREFERRED_PORT:

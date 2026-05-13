@@ -813,7 +813,9 @@ CATEGORIES = {
                 ("CloudKit cache",                      "~/Library/Caches/CloudKit"),
                 ("iCloud Drive (bird) cache",           "~/Library/Caches/com.apple.bird"),
                 ("CoreFollowUp",                        "~/Library/CoreFollowUp"),
-                ("Sharing recent items cache",          "~/Library/Application Support/com.apple.sharedfilelist"),
+                # NOTE: com.apple.sharedfilelist intentionally removed from safe tier.
+                # It contains Finder sidebar favorites (FavoriteItems.sfl3) and clearing it
+                # wipes the user's sidebar. Moved to caution-only; do not auto-clean.
                 ("DiagnosticReports",                   "~/Library/Logs/DiagnosticReports"),
             ],
             "probably_safe": [
@@ -839,7 +841,7 @@ CATEGORIES = {
                          "~/Library/Caches/CloudKit/* "
                          "~/Library/Caches/com.apple.bird/* "
                          "~/Library/CoreFollowUp/* "
-                         "~/Library/Application\\ Support/com.apple.sharedfilelist/* 2>/dev/null; true",
+                         "2>/dev/null; true",
             },
             "clear-diagnostics": {
                 "label": "Clear diagnostic reports",
@@ -1181,25 +1183,29 @@ CATEGORIES = {
     "space-eaters": {
         "label": "Space Eaters",
         "icon":  "🔥",
-        "tagline": "iOS backups · npm · pip · cargo · gradle — hidden hoarders that can hit 80 GB.",
+        "tagline": "Biggest auto-rebuilt caches across all apps — safe to delete, auto-recovered by each app.",
         "groups": {
-            "safe": [],
-            "probably_safe": [
-                # Developer package manager caches. These are pure caches —
-                # entirely reconstructed by the tools on next use.
-                ("npm global cache",         "~/.npm"),
-                ("pip cache (macOS path)",   "~/Library/Caches/pip"),
-                ("pip cache (Linux path)",   "~/.cache/pip"),
-                ("Cargo registry (Rust)",    "~/.cargo/registry"),
-                ("Cargo git (Rust)",         "~/.cargo/git"),
-                ("Gradle caches",            "~/.gradle/caches"),
-                ("Maven local repo",         "~/.m2/repository"),
-                ("Go module cache",          "~/go/pkg/mod/cache"),
-                ("Yarn cache",               "~/.yarn/cache"),
-                ("pnpm store",               "~/.pnpm-store"),
-                ("Ruby gems cache",          "~/.gem"),
-                ("CocoaPods cache",          "~/Library/Caches/CocoaPods"),
+            # ── Safe: auto-rebuilt, no user data, no preferences touched ──────────
+            # These are all PURE CACHES. Every app listed here rebuilds its cache
+            # automatically the next time you use it. NO user preferences, NO
+            # Finder sidebar settings, NO document history is touched.
+            "safe": [
+                # ── Dev caches — 100% auto-rebuilt by the tool on next run ─────────
+                ("npm cache (~/.npm)",                     "~/.npm"),
+                ("pip cache (macOS)",                      "~/Library/Caches/pip"),
+                ("pip cache (Linux/other)",                "~/.cache/pip"),
+                ("Cargo registry + git (Rust)",            "~/.cargo/registry"),
+                ("Cargo git cache (Rust)",                 "~/.cargo/git"),
+                ("Gradle build caches",                    "~/.gradle/caches"),
+                ("Maven local repo",                       "~/.m2/repository"),
+                ("Go module download cache",               "~/go/pkg/mod/cache"),
+                ("Yarn cache",                             "~/.yarn/cache"),
+                ("pnpm content-addressable store",         "~/.pnpm-store"),
+                ("Ruby gems cache",                        "~/.gem"),
+                ("CocoaPods cache",                        "~/Library/Caches/CocoaPods"),
+                ("Homebrew downloads cache",               "~/Library/Caches/Homebrew/downloads"),
             ],
+            "probably_safe": [],
             "caution": [
                 # iOS/iPadOS/watchOS device backups. These are NOT caches —
                 # they are real backup data. But people forget they have 5 old
@@ -1282,6 +1288,22 @@ CATEGORIES = {
                 "cost":  "Read-only. Delete individual games from inside Steam if you want to free this space.",
                 "shell": "du -sh ~/Library/Application\ Support/Steam/steamapps 2>/dev/null || echo \'Steam not installed\'",
                 "informational": True,
+            },
+            "clean-all-dev-caches": {
+                "label": "Clean ALL developer caches (npm + pip + Cargo + Gradle + Go + Yarn + pnpm)",
+                "desc":  "One shot — clears every developer package manager cache listed above.",
+                "cost":  "Each tool re-downloads packages from its registry on the next build/install. Nothing currently installed is removed. Installed binaries (cargo bin, gem bin) are unaffected.",
+                "shell": (
+                    "echo \'Cleaning developer caches…\'; "
+                    "rm -rf ~/.npm ~/.cache/pip ~/Library/Caches/pip "
+                    "~/.cargo/registry ~/.cargo/git "
+                    "~/.gradle/caches ~/.m2/repository ~/go/pkg/mod/cache "
+                    "~/.yarn/cache ~/.pnpm-store ~/.gem "
+                    "~/Library/Caches/CocoaPods ~/Library/Caches/Homebrew/downloads "
+                    "2>/dev/null; "
+                    "command -v npm >/dev/null && npm cache clean --force 2>/dev/null; "
+                    "echo \'\u2713 All developer caches cleared.\'"
+                ),
             },
             "show-top-25-files": {
                 "label": "Show 25 biggest files in ~/Documents + ~/Desktop",

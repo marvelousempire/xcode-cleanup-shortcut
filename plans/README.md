@@ -47,7 +47,7 @@ writing them into the repo we get:
 | [0005](0005-terminal-theme-support.md) | Terminal theme support — white bg on light mode, dark bg on dark mode, with WCAG-correct text contrast for all status and ANSI colors | shipped | v0.19.7 |
 | [0006](0006-docker-ai-habits-engine.md) | Docker stack + AI engine + habit learning — pgvector DB, encrypted key vault, OpenAI/Anthropic/Groq/Gemini/Perplexity/Ollama, growth-slope habit engine, AI summaries | shipped | v0.20.0 |
 | [0007](0007-space-eaters-scanner-expansion.md) | Space Eaters — fix stale browser paths, add Telegram/WhatsApp/Signal, iOS backups, dev caches, iCloud Drive eviction | shipped | v0.20.1 |
-| [0008](0008-permission-detection-zeros-fix.md) | Fix zeros: FDA permission detection, Archives/System/iCloud path fixes, clean-button UX | in progress | v0.20.3 |
+| [0008](0008-permission-detection-zeros-fix.md) | Fix zeros: FDA permission detection, Archives/System/iCloud path fixes, clean-button UX | shipped | v0.20.3 |
 
 ## When to add a plan
 

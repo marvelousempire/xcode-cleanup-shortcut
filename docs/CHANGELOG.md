@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.20.4] — 2026-05-13 16:00:00 Eastern · *Space Eaters auto-populated, color-coded chart with delete buttons, SQLite default persistence, Finder sidebar bug fixed*
+
+### Fixed — Finder sidebar cleared by "Clean System" (critical)
+
+`~/Library/Application Support/com.apple.sharedfilelist` was in System's **safe** tier. This directory contains `FavoriteItems.sfl3` — your **Finder sidebar favorites**. Clicking "Clean all safe" in System wiped the sidebar. Removed from the safe tier entirely. The file is user data, not a cache.
+
+### Changed — Space Eaters: dev caches moved to `safe` tier
+
+npm, pip, Cargo, Gradle, Maven, Go modules, Yarn, pnpm, Ruby gems, CocoaPods, Homebrew downloads were in `probably_safe`. They are pure auto-rebuilt caches — moved to `safe` so "Clean ALL safe" picks them up automatically. Added a **"Clean ALL developer caches"** action that clears all 12 in one shot.
+
+### Added — SQLite default persistence (`web/sqlite_store.py`)
+
+Every `make ui` run now automatically records scan history and computes growth-slope habits — with zero configuration and zero pip installs. Uses Python's built-in `sqlite3`. DB file: `~/Library/Application Support/dustpan/history.db`.
+
+Persistence priority: Postgres (Docker mode) when `DATABASE_URL` is set, SQLite otherwise. Habits, runs, and category snapshots work on both backends via the same interface (`_store.*`).
+
+### Changed — SpaceBarChart: color-coded by % of free disk + per-row clean button
+
+The bar chart now communicates urgency visually:
+
+**Color = percentage of your remaining free disk this category is using:**
+- 🟢 Green (0–3%) — low pressure
+- 🩵 Teal (3–8%) — fine
+- 🔵 Cyan (8–15%) — notice it
+- 💙 Blue (15–25%) — getting significant
+- 🟡 Yellow (25–40%) — moderate pressure
+- 🟠 Orange (40–55%) — high pressure
+- 🔴 Red (55%+) — critical
+
+The bar segments (safe / opt-in / caution) all use the stage hue at different opacities. The stats on the right also render in the stage color.
+
+**Per-row clean button:** each row has a `↓ Clean` button styled in the stage color.
+- Single-category tabs: triggers `cleanAllTier(catId, "safe")` (confirmation required)
+- Multi-subcategory tabs (Creative, LLMs): navigates to the tab so you can clean sub-tools individually
+- After cleaning: button shows `✓ Done` in green
+
+### kVersion
+`0.20.3` → `0.20.4`
+
+---
+
 ## [0.20.3] — 2026-05-13 15:00:00 Eastern · *Plan 0008 — Fix zeros: Full Disk Access detection, Archives/System/iCloud path fixes, clean-button UX*
 
 ### Fixed — Root cause of most sections reporting 0 GB
