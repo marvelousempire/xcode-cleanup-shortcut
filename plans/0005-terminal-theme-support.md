@@ -1,4 +1,4 @@
-Status: in progress
+Status: shipped (commit 1ea75a2, v0.19.7)
 
 # Plan 0005 — Terminal theme support (white on light / dark on dark)
 
