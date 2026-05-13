@@ -35,7 +35,9 @@ The big difference from other "Mac cleaners": Dustpan **tells you exactly what y
 
 ---
 
-## ⚡ Three lines to start
+## 🚀 Quick start
+
+### One command (no Docker, no pip)
 
 Open Terminal on your Mac. Paste these three lines:
 
@@ -45,12 +47,144 @@ cd xcode-cleanup-shortcut
 make ui
 ```
 
-Done. Your browser opens to the dashboard. Other devices on your Wi-Fi (your iPad, your phone, another laptop) can also open it — Terminal will show you the address to type in.
+Your browser opens to the dashboard. **Both URLs print at startup:**
+
+| URL | Who can see it |
+|---|---|
+| `http://127.0.0.1:8765` | Only your Mac |
+| `http://192.168.X.X:8765` | Any device on the same Wi-Fi (your iPad, phone, another laptop) |
 
 > **No Docker. No `pip install`. No subscription. No telemetry.**
 > Dustpan's server is plain Python that comes with every Mac. The dashboard is built once (takes about 6 seconds) and then cached. After that, every run is instant.
 
-Don't want it visible on your Wi-Fi? Run `make ui-local` instead — only your Mac sees it.
+### Don't want it on your Wi-Fi?
+
+```sh
+make ui-local
+```
+
+Same dashboard. Only your Mac can reach it. Use this when you're on a coffee-shop network or somewhere you don't trust.
+
+---
+
+## 🛠️ Requirements
+
+### Hardware
+
+- **Any Mac running macOS 14 or newer** (Sonoma, Sequoia, Tahoe).
+- **8 GB RAM minimum** — Dustpan itself uses about 50 MB. The dashboard build (one-time, ~6 seconds) needs a bit more.
+- **Apple Silicon or Intel** — both work. Build steps are universal.
+- **A few GB of free disk space to start with** — yes, you need a *little* free space to run a disk cleaner. Dustpan needs ~200 MB to clone + build.
+
+### Software
+
+Required (already on every modern Mac — you do not need to install these):
+
+- **macOS 14+** (Sonoma or newer)
+- **Python 3.9+** — ships with Xcode Command Line Tools, which ship with every Mac.
+- **Bash** + **make** + **git** — also part of Xcode Command Line Tools.
+
+If you don't have Xcode Command Line Tools, run this once:
+```sh
+xcode-select --install
+```
+
+Optional (for the modern React dashboard — but not required to run Dustpan):
+
+- **pnpm 9+** — `brew install pnpm`. Without pnpm, Dustpan automatically falls back to the simpler vanilla dashboard.
+- **Node 20+** — required by pnpm to install dependencies. `brew install node` if you don't have it.
+
+Category-specific (only needed if you want that category's cleanup):
+
+- **Docker Desktop** — only required if you want to clean Docker. Without it, the Docker category shows zero — no error.
+- **Xcode 15+** — only required if you have Xcode installed. The Xcode category just shows zero on a Mac without Xcode.
+- **SwiftBar** (`brew install --cask swiftbar`) — only required for `make install-swiftbar` (the menu-bar widget).
+
+That's it. Nothing else. No databases, no message queues, no auth provider, no API key — Dustpan runs entirely on what Apple ships.
+
+---
+
+## 🗺️ Pages map
+
+Every URL the Python server responds to.
+
+### Dashboards (pick your version)
+
+| Path | What you'll see |
+|---|---|
+| `/` | **Main dashboard** — Vite + React + Motion (the canonical UI) |
+| `/?legacy=1` | **Vanilla dashboard** — works without `pnpm`, always available |
+| `/legacy` | Same as `/?legacy=1` |
+| `/?next=1` | 302 redirects to `/next/` |
+| `/next/` | **Next.js dashboard** — experimental; build with `make ui-all` |
+
+### JSON API (the dashboard's backbone)
+
+| Path | What it does |
+|---|---|
+| `/api/status` | `{ free_gb, used_gb, total_gb, used_pct, version }` |
+| `/api/tabs` | The tab structure — what categories exist, with sub-tools |
+| `/api/report` | History summary: total runs, total GB freed, sparkline data |
+| `/api/changelog` | Raw CHANGELOG.md served as Markdown (modal renders this) |
+| `/api/category/<id>/scan` | Per-category scan results — totals + per-path sizes by tier |
+| `/api/category/<id>/actions` | Per-category action list — every button, its cost annotation |
+
+### Live streams (Server-Sent Events)
+
+| Path | What it streams |
+|---|---|
+| `/api/live` | The always-on channel: `status` deltas + `running` clean-tracker events |
+| `/api/clean-path?category=<>&path=<>` | One-shot stream while a single path cleans |
+| `/api/clean-all-safe?category=<>&tier=<>` | Stream while a whole category-tier cleans |
+| `/api/clean-everything?tier=<>` | Stream while every category's tier cleans at once |
+| `/api/run?category=<>&action=<>` | Stream while a predefined action runs |
+
+### Static assets
+
+| Path | What it serves |
+|---|---|
+| `/assets/*` | Vite's hashed JS/CSS chunks (1-year immutable cache) |
+| `/next/_next/static/*` | Next.js's hashed chunks (same caching) |
+
+---
+
+## 🔒 Privacy by default
+
+**Nothing leaves your Mac. Ever. Unless you explicitly opt in.**
+
+This is the single non-negotiable rule of Dustpan. Concretely:
+
+### What Dustpan never does
+
+| Thing | Status |
+|---|---|
+| Analytics / telemetry / "phone home" | ✗ Never. Not even an anonymized usage ping. |
+| Cloud sync | ✗ Never. Your scan results stay on your Mac. |
+| Account / login / API key | ✗ Never. There is no account. |
+| Send your file paths anywhere | ✗ Never. The list of what's on your disk doesn't leave your Mac. |
+| Network calls to anything outside `localhost` | ✗ With one exception (below) |
+
+### The single external network call
+
+Once a day, the AppleScript (not the dashboard) checks GitHub Releases for a newer version of Dustpan. That's it. It hits `api.github.com/repos/marvelousempire/xcode-cleanup-shortcut/releases/latest` once per 24 hours, caches the result, and only shows a notification if a newer version exists.
+
+**To turn even that off:**
+```sh
+XCODE_CLEANUP_NO_UPDATE_CHECK=1 make run
+# or permanently — edit your shell rc:
+export XCODE_CLEANUP_NO_UPDATE_CHECK=1
+```
+
+### How "localhost-only" actually works
+
+- The Python server binds to `127.0.0.1` (your Mac only) or `0.0.0.0` (your Mac + your Wi-Fi). It never binds to a public interface.
+- `make ui` (the default since v0.19.1) uses `0.0.0.0` so other devices on your home Wi-Fi can use the dashboard — but it's still only reachable on your *local* network. Nothing on the internet can reach it.
+- `make ui-local` forces `127.0.0.1` — only your Mac can reach it.
+- The dashboard can't make outbound calls anywhere except `/api/*` on its own server. Open DevTools and watch the Network tab if you want to verify.
+
+### Auditable end-to-end
+
+Every cleanup action is defined in [`web/cleaners.py`](./web/cleaners.py). Every shell command Dustpan runs is in that file or in [`xcode-cleanup.applescript`](./xcode-cleanup.applescript). You can read both files in one sitting. There is no compiled binary, no obfuscated code, no remote-loaded payload.
 
 ---
 

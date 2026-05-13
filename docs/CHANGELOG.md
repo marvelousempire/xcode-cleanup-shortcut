@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.19.4] — 2026-05-13 10:56:09 Eastern · *README: Requirements + Pages map + Privacy + Quick start refresh · plans/ folder added · global "plans-folder-convention" skill*
+
+### Added — README sections (adopted from `marvelousempire/claude-chat-reader`)
+- **🛠️ Requirements** — explicit hardware + software list. Was missing entirely. Hardware: Mac with macOS 14+, 8 GB RAM, Apple Silicon or Intel. Software: macOS 14+, Python 3.9+, bash + make + git (all ship with Xcode Command Line Tools). Plus the optional / category-specific deps clearly labeled.
+- **🗺️ Pages map** — every URL the Python server responds to, in three groups: Dashboards (`/`, `/?legacy=1`, `/next/`), JSON API (`/api/status`, `/api/tabs`, `/api/report`, `/api/changelog`, per-category `/api/category/<id>/{scan,actions}`), Live streams (`/api/live`, `/api/clean-path`, `/api/clean-all-safe`, `/api/clean-everything`, `/api/run`), Static assets (`/assets/*`, `/next/_next/static/*`).
+- **🔒 Privacy by default** — dedicated section. Lists what Dustpan never does (analytics, telemetry, cloud sync, account, file-path exfil, external network calls — with one exception). Explains the single external call (once-daily GitHub release check, opt-out via `XCODE_CLEANUP_NO_UPDATE_CHECK=1`). Documents how `localhost-only` works at the socket level. Auditability statement.
+- **🚀 Quick start polished.** Renamed from "Three lines to start." Now opens with a 3-line clone + `make ui`, then a Local vs Wi-Fi URL table, then the privacy/zero-deps callout, then a `make ui-local` opt-out.
+
+### Added — `plans/` folder in the repo
+- **`plans/README.md`** — the convention doc. Filename format, required sections, status discipline, index table.
+- **`plans/0001-cleanup-hub-v1-redesign.md`** — the original v1 redesign plan (Phase 1: design system → Phase 2: dashboard restructure → Phase 3: motion micro-interactions → Phase 4: README rewrite). Reconstructed from the prior ~/.claude/plans/ scratch file for the permanent record.
+- **`plans/0002-dustpan-readme-under-the-hood.md`** — the v0.19.3 "Under the hood" plan, status `shipped (v0.19.3, commit f22b9a4)`.
+
+### Added — global rule
+- New skill **`plans-folder-convention`** pushed to `marvelousempire/ai-skills-library/rules/library/plans-folder-convention/` (commit `9448290`). `alwaysApply: true`. Codifies: every repo gets a `plans/` folder, every substantive change starts as a numbered plan committed there before implementation, plans are immutable (supersede, don't edit), `Status: shipped (commit <sha>, v<version>)` discipline.
+- New Cursor rule **`~/.cursor/rules/plans-folder-convention.mdc`** mirrors the skill.
+
+### Why
+Maintainer asked two things:
+1. *"In the requirements section we need to have the hardware and the software there in the [claude-chat-reader README]. I only see the software."* — Done. Hardware AND software, with category-specific deps clearly labeled.
+2. *"I see we have a plan document — we have a rule here in claude and in Cursor that says that every time we create plan documents, we're supposed to copy them and all of their to-do's and put them in the GitHub inside of a plans folder organized as well. Did we do that?"* — Honest answer: no, we hadn't been. The rule wasn't formalized. Now it is — in both the ai-skills-library (alwaysApply) and Cursor's global rules — and Dustpan's own `plans/` folder is now seeded with the two plans we actually have. Future plans get committed here before the work starts.
+
+> **To finish wiring Claude Code** on your Mac: append the section below to `~/.claude/CLAUDE.md` (the security hook prevents automated cross-worktree edits to that file). Once added, every Claude Code session globally will see the rule.
+>
+> ```
+> ## Plans folder convention — enforce on every project
+>
+> Every substantive change starts as a numbered plan committed to the repo's plans/ folder before implementation.
+> Filename: NNNN-snake-case-title.md. Status line at top after shipping.
+> Don't edit old plans — supersede with new ones.
+> Full reference: ~/Developer/ai-skills-library/rules/library/plans-folder-convention/body.md
+> ```
+
 ## [0.19.3] — 2026-05-13 10:44:31 Eastern · *README: new "🛠️ Under the hood" section — full per-surface tech stack inventory*
 
 ### Added
