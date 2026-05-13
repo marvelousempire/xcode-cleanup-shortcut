@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.19.1] — 2026-05-13 10:21:04 Eastern · *`make ui` now binds localhost + Wi-Fi by default — one command*
+
+### Changed
+- **`make ui` now serves on `0.0.0.0` by default** — both the local URL (`http://127.0.0.1:8765`) and the Wi-Fi URL (`http://192.168.X.X:8765`) print at startup. One command. No flag needed to share with another device.
+- **`make ui-network` is gone.** The behavior moved into `make ui`. If you had it scripted, just call `make ui` — same outcome.
+- **New `make ui-local`** for the opposite case — when you specifically want localhost-only (no Wi-Fi visibility). Sets `XCC_HOST=127.0.0.1`.
+- **Server startup message updated.** Default mode now shows both URLs; the warning line was rewritten as informational (the user picked this on purpose) rather than alarmist. Localhost-only mode hints at `make ui` if you want Wi-Fi too.
+
+### Why
+Maintainer: *"we just want `make ui` to make the wifi available period. not without. local and wifi included out the box. no need for the option make it all in one."*
+
+The skill in `marvelousempire/ai-skills-library` (`rules/library/app-launch-workflow`) and the Cursor global rule were updated in lockstep so every future app inherits this pattern.
+
 ## [0.19.0] — 2026-05-13 10:04:48 Eastern · *Dustpan rebrand — by AVERY GOODMAN — with centered About modal and Apple SF Pro typography*
 
 The product is now **Dustpan** — same code, same functionality, refined identity. The cleanup engine (11 categories, 17 sub-tools, 58 annotated actions, the SSE live channel, the AppleScript, the pie chart, the theme toggle, every safety tier) is unchanged. What changed is the *feel* — name, attribution, typography, and a proper About modal that explains what this is and why it exists.

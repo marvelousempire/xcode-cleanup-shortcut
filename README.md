@@ -29,7 +29,7 @@
 
 ---
 
-## ⚡ Three lines. Browser opens. Start cleaning.
+## ⚡ Three lines. Browser opens. Use it from any device on your Wi-Fi.
 
 ```sh
 git clone https://github.com/marvelousempire/xcode-cleanup-shortcut.git
@@ -37,15 +37,13 @@ cd xcode-cleanup-shortcut
 make ui
 ```
 
+Your terminal prints **two URLs** — `http://127.0.0.1:8765` on your Mac, and `http://192.168.X.X:8765` from any other device on the same Wi-Fi (iPad, another laptop, your phone). Browser auto-opens to the local URL.
+
 > **No Docker. No `pip install`. No Node runtime.** The server is pure Python 3 stdlib.
 > `pnpm` is used to build the React UI once (~6 seconds) and is not required to run the server.
 > If `pnpm` is not installed, `make ui` falls back to the pre-built vanilla dashboard automatically.
 
-Want it on your iPad or another machine on the same Wi-Fi?
-
-```sh
-make ui-network   # binds 0.0.0.0 — prints your LAN URL alongside localhost
-```
+Want localhost-only (no Wi-Fi visibility)? Run `make ui-local` instead.
 
 ---
 
@@ -129,8 +127,8 @@ All three hit the same `/api/*` endpoints. Switch between them without restartin
 ## 🚀 Make targets
 
 ```
-make ui            Build React UI (~6s) + serve localhost + browser auto-opens
-make ui-network    Same but binds 0.0.0.0 — shows LAN URL for Wi-Fi access
+make ui            Build React UI (~6s) + serve localhost AND Wi-Fi + browser auto-opens
+make ui-local      Same build but localhost-only (no Wi-Fi visibility)
 make ui-dev        Vite HMR (:5174) + Next HMR (:5175) in parallel
 make ui-all        Build both Vite + Next.js via Turbo, then serve
 make ui-legacy     Serve vanilla HTML only — no build required

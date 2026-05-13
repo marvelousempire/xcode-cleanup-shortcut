@@ -761,11 +761,11 @@ def main():
         else:
             print(f"  Network    (could not detect LAN IP — try http://YOUR_MAC_IP:{port})")
         print()
-        print("  ⚠  NETWORK MODE: every device on your Wi-Fi can scan and delete files.")
-        print("     Intended for personal home-network use. Stop with Ctrl+C when done.")
+        print("  ⚠  Anyone on your Wi-Fi can reach this URL and trigger cleanups.")
+        print("     Run `make ui-local` for localhost-only mode. Stop with Ctrl+C when done.")
     else:
         print(f"  {'URL':9}  \033[1;36m{local_url}\033[0m")
-        print(f"  Access     Localhost only (run 'make ui-network' to expose on Wi-Fi)")
+        print(f"  Access     Localhost only (run `make ui` to expose on Wi-Fi too)")
     print()
     print(f"  {n_actions} actions across {n_tabs} tabs  ·  Press Ctrl+C to stop.")
     print()
