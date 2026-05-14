@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { api, type Proposal } from "../lib/api";
+import { api, type Proposal, type AppleScriptArtifacts } from "../lib/api";
 import { cn } from "../lib/utils";
 
 /**
@@ -80,10 +80,8 @@ export function ProposalsInbox({
       </div>
 
       <p className="text-[11px] text-fg-dim mb-3 leading-[1.6]">
-        When SADPA finds a cache or directory DustPan doesn't yet know about, it
-        proposes a new cleaner here. Accept generates a paste-ready snippet you
-        can drop into <code className="font-mono text-fg">cleaners.py</code>.
-        DustPan never auto-edits source — the file is hand-curated.
+        When SADPA finds a cache or directory DustPan doesn't yet know about, or a recurring task that would feel better as a one-tap script, it proposes a {" "}
+        <strong className="text-fg">cleaner</strong> or <strong className="text-fg">AppleScript</strong> here. Accept generates paste-ready files you can drop into <code className="font-mono text-fg">cleaners.py</code> or <code className="font-mono text-fg">applescripts/</code>. DustPan never auto-edits source — both surfaces are hand-curated.
       </p>
 
       {loading && proposals.length === 0 && (
@@ -112,10 +110,12 @@ export function ProposalsInbox({
 }
 
 function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: () => void }) {
-  const [busy,     setBusy]    = useState(false);
-  const [snippet,  setSnippet] = useState<string | null>(null);
-  const [copied,   setCopied]  = useState(false);
-  const [expanded, setExpanded] = useState(proposal.status === "pending");
+  const [busy,        setBusy]        = useState(false);
+  const [snippet,     setSnippet]     = useState<string | null>(null);
+  const [artifacts,   setArtifacts]   = useState<AppleScriptArtifacts | null>(null);
+  const [expanded,    setExpanded]    = useState(proposal.status === "pending");
+
+  const isApplescript = proposal.kind === "applescript" || !!proposal.script_body;
 
   const onAccept = async () => {
     if (busy) return;
@@ -123,6 +123,7 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
     try {
       const r = await api.acceptProposal(proposal.id);
       setSnippet(r.snippet);
+      if (r.applescript) setArtifacts(r.applescript);
       onChanged();
     } catch (e) {
       setSnippet(`Failed to accept: ${(e as Error).message}`);
@@ -145,18 +146,10 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
     try {
       const r = await api.proposalSnippet(proposal.id);
       setSnippet(r.snippet);
+      if (r.applescript) setArtifacts(r.applescript);
     } catch (e) {
       setSnippet(`Failed to load snippet: ${(e as Error).message}`);
     }
-  };
-
-  const copySnippet = async () => {
-    if (!snippet) return;
-    try {
-      await navigator.clipboard.writeText(snippet);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* fall through */ }
   };
 
   const statusCls = {
@@ -220,53 +213,78 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
                 </div>
               )}
 
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.05em] text-fg-faint mb-1.5">Proposed paths</div>
-                <div className="rounded-md border border-border/15 bg-[hsl(var(--bg-1)/0.7)] overflow-hidden">
-                  {proposal.paths.map((p, i) => (
-                    <div key={i} className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 text-[11px]",
-                      i > 0 && "border-t border-border/10",
-                    )}>
-                      <span className={cn(
-                        "flex-shrink-0 text-[9px] font-semibold uppercase tracking-[0.05em] px-1.5 py-0.5 rounded border",
-                        TIER_CLASS[p.tier],
-                      )}>{TIER_LABEL[p.tier]}</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="text-fg font-semibold">{p.label}</span>
-                        <span className="text-fg-faint font-mono ml-2">{p.path}</span>
-                      </span>
-                    </div>
-                  ))}
+              {/* Cleaner proposals: show the per-tier path table */}
+              {!isApplescript && proposal.paths.length > 0 && (
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.05em] text-fg-faint mb-1.5">Proposed paths</div>
+                  <div className="rounded-md border border-border/15 bg-[hsl(var(--bg-1)/0.7)] overflow-hidden">
+                    {proposal.paths.map((p, i) => (
+                      <div key={i} className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 text-[11px]",
+                        i > 0 && "border-t border-border/10",
+                      )}>
+                        <span className={cn(
+                          "flex-shrink-0 text-[9px] font-semibold uppercase tracking-[0.05em] px-1.5 py-0.5 rounded border",
+                          TIER_CLASS[p.tier],
+                        )}>{TIER_LABEL[p.tier]}</span>
+                        <span className="flex-1 min-w-0">
+                          <span className="text-fg font-semibold">{p.label}</span>
+                          <span className="text-fg-faint font-mono ml-2">{p.path}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {proposal.shell && (
+              {/* AppleScript proposals: preview the script before acceptance */}
+              {isApplescript && proposal.script_body && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.05em] text-fg-faint">
+                      🍎 Proposed AppleScript {proposal.file_name && <code className="font-mono ml-1 text-fg-dim">{proposal.file_name}</code>}
+                    </span>
+                  </div>
+                  <pre className="rounded-md border border-border/15 bg-[hsl(var(--bg-1)/0.7)] px-3 py-2 font-mono text-[11px] text-fg-dim whitespace-pre-wrap m-0 max-h-64 overflow-y-auto">{proposal.script_body}</pre>
+                </div>
+              )}
+
+              {!isApplescript && proposal.shell && (
                 <div>
                   <div className="text-[10px] font-semibold uppercase tracking-[0.05em] text-fg-faint mb-1">Custom shell action</div>
                   <pre className="rounded-md border border-border/15 bg-[hsl(var(--bg-1)/0.7)] px-3 py-2 font-mono text-[11px] text-fg-dim whitespace-pre-wrap m-0 break-all">{proposal.shell}</pre>
                 </div>
               )}
 
-              {/* Generated snippet area */}
-              {snippet !== null && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.05em] text-fg-faint">
-                      Paste-ready snippet for <code className="font-mono">cleaners.py</code>
-                    </span>
-                    <button type="button" onClick={copySnippet}
-                      className={cn(
-                        "text-[10px] font-semibold px-2 py-0.5 rounded transition-colors",
-                        copied
-                          ? "bg-[hsl(var(--safe)/0.15)] text-safe"
-                          : "bg-[hsl(var(--accent)/0.15)] text-accent hover:bg-[hsl(var(--accent)/0.25)]",
-                      )}>
-                      {copied ? "✓ Copied" : "📋 Copy"}
-                    </button>
-                  </div>
-                  <pre className="rounded-md border border-accent/25 bg-[hsl(var(--bg-1)/0.85)] px-3 py-2 font-mono text-[11px] text-fg-dim whitespace-pre-wrap break-all m-0 max-h-64 overflow-y-auto">{snippet}</pre>
+              {/* ── AppleScript artifacts: script + doc, each with own Copy ── */}
+              {artifacts && (
+                <div className="flex flex-col gap-3">
+                  <ArtifactBlock
+                    label="🍎 Paste into this file"
+                    pathHint={artifacts.script_path}
+                    body={artifacts.script}
+                    maxHeight={320}
+                  />
+                  <ArtifactBlock
+                    label="📝 Paste into this file"
+                    pathHint={artifacts.doc_path}
+                    body={artifacts.doc}
+                    maxHeight={260}
+                  />
+                  <p className="text-[10px] text-fg-faint leading-[1.5]">
+                    Both files are paste-ready. Drop them into the suggested paths, run <code className="font-mono">make check</code> to verify the AppleScript compiles, then commit.
+                  </p>
                 </div>
+              )}
+
+              {/* Cleaner snippet (single text blob) */}
+              {!isApplescript && snippet !== null && (
+                <ArtifactBlock
+                  label="Paste-ready snippet for"
+                  pathHint="cleaners.py"
+                  body={snippet}
+                  maxHeight={260}
+                />
               )}
 
               {/* Action buttons */}
@@ -275,7 +293,7 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
                   <>
                     <button type="button" onClick={onAccept} disabled={busy}
                       className="rounded-md border border-safe/30 bg-[hsl(var(--safe)/0.1)] text-safe hover:bg-[hsl(var(--safe)/0.2)] disabled:opacity-50 px-3 py-1.5 text-[12px] font-semibold transition-colors">
-                      ✓ Accept & generate snippet
+                      {isApplescript ? "✓ Accept & generate script + doc" : "✓ Accept & generate snippet"}
                     </button>
                     <button type="button" onClick={onDismiss} disabled={busy}
                       className="rounded-md border border-border/25 bg-[hsl(var(--bg-3)/0.5)] text-fg-dim hover:text-fg disabled:opacity-50 px-3 py-1.5 text-[12px] font-semibold transition-colors">
@@ -283,10 +301,10 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
                     </button>
                   </>
                 )}
-                {proposal.status === "accepted" && snippet === null && (
+                {proposal.status === "accepted" && snippet === null && !artifacts && (
                   <button type="button" onClick={onShowSnippet}
                     className="rounded-md border border-accent/30 bg-[hsl(var(--accent)/0.1)] text-accent hover:bg-[hsl(var(--accent)/0.2)] px-3 py-1.5 text-[12px] font-semibold transition-colors">
-                    📋 Show snippet again
+                    {isApplescript ? "📋 Show script + doc again" : "📋 Show snippet again"}
                   </button>
                 )}
               </div>
@@ -295,5 +313,47 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
         )}
       </AnimatePresence>
     </motion.div>
+  );
+}
+
+/**
+ * Paste-ready code block with a labelled header, the suggested target path,
+ * and a Copy button. Used by both cleaner snippets and AppleScript artifacts.
+ */
+function ArtifactBlock({
+  label, pathHint, body, maxHeight = 256,
+}: {
+  label:     string;
+  pathHint:  string;
+  body:      string;
+  maxHeight?: number;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(body);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.05em] text-fg-faint">
+          {label} <code className="font-mono ml-1 text-fg-dim normal-case tracking-normal">{pathHint}</code>
+        </span>
+        <button type="button" onClick={copy}
+          className={cn(
+            "text-[10px] font-semibold px-2 py-0.5 rounded transition-colors",
+            copied
+              ? "bg-[hsl(var(--safe)/0.15)] text-safe"
+              : "bg-[hsl(var(--accent)/0.15)] text-accent hover:bg-[hsl(var(--accent)/0.25)]",
+          )}>
+          {copied ? "✓ Copied" : "📋 Copy"}
+        </button>
+      </div>
+      <pre className="rounded-md border border-accent/25 bg-[hsl(var(--bg-1)/0.85)] px-3 py-2 font-mono text-[11px] text-fg-dim whitespace-pre-wrap break-all m-0 overflow-y-auto"
+           style={{ maxHeight: `${maxHeight}px` }}>{body}</pre>
+    </div>
   );
 }

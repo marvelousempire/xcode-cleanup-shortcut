@@ -26,6 +26,22 @@ export interface Proposal {
   paths:                 Array<{ label: string; path: string; tier: "safe" | "probably_safe" | "caution" }>;
   shell?:                string | null;
   source:                string;
+  /** v0.26.1 — "cleaner" (default) or "applescript" */
+  kind?:                 "cleaner" | "applescript";
+  /** v0.26.1 — for AppleScript proposals, the full .applescript body */
+  script_body?:          string | null;
+  /** v0.26.1 — suggested filename for an AppleScript proposal */
+  file_name?:            string | null;
+}
+
+/** v0.26.1 — structured artifacts returned for AppleScript proposals from /accept and /snippet */
+export interface AppleScriptArtifacts {
+  script:      string;
+  script_path: string;
+  doc:         string;
+  doc_path:    string;
+  file_name:   string;
+  doc_number:  number;
 }
 
 async function jsonFetch<T>(path: string): Promise<T> {
@@ -70,9 +86,9 @@ export const api = {
     ),
   proposalsCount:      () => jsonFetch<{ pending: number }>("/api/ai/proposals/count"),
   proposalSnippet:     (id: string) =>
-    jsonFetch<{ proposal: Proposal; snippet: string }>(`/api/ai/proposals/${id}/snippet`),
+    jsonFetch<{ proposal: Proposal; snippet: string; applescript?: AppleScriptArtifacts }>(`/api/ai/proposals/${id}/snippet`),
   acceptProposal:      (id: string) =>
-    fetch(API_BASE + `/api/ai/proposals/${id}/accept`, { method: "POST" }).then(r => r.json()) as Promise<{ ok: true; proposal: Proposal; snippet: string }>,
+    fetch(API_BASE + `/api/ai/proposals/${id}/accept`, { method: "POST" }).then(r => r.json()) as Promise<{ ok: true; proposal: Proposal; snippet: string; applescript?: AppleScriptArtifacts }>,
   dismissProposal:     (id: string) =>
     fetch(API_BASE + `/api/ai/proposals/${id}/dismiss`, { method: "POST" }).then(r => r.json()) as Promise<{ ok: true; proposal: Proposal }>,
 

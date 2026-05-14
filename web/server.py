@@ -598,10 +598,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 p = proposals_store.get(pid)
                 if not p:
                     return self._serve_json_status(404, {"error": "proposal not found"})
-                return self._serve_json({
+                response = {
                     "proposal": p,
                     "snippet":  proposals_store.generate_snippet(p),
-                })
+                }
+                # AppleScript proposals also return the structured artifacts
+                # (script + doc with suggested paths) so the UI can render them
+                # in two distinct blocks with separate Copy buttons.
+                if p.get("kind") == "applescript" or p.get("script_body"):
+                    response["applescript"] = proposals_store.generate_applescript_artifacts(p)
+                return self._serve_json(response)
             except ImportError:
                 return self._serve_json_status(501, {"error": "proposals_store unavailable"})
 
@@ -750,7 +756,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     return self._serve_json_status(404, {"error": "proposal not found"})
                 updated = proposals_store.update_status(pid, "accepted")
                 snippet = proposals_store.generate_snippet(updated or p)
-                return self._serve_json({"ok": True, "proposal": updated, "snippet": snippet})
+                response = {"ok": True, "proposal": updated, "snippet": snippet}
+                if (updated or p).get("kind") == "applescript" or (updated or p).get("script_body"):
+                    response["applescript"] = proposals_store.generate_applescript_artifacts(updated or p)
+                return self._serve_json(response)
             except ImportError:
                 return self._serve_json_status(501, {"error": "proposals_store unavailable"})
 

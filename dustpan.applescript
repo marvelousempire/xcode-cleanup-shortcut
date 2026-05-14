@@ -13,7 +13,7 @@
 --   DUSTPAN_TMP_PATTERNS=...  Override /tmp orphan globs. Empty string skips phase 4.
 --   DUSTPAN_NO_UPDATE_CHECK=1  Skip the daily GitHub release check.
 
-property kVersion : "0.26.0"
+property kVersion : "0.26.1"
 
 -- Default /private/tmp orphan patterns. These are example patterns from
 -- the maintainer's project (Red-E Play); other users should override via

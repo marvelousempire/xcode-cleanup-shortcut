@@ -543,8 +543,9 @@ def _h_list_applescript_library(args: dict, ctx: dict) -> dict:
 def _h_propose_new_applescript(args: dict, ctx: dict) -> dict:
     """
     Propose a new AppleScript for the library. Same review-inbox pattern as
-    propose_new_cleaner: never writes to applescripts/ directly; saves a
-    proposal record the user can review and accept.
+    propose_new_cleaner — but stores `script_body` as a top-level field and
+    sets `kind: "applescript"` so the snippet generator produces two artifacts
+    (script + doc) instead of cleaners.py-style Python tuples.
     """
     try:
         import proposals_store
@@ -561,24 +562,37 @@ def _h_propose_new_applescript(args: dict, ctx: dict) -> dict:
     if not intent:
         return {"error": "intent is required (why this script exists, the moment that prompted it)"}
 
+    # Sanity-check the script for the hard rules we documented in the SKILL.md
+    body_lower = body.lower()
+    warnings_list = []
+    if "with administrator privileges" in body_lower:
+        return {
+            "error": "AppleScript must not use `with administrator privileges` — DustPan does not run sudo from scripts. Show the command via `display dialog` with a Copy button and let the user paste into Terminal.",
+            "hint":  "See applescripts/snippets/native-clipboard-copy.md",
+        }
+    if "do shell script \"echo " in body_lower or "do shell script 'echo " in body_lower:
+        warnings_list.append("Body contains `do shell script \"echo …\"` — prefer display alert / display dialog / display notification for user-facing output.")
+    if "on run" not in body:
+        warnings_list.append("Body does not contain an `on run` handler — scripts should have one as an entry point.")
+
     record = proposals_store.create({
         "name":                  f"[applescript] {name}",
         "category_id_suggested": "applescript-library",
         "rationale":             intent,
-        "cost_to_user":          (args.get("cost") or "User pastes the snippet into applescripts/").strip(),
-        "paths":                 [{
-            "label": args.get("file_name") or f"{name.lower().replace(' ', '-')}.applescript",
-            "path":  body,  # The full script body lives in 'path' for simplicity — snippet generator handles it
-            "tier":  "safe",
-        }],
-        "shell":                 None,  # Not used for AppleScript proposals
+        "cost_to_user":          (args.get("cost") or "User pastes the snippet into applescripts/ and the doc template into applescripts/docs/.").strip(),
+        "kind":                  "applescript",
+        "script_body":           body,
+        "file_name":             args.get("file_name"),
+        "paths":                 [],   # Not used for AppleScript proposals
+        "shell":                 None,
         "source":                "ai-chat-applescript",
     })
     return {
         "ok":          True,
         "proposal_id": record["id"],
         "summary":     f"Proposed AppleScript '{name}' filed to review inbox (id {record['id']}).",
-        "ui_hint":     "User can review at the bottom of the Chat with SADPA panel.",
+        "warnings":    warnings_list,
+        "ui_hint":     "User reviews at the bottom of the Chat with SADPA panel — accept generates two paste-ready artifacts (script + doc).",
     }
 
 

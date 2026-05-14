@@ -85,6 +85,9 @@ def create(payload: dict) -> dict:
       - cost_to_user      (str)
       - paths             ([{label, path, tier}])
       - shell             (str)
+      - kind              (str: "cleaner" | "applescript") — determines snippet format
+      - script_body       (str) — for AppleScript proposals, the full .applescript source
+      - file_name         (str) — for AppleScript proposals, the suggested filename
     """
     items = _read_all()
     pid = uuid.uuid4().hex[:12]
@@ -98,6 +101,9 @@ def create(payload: dict) -> dict:
         "cost_to_user":          (payload.get("cost_to_user") or "").strip(),
         "paths":                 payload.get("paths") or [],
         "shell":                 (payload.get("shell") or "").strip() or None,
+        "kind":                  payload.get("kind") or "cleaner",
+        "script_body":           (payload.get("script_body") or "").strip() or None,
+        "file_name":             (payload.get("file_name") or "").strip() or None,
         "source":                payload.get("source") or "ai-chat",
     }
     items.append(record)
@@ -136,11 +142,23 @@ def delete(proposal_id: str) -> bool:
 
 def generate_snippet(proposal: dict) -> str:
     """
-    Convert a proposal into a paste-ready Python snippet for cleaners.py.
+    Convert a proposal into a paste-ready snippet.
 
-    Format mirrors the existing CATEGORIES structure: a few `(label, path)`
-    tuples per tier, optionally a custom action with shell.
+    Two output shapes depending on `kind`:
+      - "cleaner"     → Python tuples for cleaners.py (the original v0.25.0 format)
+      - "applescript" → returns a sentinel; use generate_applescript_artifacts() instead
+                        which returns a dict with separate script_body + doc_template
+                        fields so the UI can render them in two distinct blocks with
+                        separate Copy buttons.
     """
+    if proposal.get("kind") == "applescript" or proposal.get("script_body"):
+        # AppleScript proposals are richer than a single text blob — the UI
+        # should call /snippet then check `applescript` key. For backward-compat
+        # the server endpoint returns both shapes (snippet + applescript dict).
+        # This function returns a single combined string for callers that just
+        # want a paste-ready text (e.g. terminal output).
+        return _generate_applescript_snippet_text(proposal)
+
     name           = proposal.get("name", "Unnamed")
     category       = proposal.get("category_id_suggested", "apps")
     rationale      = proposal.get("rationale", "")
@@ -197,3 +215,163 @@ def generate_snippet(proposal: dict) -> str:
         lines.append("},")
 
     return "\n".join(lines)
+
+
+# ── AppleScript proposal artifacts (Plan 0023 Ship 2 + v0.26.1) ──────────────
+
+def _safe_file_stem(name: str, fallback: str = "ai-proposal") -> str:
+    """Convert 'Show Xcode Cache Sizes' → 'show-xcode-cache-sizes'."""
+    stem = "".join(c if c.isalnum() else "-" for c in name.lower())
+    while "--" in stem:
+        stem = stem.replace("--", "-")
+    stem = stem.strip("-")[:60]
+    return stem or fallback
+
+
+def _next_doc_number() -> int:
+    """Scan applescripts/docs/ for the highest NNNN- prefix and return next."""
+    from pathlib import Path as _P
+    docs = _P(__file__).resolve().parent.parent / "applescripts" / "docs"
+    highest = 0
+    if docs.exists():
+        for f in docs.glob("*.md"):
+            try:
+                n = int(f.name.split("-", 1)[0])
+                highest = max(highest, n)
+            except (ValueError, IndexError):
+                continue
+    return highest + 1
+
+
+def generate_applescript_artifacts(proposal: dict) -> dict:
+    """
+    Generate the two artifacts an AppleScript proposal acceptance produces:
+      - `script`     — full .applescript content with a header comment block
+      - `script_path`— suggested filename (e.g. "applescripts/show-disk-status.applescript")
+      - `doc`        — full doc template following applescripts/docs/ conventions
+      - `doc_path`   — suggested doc filename (e.g. "applescripts/docs/0005-show-disk-status.md")
+
+    Caller pastes each into the suggested path and commits.
+    """
+    name       = proposal.get("name", "Unnamed").replace("[applescript] ", "")
+    rationale  = proposal.get("rationale", "")
+    cost       = proposal.get("cost_to_user", "")
+    body_raw   = (proposal.get("script_body") or "").strip()
+
+    # Suggested filename
+    file_name  = proposal.get("file_name") or f"{_safe_file_stem(name)}.applescript"
+    if not file_name.endswith(".applescript"):
+        file_name += ".applescript"
+    script_path = f"applescripts/{file_name}"
+
+    # Suggested doc filename
+    doc_num    = _next_doc_number()
+    doc_stem   = file_name.replace(".applescript", "")
+    doc_name   = f"{doc_num:04d}-{doc_stem}.md"
+    doc_path   = f"applescripts/docs/{doc_name}"
+
+    # ── Build the script: header comment + body ────────────────────────────
+    header = [
+        f"-- {file_name}",
+        "-- ─────────────────────────────────────────────────────────────────────────────",
+    ]
+    if rationale:
+        # Wrap rationale at ~72 chars across `--` comment lines
+        words = rationale.split()
+        line  = "-- "
+        for w in words:
+            if len(line) + len(w) + 1 > 78:
+                header.append(line.rstrip())
+                line = "-- " + w
+            else:
+                line += (" " if line.strip() != "--" else "") + w
+        if line.strip() != "--":
+            header.append(line.rstrip())
+        header.append("--")
+    header.append("-- Proposed by SADPA. Part of the DustPan AppleScript Library.")
+    header.append(f"-- Documentation: {doc_path}")
+    header.append("")
+    script_full = "\n".join(header) + body_raw + ("\n" if not body_raw.endswith("\n") else "")
+
+    # ── Build the doc template ─────────────────────────────────────────────
+    doc_lines = [
+        f"# {doc_num:04d} — {name}",
+        "",
+        f"**File:** [`{script_path}`](../{file_name})",
+        "**Status:** 💡 Proposed (accepted from review inbox)",
+        "**Type:** _(fill in: Cleanup · Diagnostic · UI helper · Utility · Recovery)_",
+        "",
+        "## What it does",
+        "",
+        "_(One paragraph in plain English. Take the SADPA-proposed rationale below as a starting point and refine.)_",
+        "",
+        rationale,
+        "",
+        "## The moment that prompted it",
+        "",
+        "_(The specific user pain or feature request that triggered this script. Tells future maintainers why.)_",
+        "",
+        rationale,
+        "",
+        "## Cost to the user",
+        "",
+        cost or "_(What does running this script do? If it deletes something, what rebuilds?)_",
+        "",
+        "## Native macOS UI patterns used",
+        "",
+        "_(List the patterns this script uses, with links back to applescripts/snippets/.)_",
+        "",
+        "- See [`snippets/native-confirmation.md`](../snippets/native-confirmation.md) for the confirmation alert",
+        "- See [`snippets/native-progress-bar.md`](../snippets/native-progress-bar.md) for the progress block",
+        "- See [`snippets/native-notification.md`](../snippets/native-notification.md) for the completion notification",
+        "- See [`snippets/native-clipboard-copy.md`](../snippets/native-clipboard-copy.md) for the clipboard + Open Terminal pattern",
+        "",
+        "## The full script",
+        "",
+        f"See [`{script_path}`](../{file_name}).",
+        "",
+        "## How to invoke",
+        "",
+        "```bash",
+        f"# Direct",
+        f"osascript {script_path}",
+        "",
+        f"# As a Shortcut — bind to a hotkey for one-tap invocation.",
+        f"# In Shortcuts.app: New Shortcut → Run AppleScript → paste the body → save with a hotkey.",
+        "```",
+        "",
+        "## Variations / extensions",
+        "",
+        "_(Ideas for follow-up improvements. Leave at least one bullet.)_",
+        "",
+        "- _(TODO)_",
+        "",
+        "## Related",
+        "",
+        "- [`applescripts/README.md`](../README.md) — library index + philosophy",
+    ]
+    doc_full = "\n".join(doc_lines)
+
+    return {
+        "script":      script_full,
+        "script_path": script_path,
+        "doc":         doc_full,
+        "doc_path":    doc_path,
+        "file_name":   file_name,
+        "doc_number":  doc_num,
+    }
+
+
+def _generate_applescript_snippet_text(proposal: dict) -> str:
+    """
+    Fallback text form for AppleScript proposals — for callers that want a
+    single string blob (terminal output, plain-text export). Combines the
+    script header + the doc template, separated by a clear divider.
+    """
+    artifacts = generate_applescript_artifacts(proposal)
+    return (
+        f"# ─── Paste into: {artifacts['script_path']} ───\n\n"
+        f"{artifacts['script']}\n\n"
+        f"# ─── Paste into: {artifacts['doc_path']} ───\n\n"
+        f"{artifacts['doc']}\n"
+    )
