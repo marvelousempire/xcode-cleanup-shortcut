@@ -70,6 +70,22 @@ make ui-local
 
 Same dashboard. Only your Mac can reach it. Use this when you're on a coffee-shop network or somewhere you don't trust.
 
+### To update later — always use `make update`
+
+```sh
+make update
+```
+
+Pulls the latest DustPan from `main` no matter what branch you're on. **Do not run `git pull` directly** — if you're on a stale feature branch, git will fail with `"There is no tracking information for the current branch"` and that error message is not designed for humans. `make update` handles every branch state, warns you about uncommitted changes, and shows what changed when it's done.
+
+### Something feels off? Run `make doctor`
+
+```sh
+make doctor
+```
+
+Prints your current branch, git status, DustPan version, pnpm + Python versions, whether the dashboard is built, and how much disk you have free. Use this when you want to file a bug or just confirm things look right.
+
 ---
 
 ## 🖥️ What you see when it opens

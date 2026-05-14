@@ -2,7 +2,7 @@ SHORTCUT_NAME := DustPan
 SCRIPT        := dustpan.applescript
 
 .DEFAULT_GOAL := help
-.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-local ui-all ui-legacy ui-react ui-next ui-dev clean-docker
+.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-local ui-all ui-legacy ui-react ui-next ui-dev clean-docker update doctor
 
 help: ## Show this help
 	@echo "DustPan by AVERY GOODMAN — Make targets"
@@ -143,3 +143,111 @@ package-shortcut: ## Sign an exported .shortcut bundle as 'Anyone Mode' for shar
 
 report: ## Sparkline of freed-GB across recent real cleanup runs
 	@python3 scripts/report.py
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Self-update — fixes the "git pull says 'no tracking information'" UX trap
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Users routinely hit `git pull` after switching branches and see:
+#   "There is no tracking information for the current branch."
+# That's macOS git asking them to learn about upstream tracking. Most users
+# just want "give me the latest version." `make update` does that safely
+# regardless of branch state.
+
+update: ## Pull the latest DustPan from main (safe from any branch state)
+	@CURRENT=$$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?"); \
+	if [ "$$CURRENT" = "?" ] || [ "$$CURRENT" = "HEAD" ]; then \
+		echo "✗ Not in a git repo (or detached HEAD). Re-clone:"; \
+		echo "    git clone https://github.com/marvelousempire/dustpan.git"; \
+		exit 1; \
+	fi; \
+	echo "→ Currently on: $$CURRENT"; \
+	echo "→ Fetching from origin…"; \
+	git fetch origin --quiet 2>&1 | sed 's/^/  /'; \
+	if ! git diff-index --quiet HEAD --; then \
+		echo "⚠ You have uncommitted local changes. Stash or commit them first:"; \
+		echo "    git stash       # to save them aside"; \
+		echo "    git status      # to review"; \
+		exit 1; \
+	fi; \
+	if [ "$$CURRENT" != "main" ]; then \
+		echo "→ Switching to main…"; \
+		git checkout main --quiet; \
+	fi; \
+	echo "→ Pulling latest main from origin…"; \
+	BEFORE=$$(git rev-parse HEAD); \
+	git pull --ff-only origin main 2>&1 | sed 's/^/  /'; \
+	AFTER=$$(git rev-parse HEAD); \
+	if [ "$$BEFORE" = "$$AFTER" ]; then \
+		echo "✓ Already up to date."; \
+	else \
+		echo ""; \
+		echo "✓ Updated $$BEFORE → $$AFTER"; \
+		echo ""; \
+		echo "Changes pulled:"; \
+		git log --oneline "$$BEFORE..$$AFTER" | head -20 | sed 's/^/  /'; \
+	fi; \
+	echo ""; \
+	echo "Next: run 'make ui' to launch the dashboard."
+
+doctor: ## Diagnose the local install (git state, deps, build status)
+	@echo "▶ DustPan doctor"
+	@echo ""
+	@printf "  git branch:        "; git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "(not a git repo)"
+	@printf "  git status:        "; \
+		if git diff-index --quiet HEAD -- 2>/dev/null; then echo "clean"; \
+		else echo "uncommitted changes (run: git status)"; fi
+	@printf "  current version:   "; grep 'property kVersion' $(SCRIPT) 2>/dev/null | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || echo "(unknown)"
+	@printf "  pnpm installed:    "; if command -v pnpm >/dev/null 2>&1; then pnpm --version; else echo "no (legacy UI will be used)"; fi
+	@printf "  python3:           "; python3 --version 2>&1
+	@printf "  vite dist/ built:  "; if [ -d apps/web/dist ]; then echo "yes (will use)"; else echo "no (run: make ui)"; fi
+	@printf "  disk free:         "; df -h / 2>/dev/null | awk 'NR==2{print $$4" of "$$2" ("$$5" used)"}'
+	@echo ""
+	@echo "  Common fixes:"
+	@echo "    make update   — pull latest DustPan from main"
+	@echo "    make ui       — build + launch dashboard"
+	@echo "    make help     — show every available make target"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UI targets — restored from pre-v0.21.0 (these bodies were lost in the rebrand)
+# ─────────────────────────────────────────────────────────────────────────────
+
+ui: ## Build Vite UI (~6s) + serve on localhost AND Wi-Fi + browser auto-opens
+	@# `make ui` serves on 0.0.0.0 by default. One command, both URLs (Local +
+	@# Network) shown at startup. Want localhost-only? Run `make ui-local` or
+	@# `XCC_HOST=127.0.0.1 make ui`.
+	@#
+	@# URL routing:
+	@#   /          → Vite React (canonical, always rebuilt here)
+	@#   ?legacy=1  → vanilla web/index.html
+	@#   /next/     → Next.js (build separately with `make ui-all` or `make ui-next`)
+	@if command -v pnpm >/dev/null 2>&1; then \
+		echo "▶ Building Vite UI (apps/web)…"; \
+		pnpm install --silent && pnpm --filter @dustpan/web build \
+		  && echo "✓ Built apps/web/dist/" \
+		  || { echo "⚠ Vite build failed — falling back to vanilla UI."; }; \
+	else \
+		echo "ℹ pnpm not installed — serving vanilla UI. Install pnpm (brew install pnpm) for the React build."; \
+	fi
+	@XCC_HOST=0.0.0.0 python3 web/server.py
+
+ui-local: ## Build + serve localhost only (no Wi-Fi visibility)
+	@if command -v pnpm >/dev/null 2>&1; then \
+		echo "▶ Building Vite UI (apps/web)…"; \
+		pnpm install --silent && pnpm --filter @dustpan/web build || true; \
+	fi
+	@XCC_HOST=127.0.0.1 python3 web/server.py
+
+ui-all: ## Build ALL frontends (Vite + Next.js) via Turbo then serve
+	@pnpm install --silent && pnpm turbo run build
+	@XCC_HOST=0.0.0.0 python3 web/server.py
+
+ui-legacy: ## Force the vanilla web/index.html UI (no build required)
+	@XCC_LEGACY_UI=1 XCC_HOST=0.0.0.0 python3 web/server.py
+
+ui-next: ## Build + serve the Next.js static export (apps/web-next) only
+	@pnpm install --silent && pnpm --filter @dustpan/web-next build
+	@XCC_HOST=0.0.0.0 python3 web/server.py
+
+ui-dev: ## Run both frontends in dev mode (Vite :5174, Next :5175) via Turbo
+	@pnpm install --silent && pnpm turbo run dev
