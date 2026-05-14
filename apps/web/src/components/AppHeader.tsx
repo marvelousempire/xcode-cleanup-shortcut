@@ -1,3 +1,5 @@
+import { motion } from "motion/react";
+import { cn } from "../lib/utils";
 import type { DiskStatus } from "../lib/types";
 
 interface Props {
@@ -6,12 +8,57 @@ interface Props {
 }
 
 /**
- * Dustpan header — wand-sparkles glyph + wordmark + "by AVERY GOODMAN" attribution.
- * v0.19.0 rebrand from "Cleanup Hub".
+ * Dustpan header — wordmark + LIVE disk meter + version pill.
+ *
+ * The disk meter is always visible regardless of which tab is active.
+ * It updates every 2 s via the /api/live SSE channel (no extra requests).
+ * Color coding matches the 5-tier scale in Hero.tsx:
+ *   green  ≥ 50 GB free
+ *   normal 20–50 GB
+ *   yellow 10–20 GB
+ *   orange 5–10 GB
+ *   red    < 5 GB  (emergency — also shown in DiskAlarmBar)
  */
 export function AppHeader({ status, onOpenChangelog }: Props) {
+  const free  = status?.free_gb ?? null;
+  const total = status?.total_gb ?? 1;
+  const usedPct = free !== null ? Math.min(100, Math.max(0, ((total - free) / total) * 100)) : 0;
+  const freePct = 100 - usedPct;
+
+  // Same 5-tier scale as Hero
+  const tier =
+    free === null   ? "loading"   :
+    free >= 50      ? "good"      :
+    free >= 20      ? "ok"        :
+    free >= 10      ? "warn"      :
+    free >= 5       ? "critical"  :
+                      "emergency";
+
+  const barColor =
+    tier === "good"      ? "bg-safe"                    :
+    tier === "ok"        ? "bg-accent"                  :
+    tier === "warn"      ? "bg-warn"                    :
+    tier === "critical"  ? "bg-[hsl(25_95%_48%)]"      :
+                           "bg-danger";
+
+  const labelColor =
+    tier === "good"      ? "text-safe"                  :
+    tier === "ok"        ? "text-fg-dim"                :
+    tier === "warn"      ? "text-warn"                  :
+    tier === "critical"  ? "text-[hsl(25_95%_48%)]"    :
+    tier === "emergency" ? "text-danger"                :
+                           "text-fg-faint";
+
+  // Show MB when below 1 GB
+  const freeLabel =
+    free === null   ? "…" :
+    free < 1        ? `${Math.round(free * 1024)} MB free` :
+    free < 10       ? `${free.toFixed(1)} GB free` :
+                      `${Math.round(free)} GB free`;
+
   return (
-    <header className="flex items-end gap-3 mb-5 px-1">
+    <header className="flex items-center gap-3 mb-5 px-1">
+      {/* Wordmark */}
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -20,7 +67,7 @@ export function AppHeader({ status, onOpenChangelog }: Props) {
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden
-        className="w-[26px] h-[26px] text-accent flex-shrink-0 mb-[2px]"
+        className="w-[26px] h-[26px] text-accent flex-shrink-0"
       >
         <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72" />
         <path d="m14 7 3 3" />
@@ -31,7 +78,7 @@ export function AppHeader({ status, onOpenChangelog }: Props) {
         <path d="M21 16h-4" />
         <path d="M11 3H9" />
       </svg>
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline gap-2 flex-shrink-0">
         <h1
           className="m-0 font-display font-semibold tracking-[-0.022em] leading-none"
           style={{ fontSize: 22 }}
@@ -42,11 +89,42 @@ export function AppHeader({ status, onOpenChangelog }: Props) {
           by AVERY GOODMAN
         </span>
       </div>
+
+      {/* ── Live disk meter — always visible on every tab ─────────────── */}
+      <div className="flex-1 min-w-0 mx-3 flex items-center gap-2.5" aria-label="Live disk usage">
+        {/* Bar */}
+        <div
+          className="flex-1 min-w-[60px] max-w-[280px] h-[5px] rounded-full overflow-hidden"
+          style={{ background: "hsl(var(--border) / 0.22)" }}
+        >
+          <motion.div
+            className={cn("h-full rounded-full", barColor, tier === "emergency" && "animate-pulse")}
+            initial={false}
+            animate={{ width: `${usedPct}%` }}
+            transition={{ type: "spring", stiffness: 90, damping: 20 }}
+          />
+        </div>
+        {/* Label */}
+        <span
+          className={cn(
+            "flex-shrink-0 text-[11px] font-semibold tabular whitespace-nowrap",
+            labelColor,
+          )}
+        >
+          {freeLabel}
+        </span>
+        {/* Percentage */}
+        <span className="flex-shrink-0 text-[11px] text-fg-faint tabular hidden sm:inline">
+          {free !== null ? `${Math.round(freePct)}% free` : ""}
+        </span>
+      </div>
+
+      {/* Version pill */}
       <button
         type="button"
         onClick={onOpenChangelog}
         title="Click to view changelog"
-        className="ml-auto px-2.5 py-1.5 rounded-full text-[11px] text-fg-dim tabular border border-transparent hover:bg-bg-3 hover:border-border hover:text-fg transition-colors duration-150"
+        className="flex-shrink-0 px-2.5 py-1.5 rounded-full text-[11px] text-fg-dim tabular border border-transparent hover:bg-bg-3 hover:border-border hover:text-fg transition-colors duration-150"
       >
         {status?.version ? `${status.version} · localhost` : "…"}
       </button>

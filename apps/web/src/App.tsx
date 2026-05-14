@@ -11,6 +11,7 @@ import { ChangelogModal } from "./components/ChangelogModal";
 import { AboutModal } from "./components/AboutModal";
 import { RunningWidget } from "./components/RunningWidget";
 import { OnboardingCoachmark } from "./components/OnboardingCoachmark";
+import { DiskAlarmBar } from "./components/DiskAlarmBar";
 import { SUB_LABELS } from "./components/SidebarRight";
 import { cn } from "./lib/utils";
 // `motion` / `AnimatePresence` removed in v0.18.4 — see comment on the panel
@@ -41,13 +42,19 @@ function AppBody() {
   const currentSub = hasSub ? activeSub[tab.id] || tab.subcategories![0] : null;
 
   return (
-    <div className="mx-auto max-w-[1280px] px-6 pt-7 pb-24">
-      <div className="flex items-center">
-        <div className="flex-1 min-w-0">
-          <AppHeader status={status} onOpenChangelog={openChangelog} />
+    <>
+      {/* ── DiskAlarmBar: full-viewport-width emergency strip, outside the
+          max-width container so it bleeds edge-to-edge. Always visible
+          regardless of active tab. Updates every 2 s via SSE. ── */}
+      <DiskAlarmBar />
+
+      <div className="mx-auto max-w-[1280px] px-6 pt-7 pb-24">
+        <div className="flex items-center">
+          <div className="flex-1 min-w-0">
+            <AppHeader status={status} onOpenChangelog={openChangelog} />
+          </div>
+          <RunningWidget />
         </div>
-        <RunningWidget />
-      </div>
       <OnboardingCoachmark />
 
       <div
@@ -158,6 +165,7 @@ function AppBody() {
       <ChangelogModal open={showChangelog} onClose={closeChangelog} />
       <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
     </div>
+    </>
   );
 }
 
