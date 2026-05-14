@@ -67,6 +67,209 @@ Same dashboard. Only your Mac can reach it. Use this when you're on a coffee-sho
 
 ---
 
+## 🖥️ What you see when it opens
+
+The dashboard has three things side-by-side at the top, then a grid of category cards underneath.
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│  ← Sidebar                          Main viewport                         │
+│  ┌──────────┐                                                              │
+│  │ Overview │  ┌──── Hero ────┐  ┌── Disk pie ──┐  ┌── Activity ──────┐  │
+│  │ Xcode    │  │  12.1 GB free│  │   42.8 GB    │  │ Filter lines…    │  │
+│  │ LLMs     │  │  94% used    │  │   scanned    │  │ → Scanning…      │  │
+│  │ Docker   │  │  ▓▓▓▓▓▓▓▓▓░ │  │  🟢🟣🔵🟡🟤 │  │ ✓ Done. 6.4 GB  │  │
+│  │ Apps     │  │  Factory-    │  │  Xcode 2.2GB │  │ freed in 3.1s    │  │
+│  │ Browsers │  │  fresh w/o   │  │  Docker 14.6 │  │                  │  │
+│  │ Downloads│  │  losing your │  │  LLMs  12.4  │  │ [Auto][Light][🌙]│  │
+│  │ Creative │  │  stuff       │  │  …           │  │                  │  │
+│  │ Temp     │  └──────────────┘  └──────────────┘  └──────────────────┘  │
+│  │ Archives │                                                              │
+│  │ System   │  ── Re-scan everything ── ✓ Clean ALL safe · 6.4 GB ──────  │
+│  │──────────│                                                              │
+│  │  THEME   │  ┌ Xcode ──────┐  ┌ LLMs ───────┐  ┌ Docker ─────────┐   │
+│  │[Auto][☀][🌙]│ 6.4 GB safe │  │ 0.0 GB safe │  │ 0.0 GB safe     │   │
+│  └──────────┘  │ 0.2 GB opt-in│  │ 12.4 GB opt │  │ 0.0 GB opt-in   │   │
+│                │ ● 2.0 caution│  │             │  │ ● 14.6 caution  │   │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**The sidebar on the left** is the list of categories. Each one shows how many GB it has total. Tiny multi-color rings next to each name show how much is safe to delete, how much needs your okay, and how much should stay.
+
+**The big number in the top-left** is how much disk space you have free right now. It updates live as Dustpan cleans.
+
+**The donut in the middle** shows where your disk space is going. Each color is a different category. Click any slice to jump to that category.
+
+**The black box on the right** is the activity log. When you start cleaning, you'll see every file Dustpan touches scroll by in real time — like a live shipping tracker for your disk space.
+
+---
+
+## 🛠️ Under the hood
+
+The complete tech stack. Six surfaces, each built for its own constraints. If you're contributing or curious — this is everything that goes into making Dustpan run.
+
+### TL;DR — surfaces at a glance
+
+| Surface | Stack | Why this stack |
+|---|---|---|
+| 🐍 **Backend** | Python 3 stdlib (`http.server` + threading) | Ships on every Mac. Zero pip installs. Auditable in ~700 readable lines. |
+| ⚡ **Main dashboard** | Vite 6 + React 18 + TypeScript 5.7 + Tailwind 3.4 + Motion 11 | Fast cold build (~6s), HMR for dev, premium animation feel, Apple-native typography |
+| 📰 **Fallback dashboard** | Vanilla HTML + Motion via CDN | Works the second after `git clone` — no `pnpm install` required |
+| 🧪 **Experimental UI** | Next.js 14 (App Router, static export) | Future surface; statically exported so backend stays Python |
+| 🎭 **Cleanup engine** | AppleScript + macOS shell | Native pop-ups, progress bars, notifications. Runs without a server. |
+| 🚀 **Install surfaces** | Shortcut · CLI · launchd · SwiftBar · SSH | One cleanup source, five ergonomic entry points |
+
+### 🐍 Backend (`web/server.py` + `web/cleaners.py`)
+
+| Layer | Tool | What it handles |
+|---|---|---|
+| Runtime | **Python 3.9+ stdlib only** | No `pip install`. Ships on every Mac since Monterey. |
+| HTTP | `http.server.BaseHTTPRequestHandler` | Routing, response writing, content types |
+| Concurrency | `ThreadingTCPServer` + `threading.Lock` | One thread per request; lock-protected in-flight clean registry |
+| Streaming | Server-Sent Events (`text/event-stream`) | `/api/live` channel + per-clean output streams |
+| Network | `socket` + `XCC_HOST` env var | Toggle between `127.0.0.1` (localhost-only) and `0.0.0.0` (Wi-Fi visible) |
+| LAN discovery | Zero-packet UDP socket to `8.8.8.8` | OS picks the outbound interface → reveals primary LAN IP for the Network URL |
+| Subprocess | `subprocess.Popen` + `subprocess.run` | Shells out to `rm`, `du`, `find`, `xcrun`, `docker`, `osascript` |
+| Data layer | [`web/cleaners.py`](./web/cleaners.py) | 11 categories · 17 sub-tools · 58 actions — single source of truth |
+| Static serving | `apps/web/dist/` + `apps/web-next/out/` + `web/index.html` | Serves whichever frontend the URL asks for |
+
+**Why this stack.** Dustpan's brand promise is *"no Docker, no pip install, no telemetry."* Python is on every Mac. The whole server is auditable in one file. Anyone can read it, understand it, and verify it isn't doing anything sneaky.
+
+### ⚡ Main dashboard (`apps/web/` = `@cleanup-hub/web`)
+
+| Layer | Tool | What it handles |
+|---|---|---|
+| Framework | **React 18.3** + **TypeScript 5.7** | UI + types |
+| Build | **Vite 6** (`vite build`, `vite dev`) | Production bundle ~120 KB JS gz + ~6 KB CSS gz · builds in ~6s · HMR for dev |
+| Styling | **Tailwind CSS 3.4** + `tailwindcss-animate` | Utility-first styling |
+| Tokens | HSL CSS custom properties | Light + Dark + explicit `[data-theme]` override (all three activation paths) |
+| Typography | **Apple SF Pro Display** + **SF Pro Text** | Native Mac type via `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro"...` |
+| Animation | **Motion 11** (`motion/react`) | Springs, layout-aware tweens, `AnimatePresence` |
+| Components | **Radix UI** primitives (1.x) | `@radix-ui/react-dialog`, `react-scroll-area`, `react-separator`, `react-tooltip`, `react-slot` |
+| Icons | **Lucide React 0.469** | All glyphs throughout the UI |
+| Utils | `clsx` + `tailwind-merge` + `class-variance-authority` | `cn()` helper + variant patterns |
+| State | Hand-rolled `DashboardContext` (`useState` + `useEffect`) | No Redux/Zustand — Context is sufficient |
+| Real-time | Native `EventSource` | Subscribed to `/api/live` with exponential backoff reconnect |
+| Theme | Pre-paint inline `<script>` in `index.html` | Applies saved theme **before React mounts** — no flash on cold load |
+
+**Why this stack.** Vite is the fastest cold-build path in the React ecosystem. Motion 11 gives the cinematic spring physics the maintainer specified. Radix gives accessibility primitives for free (Dialog focus trapping, ESC handling, Portal). Apple's SF Pro Display + Text resolve automatically on macOS via the system-ui stack — no fonts to host, no FOUT.
+
+### 📰 Fallback dashboard (`web/index.html`)
+
+| Layer | Tool | What it handles |
+|---|---|---|
+| Build | **None** | Single self-contained HTML file. No bundler. |
+| Animation | **Motion 11** via `cdn.jsdelivr.net/npm/motion@11.18.0/+esm` | Loaded as an ES module; gracefully degrades if CDN unreachable |
+| Icons | Inline SVGs (Lucide source) | Hand-pasted for offline use |
+| API contracts | Same `/api/*` endpoints as Vite app | Identical scan/clean flow, different render engine |
+
+**Why this stack.** Works the second after `git clone` without `pnpm install`. The demo/airgap path. If pnpm isn't installed, `make ui` falls back to serving this — the user never sees an error.
+
+### 🧪 Experimental dashboard (`apps/web-next/` = `@cleanup-hub/web-next`)
+
+| Layer | Tool | What it handles |
+|---|---|---|
+| Framework | **Next.js 14.2** (App Router) | Router + RSC patterns |
+| Mode | `output: "export"` (static export) | Pre-rendered HTML + `_next/static/*` chunks. No Node runtime in production. |
+| basePath | `/next` | Coexists with the Vite app at root |
+| Tailwind | Same token system as `apps/web` | Mirrored, not shared — keeps the apps loosely coupled |
+
+**Why this stack.** A future surface to explore Next-specific patterns (server components, route groups, parallel routes) without coupling them to the canonical Vite UI. Static export keeps the Python backend as the only runtime — no Node needed in production.
+
+### 🎭 Cleanup engine ([`xcode-cleanup.applescript`](./xcode-cleanup.applescript))
+
+| Layer | Tool | What it handles |
+|---|---|---|
+| Language | **AppleScript** (~250 lines) | The original Dustpan script — predates the web dashboard |
+| Native UI | `display alert` · `display notification` · `progress total steps` | Real macOS modals, progress bars, system notifications |
+| Shell-out | `do shell script` | Runs `rm -rf`, `du`, `xcrun simctl delete unavailable`, etc. |
+| Logging | `~/Library/Logs/xcode-cleanup.log` + CSV | Consumed by [`scripts/report.py`](./scripts/report.py) for the sparkline chart |
+| Update check | Once-daily `curl` to GitHub Releases API (cached 24h) | Tells you when a new Dustpan is out |
+
+**Why this stack.** Native macOS feel. Zero dependencies. Runs without any server. Anyone with a Mac can `osascript xcode-cleanup.applescript` and it just works.
+
+### 🚀 Install surfaces
+
+| Surface | File | What it does |
+|---|---|---|
+| **`xcc` CLI** | [`bin/xcc`](./bin/xcc) | Wrapper installed to `~/.local/bin/` by `make install-cli` |
+| **Apple Shortcut** | `make install-shortcut` | Registers the AppleScript with Shortcuts.app — pin to menu bar, bind a hotkey |
+| **launchd** | [`launchd/com.example.xcode-cleanup.plist`](./launchd/) | Hourly auto-clean; threshold-gated so it's silent when disk is healthy |
+| **SwiftBar plugin** | [`swiftbar/Xcode_Cleanup.5m.sh`](./swiftbar/) | Menu-bar widget showing reclaimable GB; click for inline actions |
+| **Remote SSH runner** | [`scripts/remote-cleanup.sh`](./scripts/remote-cleanup.sh) | `curl \| bash` runner for cleaning a remote Mac without cloning |
+
+**Why this stack.** One source of cleanup logic, five different ergonomic entry points so every workflow has its preferred surface — GUI for the casual session, CLI for the build server, menu bar for the live indicator, Shortcut for the keyboard hotkey, SSH for the remote.
+
+### 🧰 Build & tooling
+
+| Layer | Tool | What it handles |
+|---|---|---|
+| Package manager | **pnpm 9** (workspace mode) | `apps/*` glob, single lockfile |
+| Monorepo orchestration | **Turbo 2** | `turbo run build / dev / typecheck / lint` — parallel + cached |
+| Type-check | **TypeScript 5.7** strict mode | `tsc --noEmit` runs in CI + on every build |
+| PostCSS | **Autoprefixer 10** + Tailwind 3.4 | Vendor prefixes + utility CSS |
+| Vite plugin | **`@vitejs/plugin-react` 4.3** | Fast Refresh + JSX transform |
+| CI | **GitHub Actions** ([`.github/workflows/check.yml`](./.github/workflows/check.yml)) | AppleScript syntax + Python import + TS strict — every push |
+| Auto-release | GitHub Actions on `main` merge | Squash-merges tag the release and publish; PR title becomes the release name |
+| Dev experience | `make ui-dev` → `pnpm turbo run dev` | Vite HMR (`:5174`) + Next dev (`:5175`) in parallel |
+
+**Why this stack.** Fast, type-safe, parallel builds. No Docker, no Node runtime needed in production (the React app builds to static HTML+JS that Python serves). Turbo's caching means a no-op `make ui` is instant.
+
+---
+
+### 🐳 Future apps that need state
+
+Dustpan is **stateless** — it scans your disk and shells out to `rm`. There's nothing to persist, so it ships without Docker. That's the whole reason `make ui` is one line.
+
+If you're cloning Dustpan as a starter for a *new* app that **does** need a database, don't add SQLite or Homebrew Postgres alongside this code. The org convention is binary:
+
+> **Needs state? → Docker. No state? → no Docker.**
+
+The canonical Docker stack (cloned from [`marvelousempire/claude-chat-reader`](https://github.com/marvelousempire/claude-chat-reader)) lives in the `app-launch-workflow` skill and is ready to copy-paste:
+
+```sh
+mkdir my-new-app && cd my-new-app
+cp -r ~/Developer/ai-skills-library/rules/library/app-launch-workflow/templates/docker-stack/* .
+./go
+```
+
+What you get: `app + db + caddy` services, **HTTPS out of the box** (one-time `caddy trust` for localhost, automatic Let's Encrypt in prod), Postgres + pgvector ready for both regular SQL and AI/RAG, security headers (HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy), and the same `make backup / restore / reset / export` UX. Full template + docs: [`ai-skills-library/.../templates/docker-stack/`](https://github.com/marvelousempire/ai-skills-library/tree/main/rules/library/app-launch-workflow/templates/docker-stack).
+
+---
+
+> **When this section changes.** Update this section whenever a dependency is added/removed, or a major version of any tool changes (React 18 → 19, Vite 6 → 7, Tailwind 3 → 4, etc.). Treat it as a living document — the README is the prototype for every future app shipped from this org, and this section is the contract for what each one's tech stack inventory should look like.
+
+---
+
+## 🧹 What Dustpan actually cleans
+
+Thirteen categories. Each one has a tier (safe / opt-in / caution) so you know what's happening before anything is deleted.
+
+> **Need Full Disk Access?** macOS blocks size measurement for protected directories (Downloads, Safari, Notes, iCloud, device backups) without it. If sections show 0 GB, the app will tell you exactly what to grant and how.
+
+| Category | What it is (plain English) | What you'd get back |
+|---|---|---|
+| 🔥 **Space Eaters** | The stuff nobody told you about — npm/pip/Cargo/Gradle/Go/Yarn package caches, Ruby gems, CocoaPods. These accumulate silently from everyday development work. | **2–30 GB.** Every cache is 100% auto-rebuilt the next time you run the tool. Nothing installed is removed. |
+| ☁️ **iCloud Drive** | Files synced from iCloud that are stored as local copies on your Mac. Notes with embedded photos (receipts, screenshots) can hit 10–30 GB alone. Dustpan uses `brctl evict` — files stay on iCloud and re-download when you open them. | 1–50 GB. Completely reversible. Files never leave iCloud. |
+| 🔨 **Xcode** | Apple's app for building iPhone/Mac apps. Every build creates working files that pile up for months. | **10–25 GB.** Your projects are fine — these files rebuild next time you compile. |
+| 🤖 **LLMs** | Desktop AI apps — Claude, Cursor, ChatGPT. They download tool data and save local conversation copies. | 1–15 GB. Your cloud conversations are safe; only local copies are cleared. |
+| 🌐 **Browsers** | Chrome, Safari, Firefox, Edge, Brave, Arc, Vivaldi. Plus `~/Library/WebKit` — the shared offline storage all of them use — which is almost never cleaned. | 2–20 GB. The first visit to each site after cleaning is 1–3 seconds slower. That's it. |
+| 💬 **Apps** | Telegram (5–20 GB in its group container), Slack, Discord, Zoom, Teams, Spotify, VS Code, Figma, WhatsApp, Signal. Their caches rebuild automatically. | 0.5–25 GB depending on what's installed. |
+| 🐳 **Docker** | Builds up internal snapshots ("images") and a giant virtual disk file (Docker.raw). | 5–60 GB. Same as running Docker cleanup yourself, with safety checks. |
+| 📥 **Downloads** | Your `~/Downloads` folder. Dustpan surfaces old installers, leftover .dmg files, and big files you forgot about. You decide what to remove. | 0–50 GB depending on how old your Downloads folder is. |
+| 🎨 **Creative** | Adobe (Photoshop, Premiere), DaVinci Resolve, Final Cut Pro, Logic Pro, Blender, OBS. Giant scratch files accumulate while you work. | 5–80 GB on an active creative Mac. Your projects are never touched — only the scratch files. |
+| 🧹 **Temp files** | macOS temp directories (`/tmp`, `/var/folders`). They're supposed to clean themselves; they often don't. Plus your Trash. | 0.5–10 GB. Literally meant to be temporary. |
+| 📦 **Archives** | Old `.zip`, `.dmg`, `.iso`, `.tar.gz` files in Downloads, Desktop, Documents. Dustpan finds them by file type; you decide. | Highly variable — 0 to 30+ GB depending on your habits. |
+| 💾 **System** | macOS's own caches — icon thumbnails, Spotlight parser, CloudKit, diagnostic reports, app logs. | 0.1–10 GB. macOS rebuilds them automatically. |
+
+**Things Dustpan surfaces but never auto-deletes** (shows sizes so you can decide):
+
+iOS/iPadOS device backups, Steam game installs, Docker.raw, iCloud Notes attachments, Lightroom catalogs, DaVinci project databases, Final Cut library structure, Logic projects, OBS scenes, app cookies and login data.
+
+> **Finder sidebar stays safe.** Dustpan explicitly excludes `~/Library/Application Support/com.apple.sharedfilelist` (your sidebar favorites) and `~/Library/Preferences/` (all app settings) from every clean tier.
+
+---
+
 ## ⚡ Quick CLI — one-shot commands (no app needed)
 
 Copy any of these into Terminal and run. No Dustpan install needed.
@@ -352,43 +555,6 @@ Every cleanup action is defined in [`web/cleaners.py`](./web/cleaners.py). Every
 
 ---
 
-## 🖥️ What you see when it opens
-
-The dashboard has three things side-by-side at the top, then a grid of category cards underneath.
-
-```
-┌────────────────────────────────────────────────────────────────────────────┐
-│  ← Sidebar                          Main viewport                         │
-│  ┌──────────┐                                                              │
-│  │ Overview │  ┌──── Hero ────┐  ┌── Disk pie ──┐  ┌── Activity ──────┐  │
-│  │ Xcode    │  │  12.1 GB free│  │   42.8 GB    │  │ Filter lines…    │  │
-│  │ LLMs     │  │  94% used    │  │   scanned    │  │ → Scanning…      │  │
-│  │ Docker   │  │  ▓▓▓▓▓▓▓▓▓░ │  │  🟢🟣🔵🟡🟤 │  │ ✓ Done. 6.4 GB  │  │
-│  │ Apps     │  │  Factory-    │  │  Xcode 2.2GB │  │ freed in 3.1s    │  │
-│  │ Browsers │  │  fresh w/o   │  │  Docker 14.6 │  │                  │  │
-│  │ Downloads│  │  losing your │  │  LLMs  12.4  │  │ [Auto][Light][🌙]│  │
-│  │ Creative │  │  stuff       │  │  …           │  │                  │  │
-│  │ Temp     │  └──────────────┘  └──────────────┘  └──────────────────┘  │
-│  │ Archives │                                                              │
-│  │ System   │  ── Re-scan everything ── ✓ Clean ALL safe · 6.4 GB ──────  │
-│  │──────────│                                                              │
-│  │  THEME   │  ┌ Xcode ──────┐  ┌ LLMs ───────┐  ┌ Docker ─────────┐   │
-│  │[Auto][☀][🌙]│ 6.4 GB safe │  │ 0.0 GB safe │  │ 0.0 GB safe     │   │
-│  └──────────┘  │ 0.2 GB opt-in│  │ 12.4 GB opt │  │ 0.0 GB opt-in   │   │
-│                │ ● 2.0 caution│  │             │  │ ● 14.6 caution  │   │
-└────────────────────────────────────────────────────────────────────────────┘
-```
-
-**The sidebar on the left** is the list of categories. Each one shows how many GB it has total. Tiny multi-color rings next to each name show how much is safe to delete, how much needs your okay, and how much should stay.
-
-**The big number in the top-left** is how much disk space you have free right now. It updates live as Dustpan cleans.
-
-**The donut in the middle** shows where your disk space is going. Each color is a different category. Click any slice to jump to that category.
-
-**The black box on the right** is the activity log. When you start cleaning, you'll see every file Dustpan touches scroll by in real time — like a live shipping tracker for your disk space.
-
----
-
 ## 📦 What's in the box
 
 | Feature | What it does |
@@ -403,172 +569,6 @@ The dashboard has three things side-by-side at the top, then a grid of category 
 | 💬 **Cost annotations** | Every cleanup tells you exactly what you're trading. *"Next build takes ~30s longer."* No mystery deletions. |
 | 🛡️ **Localhost-only by default** | No data leaves your Mac. No analytics. No telemetry. No "phone home." Ever. |
 | 🔌 **Multiple ways to run it** | Web dashboard, Apple Shortcut, menu bar widget, command-line tool, hourly auto-clean, even over SSH to a build Mac. |
-
----
-
-## 🛠️ Under the hood
-
-The complete tech stack. Six surfaces, each built for its own constraints. If you're contributing or curious — this is everything that goes into making Dustpan run.
-
-### TL;DR — surfaces at a glance
-
-| Surface | Stack | Why this stack |
-|---|---|---|
-| 🐍 **Backend** | Python 3 stdlib (`http.server` + threading) | Ships on every Mac. Zero pip installs. Auditable in ~700 readable lines. |
-| ⚡ **Main dashboard** | Vite 6 + React 18 + TypeScript 5.7 + Tailwind 3.4 + Motion 11 | Fast cold build (~6s), HMR for dev, premium animation feel, Apple-native typography |
-| 📰 **Fallback dashboard** | Vanilla HTML + Motion via CDN | Works the second after `git clone` — no `pnpm install` required |
-| 🧪 **Experimental UI** | Next.js 14 (App Router, static export) | Future surface; statically exported so backend stays Python |
-| 🎭 **Cleanup engine** | AppleScript + macOS shell | Native pop-ups, progress bars, notifications. Runs without a server. |
-| 🚀 **Install surfaces** | Shortcut · CLI · launchd · SwiftBar · SSH | One cleanup source, five ergonomic entry points |
-
-### 🐍 Backend (`web/server.py` + `web/cleaners.py`)
-
-| Layer | Tool | What it handles |
-|---|---|---|
-| Runtime | **Python 3.9+ stdlib only** | No `pip install`. Ships on every Mac since Monterey. |
-| HTTP | `http.server.BaseHTTPRequestHandler` | Routing, response writing, content types |
-| Concurrency | `ThreadingTCPServer` + `threading.Lock` | One thread per request; lock-protected in-flight clean registry |
-| Streaming | Server-Sent Events (`text/event-stream`) | `/api/live` channel + per-clean output streams |
-| Network | `socket` + `XCC_HOST` env var | Toggle between `127.0.0.1` (localhost-only) and `0.0.0.0` (Wi-Fi visible) |
-| LAN discovery | Zero-packet UDP socket to `8.8.8.8` | OS picks the outbound interface → reveals primary LAN IP for the Network URL |
-| Subprocess | `subprocess.Popen` + `subprocess.run` | Shells out to `rm`, `du`, `find`, `xcrun`, `docker`, `osascript` |
-| Data layer | [`web/cleaners.py`](./web/cleaners.py) | 11 categories · 17 sub-tools · 58 actions — single source of truth |
-| Static serving | `apps/web/dist/` + `apps/web-next/out/` + `web/index.html` | Serves whichever frontend the URL asks for |
-
-**Why this stack.** Dustpan's brand promise is *"no Docker, no pip install, no telemetry."* Python is on every Mac. The whole server is auditable in one file. Anyone can read it, understand it, and verify it isn't doing anything sneaky.
-
-### ⚡ Main dashboard (`apps/web/` = `@cleanup-hub/web`)
-
-| Layer | Tool | What it handles |
-|---|---|---|
-| Framework | **React 18.3** + **TypeScript 5.7** | UI + types |
-| Build | **Vite 6** (`vite build`, `vite dev`) | Production bundle ~120 KB JS gz + ~6 KB CSS gz · builds in ~6s · HMR for dev |
-| Styling | **Tailwind CSS 3.4** + `tailwindcss-animate` | Utility-first styling |
-| Tokens | HSL CSS custom properties | Light + Dark + explicit `[data-theme]` override (all three activation paths) |
-| Typography | **Apple SF Pro Display** + **SF Pro Text** | Native Mac type via `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro"...` |
-| Animation | **Motion 11** (`motion/react`) | Springs, layout-aware tweens, `AnimatePresence` |
-| Components | **Radix UI** primitives (1.x) | `@radix-ui/react-dialog`, `react-scroll-area`, `react-separator`, `react-tooltip`, `react-slot` |
-| Icons | **Lucide React 0.469** | All glyphs throughout the UI |
-| Utils | `clsx` + `tailwind-merge` + `class-variance-authority` | `cn()` helper + variant patterns |
-| State | Hand-rolled `DashboardContext` (`useState` + `useEffect`) | No Redux/Zustand — Context is sufficient |
-| Real-time | Native `EventSource` | Subscribed to `/api/live` with exponential backoff reconnect |
-| Theme | Pre-paint inline `<script>` in `index.html` | Applies saved theme **before React mounts** — no flash on cold load |
-
-**Why this stack.** Vite is the fastest cold-build path in the React ecosystem. Motion 11 gives the cinematic spring physics the maintainer specified. Radix gives accessibility primitives for free (Dialog focus trapping, ESC handling, Portal). Apple's SF Pro Display + Text resolve automatically on macOS via the system-ui stack — no fonts to host, no FOUT.
-
-### 📰 Fallback dashboard (`web/index.html`)
-
-| Layer | Tool | What it handles |
-|---|---|---|
-| Build | **None** | Single self-contained HTML file. No bundler. |
-| Animation | **Motion 11** via `cdn.jsdelivr.net/npm/motion@11.18.0/+esm` | Loaded as an ES module; gracefully degrades if CDN unreachable |
-| Icons | Inline SVGs (Lucide source) | Hand-pasted for offline use |
-| API contracts | Same `/api/*` endpoints as Vite app | Identical scan/clean flow, different render engine |
-
-**Why this stack.** Works the second after `git clone` without `pnpm install`. The demo/airgap path. If pnpm isn't installed, `make ui` falls back to serving this — the user never sees an error.
-
-### 🧪 Experimental dashboard (`apps/web-next/` = `@cleanup-hub/web-next`)
-
-| Layer | Tool | What it handles |
-|---|---|---|
-| Framework | **Next.js 14.2** (App Router) | Router + RSC patterns |
-| Mode | `output: "export"` (static export) | Pre-rendered HTML + `_next/static/*` chunks. No Node runtime in production. |
-| basePath | `/next` | Coexists with the Vite app at root |
-| Tailwind | Same token system as `apps/web` | Mirrored, not shared — keeps the apps loosely coupled |
-
-**Why this stack.** A future surface to explore Next-specific patterns (server components, route groups, parallel routes) without coupling them to the canonical Vite UI. Static export keeps the Python backend as the only runtime — no Node needed in production.
-
-### 🎭 Cleanup engine ([`xcode-cleanup.applescript`](./xcode-cleanup.applescript))
-
-| Layer | Tool | What it handles |
-|---|---|---|
-| Language | **AppleScript** (~250 lines) | The original Dustpan script — predates the web dashboard |
-| Native UI | `display alert` · `display notification` · `progress total steps` | Real macOS modals, progress bars, system notifications |
-| Shell-out | `do shell script` | Runs `rm -rf`, `du`, `xcrun simctl delete unavailable`, etc. |
-| Logging | `~/Library/Logs/xcode-cleanup.log` + CSV | Consumed by [`scripts/report.py`](./scripts/report.py) for the sparkline chart |
-| Update check | Once-daily `curl` to GitHub Releases API (cached 24h) | Tells you when a new Dustpan is out |
-
-**Why this stack.** Native macOS feel. Zero dependencies. Runs without any server. Anyone with a Mac can `osascript xcode-cleanup.applescript` and it just works.
-
-### 🚀 Install surfaces
-
-| Surface | File | What it does |
-|---|---|---|
-| **`xcc` CLI** | [`bin/xcc`](./bin/xcc) | Wrapper installed to `~/.local/bin/` by `make install-cli` |
-| **Apple Shortcut** | `make install-shortcut` | Registers the AppleScript with Shortcuts.app — pin to menu bar, bind a hotkey |
-| **launchd** | [`launchd/com.example.xcode-cleanup.plist`](./launchd/) | Hourly auto-clean; threshold-gated so it's silent when disk is healthy |
-| **SwiftBar plugin** | [`swiftbar/Xcode_Cleanup.5m.sh`](./swiftbar/) | Menu-bar widget showing reclaimable GB; click for inline actions |
-| **Remote SSH runner** | [`scripts/remote-cleanup.sh`](./scripts/remote-cleanup.sh) | `curl \| bash` runner for cleaning a remote Mac without cloning |
-
-**Why this stack.** One source of cleanup logic, five different ergonomic entry points so every workflow has its preferred surface — GUI for the casual session, CLI for the build server, menu bar for the live indicator, Shortcut for the keyboard hotkey, SSH for the remote.
-
-### 🧰 Build & tooling
-
-| Layer | Tool | What it handles |
-|---|---|---|
-| Package manager | **pnpm 9** (workspace mode) | `apps/*` glob, single lockfile |
-| Monorepo orchestration | **Turbo 2** | `turbo run build / dev / typecheck / lint` — parallel + cached |
-| Type-check | **TypeScript 5.7** strict mode | `tsc --noEmit` runs in CI + on every build |
-| PostCSS | **Autoprefixer 10** + Tailwind 3.4 | Vendor prefixes + utility CSS |
-| Vite plugin | **`@vitejs/plugin-react` 4.3** | Fast Refresh + JSX transform |
-| CI | **GitHub Actions** ([`.github/workflows/check.yml`](./.github/workflows/check.yml)) | AppleScript syntax + Python import + TS strict — every push |
-| Auto-release | GitHub Actions on `main` merge | Squash-merges tag the release and publish; PR title becomes the release name |
-| Dev experience | `make ui-dev` → `pnpm turbo run dev` | Vite HMR (`:5174`) + Next dev (`:5175`) in parallel |
-
-**Why this stack.** Fast, type-safe, parallel builds. No Docker, no Node runtime needed in production (the React app builds to static HTML+JS that Python serves). Turbo's caching means a no-op `make ui` is instant.
-
----
-
-### 🐳 Future apps that need state
-
-Dustpan is **stateless** — it scans your disk and shells out to `rm`. There's nothing to persist, so it ships without Docker. That's the whole reason `make ui` is one line.
-
-If you're cloning Dustpan as a starter for a *new* app that **does** need a database, don't add SQLite or Homebrew Postgres alongside this code. The org convention is binary:
-
-> **Needs state? → Docker. No state? → no Docker.**
-
-The canonical Docker stack (cloned from [`marvelousempire/claude-chat-reader`](https://github.com/marvelousempire/claude-chat-reader)) lives in the `app-launch-workflow` skill and is ready to copy-paste:
-
-```sh
-mkdir my-new-app && cd my-new-app
-cp -r ~/Developer/ai-skills-library/rules/library/app-launch-workflow/templates/docker-stack/* .
-./go
-```
-
-What you get: `app + db + caddy` services, **HTTPS out of the box** (one-time `caddy trust` for localhost, automatic Let's Encrypt in prod), Postgres + pgvector ready for both regular SQL and AI/RAG, security headers (HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy), and the same `make backup / restore / reset / export` UX. Full template + docs: [`ai-skills-library/.../templates/docker-stack/`](https://github.com/marvelousempire/ai-skills-library/tree/main/rules/library/app-launch-workflow/templates/docker-stack).
-
----
-
-> **When this section changes.** Update this section whenever a dependency is added/removed, or a major version of any tool changes (React 18 → 19, Vite 6 → 7, Tailwind 3 → 4, etc.). Treat it as a living document — the README is the prototype for every future app shipped from this org, and this section is the contract for what each one's tech stack inventory should look like.
-
----
-
-## 🧹 What Dustpan actually cleans
-
-Thirteen categories. Each one has a tier (safe / opt-in / caution) so you know what's happening before anything is deleted.
-
-> **Need Full Disk Access?** macOS blocks size measurement for protected directories (Downloads, Safari, Notes, iCloud, device backups) without it. If sections show 0 GB, the app will tell you exactly what to grant and how.
-
-| Category | What it is (plain English) | What you'd get back |
-|---|---|---|
-| 🔥 **Space Eaters** | The stuff nobody told you about — npm/pip/Cargo/Gradle/Go/Yarn package caches, Ruby gems, CocoaPods. These accumulate silently from everyday development work. | **2–30 GB.** Every cache is 100% auto-rebuilt the next time you run the tool. Nothing installed is removed. |
-| ☁️ **iCloud Drive** | Files synced from iCloud that are stored as local copies on your Mac. Notes with embedded photos (receipts, screenshots) can hit 10–30 GB alone. Dustpan uses `brctl evict` — files stay on iCloud and re-download when you open them. | 1–50 GB. Completely reversible. Files never leave iCloud. |
-| 🔨 **Xcode** | Apple's app for building iPhone/Mac apps. Every build creates working files that pile up for months. | **10–25 GB.** Your projects are fine — these files rebuild next time you compile. |
-| 🤖 **LLMs** | Desktop AI apps — Claude, Cursor, ChatGPT. They download tool data and save local conversation copies. | 1–15 GB. Your cloud conversations are safe; only local copies are cleared. |
-| 🌐 **Browsers** | Chrome, Safari, Firefox, Edge, Brave, Arc, Vivaldi. Plus `~/Library/WebKit` — the shared offline storage all of them use — which is almost never cleaned. | 2–20 GB. The first visit to each site after cleaning is 1–3 seconds slower. That's it. |
-| 💬 **Apps** | Telegram (5–20 GB in its group container), Slack, Discord, Zoom, Teams, Spotify, VS Code, Figma, WhatsApp, Signal. Their caches rebuild automatically. | 0.5–25 GB depending on what's installed. |
-| 🐳 **Docker** | Builds up internal snapshots ("images") and a giant virtual disk file (Docker.raw). | 5–60 GB. Same as running Docker cleanup yourself, with safety checks. |
-| 📥 **Downloads** | Your `~/Downloads` folder. Dustpan surfaces old installers, leftover .dmg files, and big files you forgot about. You decide what to remove. | 0–50 GB depending on how old your Downloads folder is. |
-| 🎨 **Creative** | Adobe (Photoshop, Premiere), DaVinci Resolve, Final Cut Pro, Logic Pro, Blender, OBS. Giant scratch files accumulate while you work. | 5–80 GB on an active creative Mac. Your projects are never touched — only the scratch files. |
-| 🧹 **Temp files** | macOS temp directories (`/tmp`, `/var/folders`). They're supposed to clean themselves; they often don't. Plus your Trash. | 0.5–10 GB. Literally meant to be temporary. |
-| 📦 **Archives** | Old `.zip`, `.dmg`, `.iso`, `.tar.gz` files in Downloads, Desktop, Documents. Dustpan finds them by file type; you decide. | Highly variable — 0 to 30+ GB depending on your habits. |
-| 💾 **System** | macOS's own caches — icon thumbnails, Spotlight parser, CloudKit, diagnostic reports, app logs. | 0.1–10 GB. macOS rebuilds them automatically. |
-
-**Things Dustpan surfaces but never auto-deletes** (shows sizes so you can decide):
-
-iOS/iPadOS device backups, Steam game installs, Docker.raw, iCloud Notes attachments, Lightroom catalogs, DaVinci project databases, Final Cut library structure, Logic projects, OBS scenes, app cookies and login data.
-
-> **Finder sidebar stays safe.** Dustpan explicitly excludes `~/Library/Application Support/com.apple.sharedfilelist` (your sidebar favorites) and `~/Library/Preferences/` (all app settings) from every clean tier.
 
 ---
 
