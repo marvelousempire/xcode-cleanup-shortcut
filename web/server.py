@@ -1062,6 +1062,40 @@ class Handler(http.server.BaseHTTPRequestHandler):
             },
         ]
 
+        # ── "Probably not worth touching" — paths that look big but aren't reclaimable ──
+        # These are measured and reported separately so the user knows why we're
+        # NOT recommending them, rather than silently skipping.
+        NOT_WORTH_IT = [
+            {
+                "id":     "nwi-mediaanalysisd",
+                "label":  "macOS Photo Recognition (mediaanalysisd)",
+                "paths":  [
+                    home / "Library/Containers/com.apple.mediaanalysisd/Data/Library",
+                    home / "Library/Containers/com.apple.mediaanalysisd/Data/tmp",
+                ],
+                "why":    (
+                    "macOS rebuilds this automatically within hours of deletion — "
+                    "from the same Photos library. You'd get the space back temporarily, "
+                    "then lose it again as macOS re-analyzes. Net gain: zero. "
+                    "Worth deleting only if you're in a disk emergency and need minutes, "
+                    "not days."
+                ),
+            },
+            {
+                "id":    "nwi-spotlight",
+                "label": "Spotlight / CoreSpotlight index",
+                "paths": [
+                    Path("/.Spotlight-V100"),
+                    home / "Library/Metadata/CoreSpotlight",
+                ],
+                "why":   (
+                    "Spotlight rebuilds its index within 30–60 minutes after deletion. "
+                    "You get the space back for under an hour, then it's gone again. "
+                    "Search will be broken during the rebuild."
+                ),
+            },
+        ]
+
         def measure_known():
             _emit_progress("known", "Measuring known cache locations…")
             for spec in KNOWN:
@@ -1079,12 +1113,42 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     t["path"]      = found_path or str(spec["paths"][0])
                     t["source"]    = "known"
                     _emit_target(t)
+
+            # Measure "not worth it" targets and emit separately
+            nwi_results = []
+            for spec in NOT_WORTH_IT:
+                total = 0.0
+                found_path = None
+                for p in spec["paths"]:
+                    if p.exists():
+                        s = _du(p)
+                        total += s
+                        if s > 0 and found_path is None:
+                            found_path = str(p)
+                if total >= 0.05:
+                    nwi_results.append({
+                        "id":       spec["id"],
+                        "label":    spec["label"],
+                        "path":     found_path or str(spec["paths"][0]),
+                        "size_gb":  round(total, 2),
+                        "why":      spec["why"],
+                    })
+            if nwi_results:
+                result_q.put(("not_worth_it", nwi_results))
+
         threading.Thread(target=measure_known, daemon=True).start()
 
         # ── Phase 2: Dynamic discovery ────────────────────────────────────────
 
         def discover_worktrees():
-            """Find all .claude/worktrees/ directories anywhere under ~."""
+            """Find all .claude/worktrees/ directories anywhere under ~.
+
+            For each worktrees/ dir:
+              1. Measure total size
+              2. Break down individual sub-worktrees with per-dir sizes
+              3. Cross-reference `git branch -r --merged origin/main` to flag
+                 worktrees whose branch is already merged (safe to prune)
+            """
             _emit_progress("worktrees", "Scanning for Claude Code worktrees…")
             try:
                 r = subprocess.run(
@@ -1096,15 +1160,66 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     p = Path(line.strip())
                     if not p.exists():
                         continue
-                    size = _du(p, timeout=12)
+                    size = _du(p, timeout=15)
                     if size < 0.05:
                         continue
-                    # Count sub-worktrees
+
+                    project_root = p.parent.parent  # project/.claude/worktrees → project
+
+                    # Per-worktree sizes (sorted largest first)
+                    sub_sizes: list[tuple[str, float]] = []
                     try:
-                        wt_count = sum(1 for _ in p.iterdir() if _.is_dir())
+                        for sub in p.iterdir():
+                            if sub.is_dir():
+                                s = _du(sub, timeout=6)
+                                sub_sizes.append((sub.name, s))
+                        sub_sizes.sort(key=lambda x: x[1], reverse=True)
                     except PermissionError:
-                        wt_count = 0
-                    project = p.parent.parent.name
+                        pass
+
+                    # Check which branches are merged into origin/main
+                    merged_branches: set[str] = set()
+                    try:
+                        mr = subprocess.run(
+                            ["git", "-C", str(project_root), "branch", "-r", "--merged", "origin/main"],
+                            capture_output=True, text=True, timeout=8,
+                        )
+                        for b in mr.stdout.strip().splitlines():
+                            # e.g. "  origin/zen-germain" → "zen-germain"
+                            b = b.strip().lstrip("* ")
+                            if "/" in b:
+                                b = b.split("/", 1)[1]
+                            merged_branches.add(b)
+                    except Exception:
+                        pass
+
+                    # Build per-worktree detail lines
+                    breakdown_lines = []
+                    merged_count = 0
+                    for name, s in sub_sizes[:8]:
+                        is_merged = name in merged_branches
+                        if is_merged:
+                            merged_count += 1
+                        tag = " [merged ✓ safe to prune]" if is_merged else ""
+                        breakdown_lines.append(f"  {name}  {s:.1f} GB{tag}")
+
+                    project = project_root.name
+                    wt_count = len(sub_sizes)
+                    notes_parts = [
+                        f"{wt_count} worktree(s) found — each carries its own node_modules.",
+                    ]
+                    if merged_count:
+                        notes_parts.append(
+                            f"{merged_count} of them are already merged into origin/main — "
+                            "dead weight. Safe to remove immediately."
+                        )
+                    notes_parts.append(
+                        "To prune: `git worktree remove <path>` for each merged one, "
+                        "or `rm -rf` the sub-folder directly."
+                    )
+                    if breakdown_lines:
+                        notes_parts.append("Largest worktrees:\n" + "\n".join(breakdown_lines))
+
                     _emit_target({
                         "id":               f"worktrees-{project}",
                         "label":            f"Claude Code worktrees — {project}/",
@@ -1112,13 +1227,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         "size_gb":          size,
                         "category":         "space-eaters",
                         "confidence":       "easy",
-                        "confidence_label": "Safe — worktrees are temporary copies",
-                        "notes": (
-                            f"{wt_count} worktree(s) found. Each carries its own node_modules. "
-                            "Merged worktrees are dead weight — `git worktree remove <path>` "
-                            "or `rm -rf` each sub-folder."
+                        "confidence_label": "Safe — worktrees are temporary working copies",
+                        "notes":            "\n\n".join(notes_parts),
+                        "action": (
+                            f"echo 'Worktrees in {project}:'; "
+                            f"git -C '{project_root}' worktree list 2>/dev/null; "
+                            f"echo ''; echo 'Sizes:'; "
+                            f"du -sh '{p}'/*/ 2>/dev/null | sort -rh | head -12; "
+                            f"echo ''; echo 'Already merged into origin/main:'; "
+                            f"git -C '{project_root}' branch -r --merged origin/main 2>/dev/null | head -20"
                         ),
-                        "action": f"git -C '{p.parent.parent}' worktree list && echo '---' && du -sh '{p}'/*/ 2>/dev/null | sort -rh | head -10",
+                        "sub_worktrees":    [{"name": n, "size_gb": s, "merged": n in merged_branches}
+                                             for n, s in sub_sizes],
+                        "merged_count":     merged_count,
                         "rebuild": "Claude Code recreates worktrees on demand",
                         "source": "dynamic",
                     })
@@ -1227,6 +1348,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         # ── Drain queue, stream results, wait for all threads ─────────────────
         all_targets: list[dict] = []
+        all_nwi:     list[dict] = []
         deadline = t0 + 60  # max 60s survey
 
         try:
@@ -1240,6 +1362,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         self._send_sse({"event": "target", "data": data})
                     elif kind == "progress":
                         self._send_sse({"event": "progress", "data": data})
+                    elif kind == "not_worth_it":
+                        # Emit separately so the frontend can render a distinct section
+                        self._send_sse({"event": "not_worth_it", "data": data})
+                        all_nwi.extend(data)
                 except _queue.Empty:
                     pass
                 if all_done and result_q.empty():
@@ -1253,12 +1379,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._send_sse({
                 "event": "done",
                 "data": {
-                    "targets":       all_targets,
-                    "total_gb":      round(sum(t["size_gb"] for t in all_targets), 1),
-                    "free_gb":       status["free_gb"],
-                    "total_gb_disk": status["total_gb"],
-                    "elapsed_s":     round(time.time() - t0, 1),
-                    "target_count":  len(all_targets),
+                    "targets":        all_targets,
+                    "not_worth_it":   all_nwi,
+                    "total_gb":       round(sum(t["size_gb"] for t in all_targets), 1),
+                    "free_gb":        status["free_gb"],
+                    "total_gb_disk":  status["total_gb"],
+                    "elapsed_s":      round(time.time() - t0, 1),
+                    "target_count":   len(all_targets),
                 },
             })
         except (BrokenPipeError, ConnectionResetError):

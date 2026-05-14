@@ -32,15 +32,27 @@ export interface SurveyTarget {
   action_id?:         string;
   rebuild:            string;
   source:             "known" | "dynamic";
+  /** Worktree-specific: per-sub-dir breakdown */
+  sub_worktrees?:     Array<{ name: string; size_gb: number; merged: boolean }>;
+  merged_count?:      number;
+}
+
+interface NotWorthItItem {
+  id:      string;
+  label:   string;
+  path:    string;
+  size_gb: number;
+  why:     string;
 }
 
 interface SurveyDone {
-  targets:       SurveyTarget[];
-  total_gb:      number;
-  free_gb:       number;
-  total_gb_disk: number;
-  elapsed_s:     number;
-  target_count:  number;
+  targets:        SurveyTarget[];
+  not_worth_it:   NotWorthItItem[];
+  total_gb:       number;
+  free_gb:        number;
+  total_gb_disk:  number;
+  elapsed_s:      number;
+  target_count:   number;
 }
 
 type Phase =
@@ -74,12 +86,13 @@ const CONFIDENCE_CONFIG = {
 export function SurveyPanel() {
   const { status, setActiveTab } = useDashboard();
 
-  const [phase,     setPhase]     = useState<Phase>("idle");
-  const [targets,   setTargets]   = useState<SurveyTarget[]>([]);
-  const [progress,  setProgress]  = useState("");
-  const [elapsed,   setElapsed]   = useState(0);
-  const [doneData,  setDoneData]  = useState<SurveyDone | null>(null);
-  const [expanded,  setExpanded]  = useState<string | null>(null);
+  const [phase,       setPhase]       = useState<Phase>("idle");
+  const [targets,     setTargets]     = useState<SurveyTarget[]>([]);
+  const [notWorthIt,  setNotWorthIt]  = useState<NotWorthItItem[]>([]);
+  const [progress,    setProgress]    = useState("");
+  const [elapsed,     setElapsed]     = useState(0);
+  const [doneData,    setDoneData]    = useState<SurveyDone | null>(null);
+  const [expanded,    setExpanded]    = useState<string | null>(null);
 
   const esRef   = useRef<ReturnType<typeof streamSSE> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -90,6 +103,7 @@ export function SurveyPanel() {
   const startSurvey = useCallback(() => {
     // Reset
     setTargets([]);
+    setNotWorthIt([]);
     setProgress("Starting…");
     setDoneData(null);
     setExpanded(null);
@@ -114,9 +128,12 @@ export function SurveyPanel() {
             next.sort((a, b) => b.size_gb - a.size_gb);
             return next;
           });
+        } else if (msg.event === "not_worth_it") {
+          setNotWorthIt(msg.data as NotWorthItItem[]);
         } else if (msg.event === "done") {
           clearInterval(timerRef.current!);
           setDoneData(msg.data as SurveyDone);
+          setNotWorthIt((msg.data as SurveyDone).not_worth_it ?? []);
           setProgress("Complete");
           setPhase("done");
         }
@@ -306,6 +323,38 @@ export function SurveyPanel() {
         </div>
       )}
 
+      {/* ── "Probably not worth touching" section ── */}
+      <AnimatePresence>
+        {phase === "done" && notWorthIt.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg border border-border/20 bg-[hsl(var(--bg-2)/0.4)] p-4"
+          >
+            <div className="text-[13px] font-bold text-fg mb-1">
+              🚫 Probably not worth touching
+            </div>
+            <div className="text-[11px] text-fg-dim mb-3">
+              These look big but macOS rebuilds them automatically — you'd get the space back
+              temporarily then lose it again as the OS re-populates. Not worth the churn.
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {notWorthIt.map(item => (
+                <div key={item.id}
+                  className="rounded-md border border-border/15 bg-[hsl(var(--bg-1)/0.6)] p-3">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-[12px] font-semibold text-fg">{item.label}</span>
+                    <span className="text-[11px] text-fg-faint tabular-nums">{item.size_gb.toFixed(1)} GB</span>
+                  </div>
+                  <p className="text-[11px] text-fg-dim leading-[1.6] m-0">{item.why}</p>
+                  <div className="text-[10px] text-fg-faint font-mono mt-1.5 break-all">{item.path}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Confidence legend */}
       {phase === "done" && targets.length > 0 && (
         <div className="rounded-lg border border-border/15 bg-[hsl(var(--bg-2)/0.4)] p-3">
@@ -432,7 +481,39 @@ function SurveyTargetCard({
           >
             <div className="px-4 pb-4 pt-1 border-t border-border/10">
               {/* Notes */}
-              <p className="text-[12px] text-fg-dim leading-[1.7] mb-3">{target.notes}</p>
+              <p className="text-[12px] text-fg-dim leading-[1.7] mb-3 whitespace-pre-line">{target.notes}</p>
+
+              {/* Sub-worktree breakdown — shown when available */}
+              {target.sub_worktrees && target.sub_worktrees.length > 0 && (
+                <div className="mb-3">
+                  <div className="text-[11px] font-semibold text-fg-dim uppercase tracking-[0.05em] mb-1.5">
+                    Individual worktrees
+                  </div>
+                  <div className="rounded-md border border-border/15 bg-[hsl(var(--bg-1)/0.7)] overflow-hidden">
+                    {target.sub_worktrees.slice(0, 10).map((wt, i) => (
+                      <div key={wt.name}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-1.5 text-[11px]",
+                          i > 0 && "border-t border-border/10",
+                          wt.merged ? "bg-[hsl(var(--safe)/0.04)]" : "",
+                        )}>
+                        <span className="flex-1 font-mono text-fg-dim truncate">{wt.name}</span>
+                        <span className="tabular-nums text-fg-faint">{wt.size_gb.toFixed(1)} GB</span>
+                        {wt.merged && (
+                          <span className="text-[10px] font-semibold text-safe border border-safe/25 px-1.5 py-0.5 rounded-full">
+                            merged ✓
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {target.merged_count !== undefined && target.merged_count > 0 && (
+                    <div className="text-[11px] text-safe mt-1.5">
+                      ✓ {target.merged_count} already merged into origin/main — safe to prune immediately
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Rebuild cost */}
               <div className="flex items-start gap-2 mb-3">
