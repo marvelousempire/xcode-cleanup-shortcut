@@ -58,10 +58,23 @@ record-demo: ## Print recording instructions, then run the demo
 	@echo "→ Convert .mov to .gif (ffmpeg only, no gifsicle needed):"
 	@echo "    ffmpeg -i ~/Desktop/recording.mov -filter_complex 'fps=12,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle' -y assets/progress-bar.gif"
 
-check: ## Verify the AppleScript compiles
+check: ## Verify AppleScript, bin/xcc, Python imports, and that every Makefile-referenced file exists
 	@osacompile -o /tmp/dustpan-check.scpt $(SCRIPT) \
 		&& rm /tmp/dustpan-check.scpt \
 		&& echo "✓ AppleScript syntax OK"
+	@# Guard against the v0.21.0-style regression where bin/xcc pointed to a
+	@# renamed file. If any of these references break, the rebrand sweep missed
+	@# something — surface it loudly in CI.
+	@for f in $(SCRIPT) launchd/com.marvelousempire.dustpan.plist swiftbar/dustpan.30m.sh scripts/report.py scripts/remote-cleanup.sh bin/xcc; do \
+		if [ ! -e "$$f" ]; then echo "✗ Missing referenced file: $$f" >&2; exit 1; fi; \
+	done
+	@# bin/xcc must reference the current AppleScript name + correct env var prefix
+	@grep -q 'dustpan.applescript' bin/xcc && grep -q 'DUSTPAN_DRY_RUN' bin/xcc \
+		|| { echo "✗ bin/xcc has stale rebrand references" >&2; exit 1; }
+	@echo "✓ bin/xcc references look correct"
+	@# Web Python modules import cleanly
+	@cd web && python3 -c "import server, cleaners, ai, agent, agent_tools, agent_chat, proposals_store" \
+		&& echo "✓ Python modules import cleanly"
 
 history: ## Show the run history log
 	@if [ -f ~/Library/Logs/dustpan.log ]; then \

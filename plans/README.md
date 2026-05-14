@@ -49,7 +49,12 @@ writing them into the repo we get:
 | [0007](0007-space-eaters-scanner-expansion.md) | Space Eaters — fix stale browser paths, add Telegram/WhatsApp/Signal, iOS backups, dev caches, iCloud Drive eviction | shipped | v0.20.1 |
 | [0008](0008-permission-detection-zeros-fix.md) | Fix zeros: FDA permission detection, Archives/System/iCloud path fixes, clean-button UX | shipped | v0.20.3 |
 
-| [0009](0009-disk-doctor-active-diagnosis.md) | Disk Doctor — QuickWins, RescueBanner, /api/doctor, Xcode DocumentationIndex, active diagnosis without AI | in progress | v0.20.6 |
+| [0009](0009-disk-doctor-active-diagnosis.md) | Disk Doctor — QuickWins, RescueBanner, /api/doctor, Xcode DocumentationIndex, active diagnosis without AI | shipped | v0.20.6 |
+| [0010](0010-ai-diagnosis-agent.md) | One-shot SADPA agent — rule-based fallback + optional LLM, SSE streams thinking/context/analysis/done | shipped | v0.20.7 |
+| [0021](0021-emergency-rescue-panel.md) | Emergency Rescue panel — disk-at-zero rescue with 6 numbered cards + SADPA auto-navigate + real-time freed counters | shipped | v0.21.4 / v0.21.5 |
+| [0022](0022-space-survey.md) | Space Survey — live-streaming filesystem crawl (worktrees, build artifacts, large node_modules) with per-worktree merge status and "Probably not worth touching" section | shipped | v0.22.0 / v0.22.1 |
+| [0023](0023-conversational-sadpa-agent.md) | Conversational SADPA with tool-calling (Anthropic + OpenAI), sandboxed filesystem peek, approval gates, and AI cleaner proposals with paste-ready snippets | shipped | v0.23.0 (Ship 1) / v0.25.0 (Ship 2) |
+| [0024](0024-foreign-ownership-discovery.md) | Foreign-ownership discovery — find disk space locked behind previous users' UIDs (`/opt/homebrew` owned by 'olivia', `/Users/<oldname>/`, Guest leftovers) with copy-paste takeover commands | shipped | v0.24.0 |
 
 ## When to add a plan
 

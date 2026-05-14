@@ -1,6 +1,6 @@
 {
   "name": "dustpan",
-  "version": "0.19.0",
+  "version": "0.25.4",
   "private": true,
   "description": "Dustpan — by AVERY GOODMAN. Mac disk cleanup utility, pnpm workspace root. Frontend apps live under apps/*. The canonical backend is web/server.py (Python stdlib only).",
   "packageManager": "pnpm@9.0.0",
