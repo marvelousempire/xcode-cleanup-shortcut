@@ -9,7 +9,7 @@ function stripGlyph(s: string) {
 }
 
 export function SidebarLeft() {
-  const { tabs, activeTab, setActiveTab, scans } = useDashboard();
+  const { tabs, activeTab, setActiveTab, scans, pendingProposals } = useDashboard();
 
   // v0.17.1: show total recoverable footprint per tab (safe + opt-in + caution).
   // Previously this returned only `total_cleanable_gb` (safe + opt-in), which
@@ -113,6 +113,7 @@ export function SidebarLeft() {
             active={activeTab === "ai-chat"}
             onClick={() => setActiveTab("ai-chat")}
             icon={null}
+            badge={pendingProposals}
           />
           {/* Space Survey — SADPA's full filesystem crawl */}
           <SidebarFooterBtn
@@ -184,12 +185,13 @@ export function SidebarLeft() {
 // rings before any data is back. Three stroke-dasharray segments around r=13.
 /** Simple footer button for non-category tabs (Emergency, SADPA, Settings). */
 function SidebarFooterBtn({
-  label, active, onClick, icon,
+  label, active, onClick, icon, badge,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
   icon: ReactNode | null;
+  badge?: number;
 }) {
   return (
     <button
@@ -205,6 +207,12 @@ function SidebarFooterBtn({
     >
       {icon}
       <span className="flex-1 truncate">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className="flex-shrink-0 text-[10px] font-bold tabular-nums px-1.5 py-0 rounded-full bg-accent text-white"
+          style={{ minWidth: 16, textAlign: "center", lineHeight: "16px" }}>
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </button>
   );
 }

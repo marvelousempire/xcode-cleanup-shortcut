@@ -574,6 +574,37 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/api/settings/agent":
             return self._serve_json(self._read_agent_settings())
 
+        # ── Plan 0023 Ship 2: AI cleaner-proposals review inbox ───────────────
+        if path == "/api/ai/proposals":
+            try:
+                import proposals_store
+                status_filter = query.get("status", [None])[0]
+                items = proposals_store.list_proposals(status=status_filter)
+                return self._serve_json({"proposals": items, "count": len(items)})
+            except ImportError:
+                return self._serve_json_status(501, {"error": "proposals_store unavailable"})
+
+        if path == "/api/ai/proposals/count":
+            try:
+                import proposals_store
+                return self._serve_json({"pending": proposals_store.count_pending()})
+            except ImportError:
+                return self._serve_json({"pending": 0})
+
+        if path.startswith("/api/ai/proposals/") and path.endswith("/snippet"):
+            pid = path[len("/api/ai/proposals/"):-len("/snippet")]
+            try:
+                import proposals_store
+                p = proposals_store.get(pid)
+                if not p:
+                    return self._serve_json_status(404, {"error": "proposal not found"})
+                return self._serve_json({
+                    "proposal": p,
+                    "snippet":  proposals_store.generate_snippet(p),
+                })
+            except ImportError:
+                return self._serve_json_status(501, {"error": "proposals_store unavailable"})
+
         if path == "/api/habits":
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
@@ -708,6 +739,31 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # ── Plan 0023: POST /api/settings/agent — auto-approve toggle ─────────
         if path == "/api/settings/agent":
             return self._save_agent_settings(body)
+
+        # ── Plan 0023 Ship 2: proposal actions ────────────────────────────────
+        if path.startswith("/api/ai/proposals/") and path.endswith("/accept"):
+            pid = path[len("/api/ai/proposals/"):-len("/accept")]
+            try:
+                import proposals_store
+                p = proposals_store.get(pid)
+                if not p:
+                    return self._serve_json_status(404, {"error": "proposal not found"})
+                updated = proposals_store.update_status(pid, "accepted")
+                snippet = proposals_store.generate_snippet(updated or p)
+                return self._serve_json({"ok": True, "proposal": updated, "snippet": snippet})
+            except ImportError:
+                return self._serve_json_status(501, {"error": "proposals_store unavailable"})
+
+        if path.startswith("/api/ai/proposals/") and path.endswith("/dismiss"):
+            pid = path[len("/api/ai/proposals/"):-len("/dismiss")]
+            try:
+                import proposals_store
+                updated = proposals_store.update_status(pid, "dismissed")
+                if not updated:
+                    return self._serve_json_status(404, {"error": "proposal not found"})
+                return self._serve_json({"ok": True, "proposal": updated})
+            except ImportError:
+                return self._serve_json_status(501, {"error": "proposals_store unavailable"})
 
         self.send_error(404)
 

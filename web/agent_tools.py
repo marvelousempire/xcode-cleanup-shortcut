@@ -477,6 +477,51 @@ def _h_clean_path(args: dict, ctx: dict) -> dict:
     return exec_clean(cid, path)
 
 
+def _h_propose_new_cleaner(args: dict, ctx: dict) -> dict:
+    """
+    Persist a proposal for a new DustPan cleaner to the review inbox.
+    Never modifies cleaners.py — that file is hand-curated source. The user
+    reviews the proposal in the UI and chooses to dismiss it or accept it
+    (accept generates a paste-ready snippet).
+    """
+    try:
+        import proposals_store
+    except ImportError:
+        return {"error": "proposals_store module not available"}
+
+    # Validate
+    name = (args.get("name") or "").strip()
+    if not name:
+        return {"error": "name is required"}
+    if len(name) > 120:
+        name = name[:120]
+    paths = args.get("paths") or []
+    if not isinstance(paths, list) or not paths:
+        return {"error": "paths must be a non-empty list of {label, path, tier} objects"}
+    for p in paths:
+        if not isinstance(p, dict) or not p.get("path"):
+            return {"error": "each path entry must have at least a 'path' field"}
+
+    payload = {
+        "name":                  name,
+        "category_id_suggested": args.get("category_id_suggested", "apps"),
+        "rationale":             args.get("rationale", ""),
+        "cost_to_user":          args.get("cost_to_user", ""),
+        "paths":                 paths,
+        "shell":                 args.get("shell"),
+        "source":                "ai-chat",
+    }
+    record = proposals_store.create(payload)
+    return {
+        "ok":          True,
+        "proposal_id": record["id"],
+        "status":      record["status"],
+        "name":        record["name"],
+        "summary":     f"Proposal '{name}' saved for review (id {record['id']}).",
+        "ui_hint":     "User can review at the bottom of the Chat with SADPA panel.",
+    }
+
+
 def _h_navigate_to_tab(args: dict, ctx: dict) -> dict:
     """Client-side concern — server just echoes it as an instruction."""
     tab = (args.get("tab_id") or "").strip()
@@ -673,6 +718,64 @@ TOOLS: list[dict] = [
         },
         "tier": "B", "requires_approval": True,
         "handler": _h_clean_path,
+    },
+
+    # ── Tier B-meta: proposes a new cleaner, never auto-executes ──
+    {
+        "name": "propose_new_cleaner",
+        "description": (
+            "Propose a NEW cleanup entry for DustPan to add. Use when you find "
+            "a large directory or recurring cache that DustPan doesn't already "
+            "know about (check list_categories + list_category_actions first). "
+            "Your proposal goes to a review inbox — it does NOT modify DustPan. "
+            "The user reviews it and either dismisses it or accepts (accept "
+            "generates a paste-ready Python snippet they can drop into "
+            "cleaners.py themselves). Be specific: include exact paths, the "
+            "right tier (safe = always reclaimable, probably_safe = usually "
+            "fine, caution = needs human review), what category it belongs to, "
+            "and what the user gives up if they accept."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Short human-readable name (e.g. 'JetBrains IDE Caches', 'pyenv Cache', 'Bun install cache')",
+                },
+                "category_id_suggested": {
+                    "type": "string",
+                    "description": "Which existing category this belongs to (apps, xcode, temp, system, browsers, docker, downloads, archives, creative, etc.). Call list_categories if unsure.",
+                },
+                "rationale": {
+                    "type": "string",
+                    "description": "Plain-English explanation of what these files are and why they accumulate. 1–3 sentences.",
+                },
+                "cost_to_user": {
+                    "type": "string",
+                    "description": "What rebuilds / what's lost if the user accepts. Concrete (e.g. '~30s slower next launch of the IDE').",
+                },
+                "paths": {
+                    "type": "array",
+                    "description": "Concrete filesystem paths to include in the cleaner. Each is {label, path, tier}.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "label": {"type": "string"},
+                            "path":  {"type": "string"},
+                            "tier":  {"type": "string", "enum": ["safe", "probably_safe", "caution"]},
+                        },
+                        "required": ["label", "path", "tier"],
+                    },
+                },
+                "shell": {
+                    "type": "string",
+                    "description": "OPTIONAL — a shell snippet for cleanups that are more complex than `rm -rf <paths>`. Most proposals should omit this and rely on the standard tiered-path cleanup pattern.",
+                },
+            },
+            "required": ["name", "category_id_suggested", "rationale", "paths"],
+        },
+        "tier": "B-meta", "requires_approval": False,  # Saving for review needs no approval — it's just a record
+        "handler": _h_propose_new_cleaner,
     },
 
     # ── Tier C: meta / client-side ──

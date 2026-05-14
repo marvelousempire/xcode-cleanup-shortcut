@@ -67,6 +67,9 @@ interface DashboardState {
   habits: Habit[];
   /** Plan 0009: doctor report — ranked safe items across all scanned categories. */
   doctorReport: DoctorReport | null;
+  /** Plan 0023 Ship 2: pending AI cleaner proposals (for sidebar badge). */
+  pendingProposals: number;
+  refreshProposalsCount: () => void;
 
   setActiveTab: (tabId: string) => void;
   setActiveSub: (tabId: string, subId: string) => void;
@@ -110,6 +113,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [scanning, setScanning] = useState(false);
   const [overviewAutoScanned, setOverviewAutoScanned] = useState(false);
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
+  const [pendingProposals, setPendingProposals] = useState<number>(0);
+
+  const refreshProposalsCount = useCallback(() => {
+    fetch("/api/ai/proposals/count")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setPendingProposals(d?.pending ?? 0))
+      .catch(() => { /* ignore */ });
+  }, []);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [doctorReport, setDoctorReport] = useState<DoctorReport | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -188,6 +199,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     api.aiStatus().then(setAiStatus).catch(() => {});
     api.habits().then((d) => setHabits(d.habits ?? [])).catch(() => {});
   }, []);
+
+  // Plan 0023 Ship 2: poll proposals count for the sidebar badge.
+  useEffect(() => {
+    refreshProposalsCount();
+    const iv = setInterval(refreshProposalsCount, 30_000);
+    return () => clearInterval(iv);
+  }, [refreshProposalsCount]);
 
   // Plan 0009: load doctor report on mount (empty until first scan).
   // Refreshed after every scan so QuickWins + RescueBanner stay current.
@@ -481,6 +499,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       aiStatus,
       habits,
       doctorReport,
+      pendingProposals,
+      refreshProposalsCount,
       setActiveTab,
       setActiveSub,
       scanCategory,
@@ -498,7 +518,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [
       status, history, tabs, allCategories, scans, runningCleans, activeTab, activeSub,
       output, outputVisible, busy, scanning, overviewAutoScanned, showChangelog, confirm,
-      aiStatus, habits, doctorReport,
+      aiStatus, habits, doctorReport, pendingProposals, refreshProposalsCount,
       setActiveTab, setActiveSub, scanCategory, scanEverything, cleanPath,
       cleanAllTier, cleanEverywhere, runAction, runActionDirect, openConfirm, closeOutput,
     ],

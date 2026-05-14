@@ -13,6 +13,21 @@ import type {
 
 const API_BASE = ""; // Same-origin in production; Vite proxy in dev.
 
+// ── Plan 0023 Ship 2: proposal shape (matches web/proposals_store.py) ────
+export interface Proposal {
+  id:                    string;
+  created_at:            number;
+  resolved_at?:          number;
+  status:                "pending" | "accepted" | "dismissed";
+  name:                  string;
+  category_id_suggested: string;
+  rationale:             string;
+  cost_to_user:          string;
+  paths:                 Array<{ label: string; path: string; tier: "safe" | "probably_safe" | "caution" }>;
+  shell?:                string | null;
+  source:                string;
+}
+
 async function jsonFetch<T>(path: string): Promise<T> {
   const r = await fetch(API_BASE + path);
   if (!r.ok) throw new Error(`${path} → ${r.status}`);
@@ -47,6 +62,19 @@ export const api = {
 
   deleteKey: (provider: string) =>
     fetch(API_BASE + `/api/settings/keys/${provider}`, { method: "DELETE" }).then((r) => r.json()),
+
+  // ── Plan 0023 Ship 2: cleaner proposals review inbox ─────────────────────
+  proposals:           (status?: string) =>
+    jsonFetch<{ proposals: Proposal[]; count: number }>(
+      "/api/ai/proposals" + (status ? `?status=${status}` : "")
+    ),
+  proposalsCount:      () => jsonFetch<{ pending: number }>("/api/ai/proposals/count"),
+  proposalSnippet:     (id: string) =>
+    jsonFetch<{ proposal: Proposal; snippet: string }>(`/api/ai/proposals/${id}/snippet`),
+  acceptProposal:      (id: string) =>
+    fetch(API_BASE + `/api/ai/proposals/${id}/accept`, { method: "POST" }).then(r => r.json()) as Promise<{ ok: true; proposal: Proposal; snippet: string }>,
+  dismissProposal:     (id: string) =>
+    fetch(API_BASE + `/api/ai/proposals/${id}/dismiss`, { method: "POST" }).then(r => r.json()) as Promise<{ ok: true; proposal: Proposal }>,
 
   saveOllama: (url: string, model: string) =>
     fetch(API_BASE + "/api/settings/ollama", {
