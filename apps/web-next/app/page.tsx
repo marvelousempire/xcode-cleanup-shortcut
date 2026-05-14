@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, Sparkles } from "lucide-react";
 
 // Same DiskStatus shape the Python server emits at /api/status. Duplicated here
-// rather than imported from @cleanup-hub/web so the Next app stays self-contained
+// rather than imported from @dustpan/web so the Next app stays self-contained
 // while the migration is incremental.
 interface DiskStatus {
   free_gb: number;

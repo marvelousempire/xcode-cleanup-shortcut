@@ -16,7 +16,7 @@ The `progress-bar.gif` shown in the README needs to be captured locally — the 
 ```sh
 # 1. Start screen recording (⌘⇧5 → Record Selected Portion → cover the menu bar area)
 # 2. Run demo
-XCODE_CLEANUP_DEMO=1 osascript xcode-cleanup.applescript
+DUSTPAN_DEMO=1 osascript dustpan.applescript
 # 3. Stop recording
 # 4. Convert
 ffmpeg -i ~/Desktop/recording.mov -filter_complex 'fps=12,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle' -y assets/progress-bar.gif

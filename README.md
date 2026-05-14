@@ -43,7 +43,7 @@ Open Terminal on your Mac. Paste these three lines:
 
 ```sh
 git clone https://github.com/marvelousempire/xcode-cleanup-shortcut.git
-cd xcode-cleanup-shortcut
+cd xcode-cleanup-shortcut  # (repo folder)
 make ui
 ```
 
@@ -135,7 +135,7 @@ The complete tech stack. Six surfaces, each built for its own constraints. If yo
 
 **Why this stack.** Dustpan's brand promise is *"no Docker, no pip install, no telemetry."* Python is on every Mac. The whole server is auditable in one file. Anyone can read it, understand it, and verify it isn't doing anything sneaky.
 
-### ⚡ Main dashboard (`apps/web/` = `@cleanup-hub/web`)
+### ⚡ Main dashboard (`apps/web/` = `@dustpan/web`)
 
 | Layer | Tool | What it handles |
 |---|---|---|
@@ -165,7 +165,7 @@ The complete tech stack. Six surfaces, each built for its own constraints. If yo
 
 **Why this stack.** Works the second after `git clone` without `pnpm install`. The demo/airgap path. If pnpm isn't installed, `make ui` falls back to serving this — the user never sees an error.
 
-### 🧪 Experimental dashboard (`apps/web-next/` = `@cleanup-hub/web-next`)
+### 🧪 Experimental dashboard (`apps/web-next/` = `@dustpan/web-next`)
 
 | Layer | Tool | What it handles |
 |---|---|---|
@@ -176,17 +176,17 @@ The complete tech stack. Six surfaces, each built for its own constraints. If yo
 
 **Why this stack.** A future surface to explore Next-specific patterns (server components, route groups, parallel routes) without coupling them to the canonical Vite UI. Static export keeps the Python backend as the only runtime — no Node needed in production.
 
-### 🎭 Cleanup engine ([`xcode-cleanup.applescript`](./xcode-cleanup.applescript))
+### 🎭 Cleanup engine ([`dustpan.applescript`](./dustpan.applescript))
 
 | Layer | Tool | What it handles |
 |---|---|---|
 | Language | **AppleScript** (~250 lines) | The original Dustpan script — predates the web dashboard |
 | Native UI | `display alert` · `display notification` · `progress total steps` | Real macOS modals, progress bars, system notifications |
 | Shell-out | `do shell script` | Runs `rm -rf`, `du`, `xcrun simctl delete unavailable`, etc. |
-| Logging | `~/Library/Logs/xcode-cleanup.log` + CSV | Consumed by [`scripts/report.py`](./scripts/report.py) for the sparkline chart |
+| Logging | `~/Library/Logs/dustpan.log` + CSV | Consumed by [`scripts/report.py`](./scripts/report.py) for the sparkline chart |
 | Update check | Once-daily `curl` to GitHub Releases API (cached 24h) | Tells you when a new Dustpan is out |
 
-**Why this stack.** Native macOS feel. Zero dependencies. Runs without any server. Anyone with a Mac can `osascript xcode-cleanup.applescript` and it just works.
+**Why this stack.** Native macOS feel. Zero dependencies. Runs without any server. Anyone with a Mac can `osascript dustpan.applescript` and it just works.
 
 ### 🚀 Install surfaces
 
@@ -194,8 +194,8 @@ The complete tech stack. Six surfaces, each built for its own constraints. If yo
 |---|---|---|
 | **`xcc` CLI** | [`bin/xcc`](./bin/xcc) | Wrapper installed to `~/.local/bin/` by `make install-cli` |
 | **Apple Shortcut** | `make install-shortcut` | Registers the AppleScript with Shortcuts.app — pin to menu bar, bind a hotkey |
-| **launchd** | [`launchd/com.example.xcode-cleanup.plist`](./launchd/) | Hourly auto-clean; threshold-gated so it's silent when disk is healthy |
-| **SwiftBar plugin** | [`swiftbar/Xcode_Cleanup.5m.sh`](./swiftbar/) | Menu-bar widget showing reclaimable GB; click for inline actions |
+| **launchd** | [`launchd/com.marvelousempire.dustpan.plist`](./launchd/) | Hourly auto-clean; threshold-gated so it's silent when disk is healthy |
+| **SwiftBar plugin** | [`swiftbar/dustpan.30m.sh`](./swiftbar/) | Menu-bar widget showing reclaimable GB; click for inline actions |
 | **Remote SSH runner** | [`scripts/remote-cleanup.sh`](./scripts/remote-cleanup.sh) | `curl \| bash` runner for cleaning a remote Mac without cloning |
 
 **Why this stack.** One source of cleanup logic, five different ergonomic entry points so every workflow has its preferred surface — GUI for the casual session, CLI for the build server, menu bar for the live indicator, Shortcut for the keyboard hotkey, SSH for the remote.
@@ -537,9 +537,9 @@ Once a day, the AppleScript (not the dashboard) checks GitHub Releases for a new
 
 **To turn even that off:**
 ```sh
-XCODE_CLEANUP_NO_UPDATE_CHECK=1 make run
+DUSTPAN_NO_UPDATE_CHECK=1 make run
 # or permanently — edit your shell rc:
-export XCODE_CLEANUP_NO_UPDATE_CHECK=1
+export DUSTPAN_NO_UPDATE_CHECK=1
 ```
 
 ### How "localhost-only" actually works
@@ -551,7 +551,7 @@ export XCODE_CLEANUP_NO_UPDATE_CHECK=1
 
 ### Auditable end-to-end
 
-Every cleanup action is defined in [`web/cleaners.py`](./web/cleaners.py). Every shell command Dustpan runs is in that file or in [`xcode-cleanup.applescript`](./xcode-cleanup.applescript). You can read both files in one sitting. There is no compiled binary, no obfuscated code, no remote-loaded payload.
+Every cleanup action is defined in [`web/cleaners.py`](./web/cleaners.py). Every shell command Dustpan runs is in that file or in [`dustpan.applescript`](./dustpan.applescript). You can read both files in one sitting. There is no compiled binary, no obfuscated code, no remote-loaded payload.
 
 ---
 
@@ -637,12 +637,12 @@ These are "environment variables." You put them before the command, like:
 
 | Variable | What it does |
 |---|---|
-| `XCODE_CLEANUP_DRY_RUN=1` | Don't delete anything — just measure how much would be freed |
-| `XCODE_CLEANUP_DEMO=1` | Pretend mode — sleeps instead of deleting (for recording videos) |
-| `XCODE_CLEANUP_FORCE=1` | Run cleanup even if disk has lots of free space already |
-| `XCODE_CLEANUP_AUTO_CONFIRM=1` | Skip the "are you sure?" pop-up (only for scripts) |
-| `XCODE_CLEANUP_TMP_PATTERNS=…` | Customize which `/tmp` files to clean. Set to `""` to skip them entirely. |
-| `XCODE_CLEANUP_NO_UPDATE_CHECK=1` | Don't ping GitHub to check for new Dustpan releases |
+| `DUSTPAN_DRY_RUN=1` | Don't delete anything — just measure how much would be freed |
+| `DUSTPAN_DEMO=1` | Pretend mode — sleeps instead of deleting (for recording videos) |
+| `DUSTPAN_FORCE=1` | Run cleanup even if disk has lots of free space already |
+| `DUSTPAN_AUTO_CONFIRM=1` | Skip the "are you sure?" pop-up (only for scripts) |
+| `DUSTPAN_TMP_PATTERNS=…` | Customize which `/tmp` files to clean. Set to `""` to skip them entirely. |
+| `DUSTPAN_NO_UPDATE_CHECK=1` | Don't ping GitHub to check for new Dustpan releases |
 | `XCC_UI_PORT=9000` | Change the dashboard's port (default is 8765) |
 | `XCC_HOST=127.0.0.1` | Localhost-only mode (same as `make ui-local`) |
 | `XCC_LEGACY_UI=1` | Always serve the vanilla HTML dashboard even if the React one is built |
@@ -664,7 +664,7 @@ my-mac
    │   ├─ web/                ← The React dashboard. Built with Vite + Tailwind + Motion.
    │   └─ web-next/           ← The Next.js dashboard. Experimental.
    │
-   ├─ xcode-cleanup.applescript  ← The original cleanup script. Pop-ups + progress bar.
+   ├─ dustpan.applescript  ← The original cleanup script. Pop-ups + progress bar.
    ├─ Makefile                ← All `make` commands defined here.
    └─ docs/                   ← Changelog, design system, handoff notes.
 ```
@@ -813,12 +813,12 @@ See [`docs/SHORTCUTS.md`](./docs/SHORTCUTS.md) for a paste-ready *Run Script Ove
 
 | Path | What it is |
 |---|---|
-| `xcode-cleanup.applescript` | The original cleanup script. ~250 lines of Mac automation. |
+| `dustpan.applescript` | The original cleanup script. ~250 lines of Mac automation. |
 | `web/server.py` | The web dashboard's server. Plain Python. Routes, SSE, network mode, all in one file. |
 | `web/cleaners.py` | **The data layer.** Every category, every path, every action — all defined here. |
 | `web/index.html` | The vanilla HTML dashboard. No framework. Works as a fallback. |
-| `apps/web/` | The Vite + React dashboard (`@cleanup-hub/web`). |
-| `apps/web-next/` | The Next.js dashboard (`@cleanup-hub/web-next`). Experimental. |
+| `apps/web/` | The Vite + React dashboard (`@dustpan/web`). |
+| `apps/web-next/` | The Next.js dashboard (`@dustpan/web-next`). Experimental. |
 | `Makefile` | Every `make` command defined here. |
 | `package.json` | The pnpm workspace root. |
 | `turbo.json` | The Turbo build pipeline (handles building multiple apps in parallel). |

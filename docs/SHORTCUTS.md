@@ -99,14 +99,14 @@ fi
 
 ## Run AppleScript (best for menu-bar progress + notifications)
 
-If you want the full Shortcut UX — menu-bar progress bar with phases, native confirmation alert, "Freed X GB" banner — use a **Run AppleScript** action instead and paste the entire contents of [`xcode-cleanup.applescript`](../xcode-cleanup.applescript). The version is on `main`; right-click the file on GitHub → "Raw" → ⌘A → ⌘C.
+If you want the full Shortcut UX — menu-bar progress bar with phases, native confirmation alert, "Freed X GB" banner — use a **Run AppleScript** action instead and paste the entire contents of [`dustpan.applescript`](../dustpan.applescript). The version is on `main`; right-click the file on GitHub → "Raw" → ⌘A → ⌘C.
 
 **Action settings:**
 
 | Field | Value |
 |---|---|
 | Pass Input | (don't pass input) |
-| Script | *paste the full `xcode-cleanup.applescript`* |
+| Script | *paste the full `dustpan.applescript`* |
 
 First run will prompt for Automation permission — approve.
 

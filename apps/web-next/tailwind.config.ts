@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Tailwind config for the Next.js app. Mirrors @cleanup-hub/web's token system
+// Tailwind config for the Next.js app. Mirrors @dustpan/web's token system
 // (HSL custom properties for theme tokens, semantic safe/warn/danger colors)
 // so the two apps look identical and we can lift components between them.
 export default {

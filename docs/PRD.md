@@ -1,4 +1,4 @@
-# Xcode Cleanup Shortcut — PRD
+# DustPan by AVERY GOODMAN — PRD
 
 **Status:** Live (v0.4 shipped)
 **Owner:** marvelousempire
@@ -51,20 +51,20 @@ This is friction that should be a button.
 | F8 | Phase 4: remove project-scratch `/private/tmp` orphans matching configured globs. | ✅ |
 | F9 | Re-measure free space and compute GB freed. | ✅ |
 | F10 | Show final `display notification` with freed GB and new free space. Sound: Glass. | ✅ |
-| F11 | Dry-run mode (`XCODE_CLEANUP_DRY_RUN=1`) measures each phase via `du -sk` and reports the total without deleting. | ✅ v0.2 |
-| F12 | Demo mode (`XCODE_CLEANUP_DEMO=1`) sleeps instead of deleting, for capturing the README progress-bar GIF. | ✅ v0.2 |
-| F13 | Force mode (`XCODE_CLEANUP_FORCE=1`) skips the threshold check. | ✅ v0.2 |
+| F11 | Dry-run mode (`DUSTPAN_DRY_RUN=1`) measures each phase via `du -sk` and reports the total without deleting. | ✅ v0.2 |
+| F12 | Demo mode (`DUSTPAN_DEMO=1`) sleeps instead of deleting, for capturing the README progress-bar GIF. | ✅ v0.2 |
+| F13 | Force mode (`DUSTPAN_FORCE=1`) skips the threshold check. | ✅ v0.2 |
 | F14 | Makefile exposes `run`, `dry-run`, `demo`, `force`, `install-shortcut`, `uninstall-shortcut`, `shortcut-run`, `record-demo`, `check`, `size-report`. | ✅ v0.2 |
-| F15 | History log at `~/Library/Logs/xcode-cleanup.log` records every run (real / dry-run / demo) with timestamp, mode, freed GB, before/after. | ✅ v0.3 |
-| F16 | `XCODE_CLEANUP_TMP_PATTERNS` overrides the default `/tmp` orphan globs; empty string skips phase 4. | ✅ v0.3 |
-| F17 | `XCODE_CLEANUP_AUTO_CONFIRM=1` skips the confirmation alert (for scripted recording). | ✅ v0.2.1 |
+| F15 | History log at `~/Library/Logs/dustpan.log` records every run (real / dry-run / demo) with timestamp, mode, freed GB, before/after. | ✅ v0.3 |
+| F16 | `DUSTPAN_TMP_PATTERNS` overrides the default `/tmp` orphan globs; empty string skips phase 4. | ✅ v0.3 |
+| F17 | `DUSTPAN_AUTO_CONFIRM=1` skips the confirmation alert (for scripted recording). | ✅ v0.2.1 |
 | F18 | CI runs `make check` on every push and PR via `.github/workflows/check.yml` (macos-latest). | ✅ v0.3 |
 | F19 | `make history` prints the last 20 entries from the run log. | ✅ v0.3 |
 | F20 | `bin/xcc` CLI wrapper exposes the script as a first-class command (`xcc --dry-run`, `xcc --force`, etc.). Installable via `make install-cli`. | ✅ v0.4 |
-| F21 | `launchd/com.marvelousempire.xcode-cleanup.plist` runs the cleanup hourly in the background, passing `AUTO_CONFIRM=1` + `NO_UPDATE_CHECK=1`. Installable via `make install-launchd`. | ✅ v0.4 |
-| F22 | `swiftbar/xcode-cleanup.30m.sh` displays free disk space in the menu bar with click-to-cleanup actions. Installable via `make install-swiftbar`. | ✅ v0.4 |
-| F23 | Daily update check via GitHub Releases API. Caches result for 24h. Opt-out: `XCODE_CLEANUP_NO_UPDATE_CHECK=1`. | ✅ v0.4 |
-| F24 | CSV history log at `~/Library/Logs/xcode-cleanup-history.csv` for analytics. | ✅ v0.4 |
+| F21 | `launchd/com.marvelousempire.dustpan.plist` runs the cleanup hourly in the background, passing `AUTO_CONFIRM=1` + `NO_UPDATE_CHECK=1`. Installable via `make install-launchd`. | ✅ v0.4 |
+| F22 | `swiftbar/dustpan.30m.sh` displays free disk space in the menu bar with click-to-cleanup actions. Installable via `make install-swiftbar`. | ✅ v0.4 |
+| F23 | Daily update check via GitHub Releases API. Caches result for 24h. Opt-out: `DUSTPAN_NO_UPDATE_CHECK=1`. | ✅ v0.4 |
+| F24 | CSV history log at `~/Library/Logs/dustpan-history.csv` for analytics. | ✅ v0.4 |
 | F25 | `scripts/report.py` and `make report` render a Unicode-block sparkline of freed-GB over time. | ✅ v0.4 |
 | F26 | Auto-release GitHub Actions workflow tags + creates a release when a commit message starts with `vX.Y.Z:`. | ✅ v0.4 |
 | F27 | `make package-shortcut` signs an exported `.shortcut` bundle in Anyone Mode for distribution. | ✅ v0.4 |
@@ -107,7 +107,7 @@ This is friction that should be a button.
 
 ## Future work (v0.5+)
 
-- **Per-phase opt-out toggles** as env vars (`XCODE_CLEANUP_SKIP_SIMS=1`, etc.).
+- **Per-phase opt-out toggles** as env vars (`DUSTPAN_SKIP_SIMS=1`, etc.).
 - **Homebrew/pnpm/npm cleanup phases** as optional extensions.
 - **SwiftBar plugin variant** for live menu-bar disk-free indicator.
 - **Disk-pressure trigger via `fs_usage`** — current launchd is interval-based; an event-driven trigger fires only when df % crosses a threshold.

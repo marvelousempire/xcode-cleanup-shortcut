@@ -264,7 +264,7 @@ def get_status() -> dict:
 
 
 def get_report() -> dict:
-    csv_path = Path.home() / "Library/Logs/xcode-cleanup-history.csv"
+    csv_path = Path.home() / "Library/Logs/dustpan-history.csv"
     if not csv_path.exists():
         return {"runs": [], "total_freed_gb": 0, "real_runs": 0, "max_freed_gb": 0}
     runs = []
@@ -1037,7 +1037,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _log_run(self, category_id, action_id, freed_gb, before_gb, after_gb):
         try:
             from datetime import datetime
-            csv_path = Path.home() / "Library/Logs/xcode-cleanup-history.csv"
+            csv_path = Path.home() / "Library/Logs/dustpan-history.csv"
             csv_path.parent.mkdir(parents=True, exist_ok=True)
             with csv_path.open("a") as f:
                 ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
