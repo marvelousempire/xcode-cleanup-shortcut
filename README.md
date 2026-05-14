@@ -759,6 +759,7 @@ Every cleanup action is defined in [`web/cleaners.py`](./web/cleaners.py). Every
 | 📋 **AI cleaner proposals** | SADPA proposes new cleaners → paste-ready Python snippets | [cleaner-proposals.md](./docs/marketing/cleaner-proposals.md) |
 | 💬 **Cost annotations everywhere** | Every cleanup tells you what you'll lose before you click | [every-cleanup-tells-you-the-cost.md](./docs/marketing/every-cleanup-tells-you-the-cost.md) |
 | 🧹 **The original Xcode pitch** | The 150-line AppleScript that started it all | [the-original-pitch.md](./docs/marketing/the-original-pitch.md) |
+| 🍎 **AppleScript library** | Native-UI scripts for one-tap actions — disk status dialog, quick rescue progress bar, locked-space recovery. SADPA can propose new ones. | [`applescripts/`](./applescripts/) |
 | 🥧 **Live disk pie chart** | A donut that shows where your gigabytes are going. Each slice is one category. Click a slice → jump to that category. Updates every time you scan. |
 | 📊 **Hero free-space counter** | The big GB-free number at the top updates in real time. If anything outside Dustpan frees disk (like Time Machine, or you deleting a file in Finder), the number ticks immediately. |
 | 🪟 **Three dashboard versions** | The main one (built with React), a simpler vanilla one, and an experimental Next.js one. All run from the same Python server. |
