@@ -83,16 +83,7 @@ export function OverviewPanel() {
         </div>
       </section>
 
-      {/* ── 2. Space breakdown bar chart ─────────────────────────────────── */}
-      <SpaceBarChart />
-
-      {/* ── 3. Banners — rescue (disk low) · permission (FDA) · habits · quick wins */}
-      <RescueBanner />
-      <PermissionBanner />
-      <HabitBanner />
-      <QuickWins />
-
-      {/* ── 4. 3-pane: hero · pie · terminal ─────────────────────────────── */}
+      {/* ── 2. 3-pane: hero · pie · terminal ─────────────────────────────── */}
       <div className="mb-3.5 grid gap-3.5 overview-top">
         <div className="overflow-hidden rounded-lg border border-border/15 shadow-md" style={{ background: "hsl(var(--bg-2))" }}>
           <Hero status={status} embedded />
@@ -113,7 +104,7 @@ export function OverviewPanel() {
         </div>
       </div>
 
-      {/* ── 5. History banner ────────────────────────────────────────────── */}
+      {/* ── 3. History banner ────────────────────────────────────────────── */}
       {history?.real_runs ? (
         <div
           className="mt-1 mb-4 flex items-center justify-center gap-2 rounded-full border border-border/10 px-4 py-2.5 text-[12px] tabular"
@@ -127,6 +118,15 @@ export function OverviewPanel() {
           </span>
         </div>
       ) : null}
+
+      {/* ── 4. Space breakdown bar chart ─────────────────────────────────── */}
+      <SpaceBarChart />
+
+      {/* ── 5. Banners — rescue (disk low) · permission (FDA) · habits · quick wins */}
+      <RescueBanner />
+      <PermissionBanner />
+      <HabitBanner />
+      <QuickWins />
 
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
         {tabs.filter((t) => !t.meta).map((tab, idx) => {
