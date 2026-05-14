@@ -1646,6 +1646,99 @@ CATEGORIES = {
                 ),
             },
 
+            # \u2500\u2500 Foreign-ownership recovery (plan 0024) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            # macOS file permissions can lock huge amounts of disk space behind
+            # previous users' UIDs. /opt/homebrew installed by 'olivia',
+            # /Users/oldperson left over from a migration, etc. These actions
+            # are informational by default \u2014 they require sudo password in
+            # Terminal \u2014 but the discovery scan and the diagnostic command can
+            # run silently and the result tells you exactly what to copy-paste.
+            "emergency-find-foreign-owned": {
+                "label": "Find space locked by previous users",
+                "desc":  (
+                    "Lists files and directories owned by anyone other than you "
+                    "in known multi-user-cruft locations: /opt/homebrew, "
+                    "/usr/local/Homebrew, /Users/<old-account>, MacPorts. "
+                    "Reports each owner, size, and the exact takeover command. "
+                    "DustPan cannot run sudo itself \u2014 you'll paste the command "
+                    "into Terminal."
+                ),
+                "cost":  "Read-only \u2014 nothing is changed.",
+                "informational": True,
+                "shell": (
+                    "ME=$(whoami); "
+                    "echo '\ud83d\udd0d Looking for disk space locked behind other users\u2026'; echo ''; "
+                    "echo '\u2500\u2500 /opt/homebrew \u2500\u2500'; "
+                    "if [ -d /opt/homebrew ]; then "
+                    "  OWNER=$(stat -f '%Su' /opt/homebrew); "
+                    "  if [ \"$OWNER\" != \"$ME\" ] && [ \"$OWNER\" != \"root\" ]; then "
+                    "    SIZE=$(du -sh /opt/homebrew 2>/dev/null | cut -f1); "
+                    "    echo \"  \ud83d\udd12 $SIZE locked \u2014 owner is '$OWNER' (not you)\"; "
+                    "    echo \"     Takeover:  sudo chown -R \\$(whoami) /opt/homebrew\"; "
+                    "  else "
+                    "    echo '  \u2713 owned by you or root \u2014 no action needed'; "
+                    "  fi; "
+                    "else echo '  (not installed)'; fi; echo ''; "
+                    "echo '\u2500\u2500 /usr/local/Homebrew (legacy) \u2500\u2500'; "
+                    "if [ -d /usr/local/Homebrew ]; then "
+                    "  OWNER=$(stat -f '%Su' /usr/local/Homebrew); "
+                    "  if [ \"$OWNER\" != \"$ME\" ] && [ \"$OWNER\" != \"root\" ]; then "
+                    "    SIZE=$(du -sh /usr/local/Homebrew 2>/dev/null | cut -f1); "
+                    "    echo \"  \ud83d\udd12 $SIZE locked \u2014 owner is '$OWNER'\"; "
+                    "    echo \"     Takeover:  sudo chown -R \\$(whoami) /usr/local/Homebrew\"; "
+                    "  fi; "
+                    "else echo '  (not installed)'; fi; echo ''; "
+                    "echo '\u2500\u2500 /Users (old user home directories) \u2500\u2500'; "
+                    "for d in /Users/*/; do "
+                    "  name=$(basename \"$d\"); "
+                    "  if [ \"$name\" = \"$ME\" ] || [ \"$name\" = \"Shared\" ] || [ \"$name\" = \".localized\" ]; then continue; fi; "
+                    "  OWNER=$(stat -f '%Su' \"$d\" 2>/dev/null); "
+                    "  if [ \"$OWNER\" = \"root\" ] || [ -z \"$OWNER\" ]; then continue; fi; "
+                    "  SIZE=$(du -sh \"$d\" 2>/dev/null | cut -f1); "
+                    "  echo \"  \ud83d\udd12 $SIZE locked \u2014 '$name' (owner: $OWNER)\"; "
+                    "  echo \"     Delete:    sudo rm -rf \\\"$d\\\"\"; "
+                    "  echo \"     Keep+own:  sudo chown -R \\$(whoami) \\\"$d\\\"\"; "
+                    "done; "
+                    "echo ''; "
+                    "echo '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'; "
+                    "echo 'Run any command above in Terminal. macOS will prompt for your password.'"
+                ),
+            },
+
+            "emergency-takeover-homebrew": {
+                "label": "Show the Homebrew takeover command",
+                "desc":  (
+                    "Prints the exact sudo command that transfers ownership of "
+                    "/opt/homebrew from a previous user to you. Doesn't run it \u2014 "
+                    "macOS requires you to type your password in Terminal directly. "
+                    "After takeover, brew commands work normally under your account."
+                ),
+                "cost":  "Read-only output. The chown itself is a separate Terminal step.",
+                "informational": True,
+                "shell": (
+                    "if [ -d /opt/homebrew ]; then "
+                    "  OWNER=$(stat -f '%Su' /opt/homebrew); ME=$(whoami); "
+                    "  if [ \"$OWNER\" = \"$ME\" ]; then "
+                    "    echo '\u2713 /opt/homebrew is already owned by you \u2014 no takeover needed.'; "
+                    "  else "
+                    "    SIZE=$(du -sh /opt/homebrew 2>/dev/null | cut -f1); "
+                    "    echo \"Homebrew at /opt/homebrew is currently owned by '$OWNER'.\"; "
+                    "    echo \"Size locked: $SIZE\"; "
+                    "    echo ''; "
+                    "    echo 'Copy this into Terminal:'; "
+                    "    echo ''; "
+                    "    echo '  sudo chown -R $(whoami) /opt/homebrew'; "
+                    "    echo ''; "
+                    "    echo 'macOS will prompt for your password once. Then run:'; "
+                    "    echo '  /opt/homebrew/bin/brew update'; "
+                    "    echo 'to refresh the package list.'; "
+                    "  fi; "
+                    "else "
+                    "  echo 'Homebrew is not installed at /opt/homebrew on this Mac.'; "
+                    "fi"
+                ),
+            },
+
             # \u2500\u2500 6 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
             "emergency-check-disk": {
                 "label": "Check Disk Space Right Now",

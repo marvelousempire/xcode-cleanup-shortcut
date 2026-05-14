@@ -1357,11 +1357,158 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 except Exception:
                     pass
 
+        # ── discover_foreign_ownership (plan 0024) ───────────────────────────
+        # Find disk space locked behind another user's UID. Classic case:
+        # /opt/homebrew owned by a previous user ("olivia"), /Users/<oldname>
+        # still on disk, /Users/Guest, /usr/local owned by Homebrew from 5 years
+        # ago. These are GOLDEN reclaim opportunities once the user runs the
+        # `sudo chown -R $(whoami) <path>` takeover command.
+        def discover_foreign_ownership():
+            import pwd as _pwd
+            current_user = os.environ.get("USER") or os.environ.get("LOGNAME") or ""
+            if not current_user:
+                try:
+                    current_user = _pwd.getpwuid(os.getuid()).pw_name
+                except Exception:
+                    return
+
+            _emit_progress("ownership", "Scanning for files locked by previous users…")
+
+            # Candidate roots — known places where multi-user cruft accumulates.
+            # Each is either a directory we measure as a whole, OR a parent dir
+            # whose immediate children we enumerate (for /Users).
+            roots: list[tuple[Path, str]] = [
+                (Path("/opt/homebrew"),         "whole"),
+                (Path("/opt/local"),            "whole"),   # MacPorts
+                (Path("/usr/local/Homebrew"),   "whole"),   # pre-Apple-Silicon brew
+                (Path("/usr/local/Cellar"),     "whole"),
+                (Path("/Users"),                "enumerate"),
+            ]
+
+            def _owner_name(p: Path) -> tuple[str, int, bool]:
+                """(name_or_'uid-NNN', uid, user_still_exists)"""
+                try:
+                    st = p.lstat()
+                    uid = st.st_uid
+                    try:
+                        name = _pwd.getpwuid(uid).pw_name
+                        return name, uid, True
+                    except KeyError:
+                        return f"uid-{uid}", uid, False
+                except OSError:
+                    return "unknown", -1, False
+
+            for root, mode in roots:
+                if not root.exists():
+                    continue
+                try:
+                    if mode == "whole":
+                        owner, uid, exists = _owner_name(root)
+                        if owner == current_user or uid in (0,):
+                            continue   # owned by us or root — not a takeover target
+                        size = _du(root, timeout=20)
+                        if size < 0.05:
+                            continue
+                        label = f"{root.name} (locked by '{owner}')"
+                        if root == Path("/opt/homebrew"):
+                            label = f"Homebrew at /opt/homebrew (installed by '{owner}')"
+                        elif root == Path("/usr/local/Homebrew"):
+                            label = f"Legacy Homebrew at /usr/local/Homebrew (installed by '{owner}')"
+                        takeover = (
+                            f"sudo chown -R $(whoami) {root} && "
+                            f"echo '✓ {root} is now owned by '$(whoami)"
+                        )
+                        notes_parts = [
+                            f"This directory ({size:.1f} GB) is owned by user '{owner}'"
+                            + (" (no longer on the system)" if not exists else "")
+                            + ". DustPan and Homebrew can't manage it under your current account "
+                            "until ownership is transferred to you.",
+                            "**To unlock:** open Terminal and run the command below. You'll be "
+                            "prompted for your Mac password — this is the macOS sudo prompt, not "
+                            "anything DustPan can do silently.",
+                        ]
+                        _emit_target({
+                            "id":               f"foreign-{root.name}-{owner}",
+                            "label":            label,
+                            "path":             str(root),
+                            "size_gb":          size,
+                            "category":         "ownership",
+                            "confidence":       "takeover",
+                            "confidence_label": "Takeover available — needs sudo password",
+                            "notes":            "\n\n".join(notes_parts),
+                            "action":           takeover,
+                            "rebuild":          "Nothing rebuilds — you keep the data, just gain access to it",
+                            "source":           "dynamic",
+                            "owner":            owner,
+                            "owner_uid":        uid,
+                            "owner_exists":     exists,
+                            "takeover_command": takeover,
+                        })
+                    elif mode == "enumerate":
+                        # Enumerate /Users/* but skip current user + system entries
+                        skip_names = {current_user, "Shared", ".localized", "root"}
+                        try:
+                            children = list(root.iterdir())
+                        except PermissionError:
+                            continue
+                        for child in children:
+                            if child.name in skip_names or child.name.startswith("."):
+                                continue
+                            if not child.is_dir():
+                                continue
+                            owner, uid, exists = _owner_name(child)
+                            if owner == current_user:
+                                continue
+                            # Don't measure root-owned (like /Users/Shared) as recoverable
+                            if uid == 0:
+                                continue
+                            size = _du(child, timeout=20)
+                            if size < 0.05:
+                                continue
+                            takeover = (
+                                f"# WARNING: This will delete user data. Make sure you don't need it.\n"
+                                f"sudo rm -rf {child}\n"
+                                f"# OR — keep the data but transfer ownership to you:\n"
+                                f"sudo chown -R $(whoami) {child}"
+                            )
+                            user_status = "no longer on the system" if not exists else "old account"
+                            _emit_target({
+                                "id":               f"foreign-user-{child.name}",
+                                "label":            f"Old user home: /Users/{child.name} (owner '{owner}', {user_status})",
+                                "path":             str(child),
+                                "size_gb":          size,
+                                "category":         "ownership",
+                                "confidence":       "takeover",
+                                "confidence_label": "Old user home — review before deleting",
+                                "notes": (
+                                    f"This is the home directory of user '{owner}' "
+                                    f"({user_status}). It's {size:.1f} GB of data that's invisible "
+                                    f"to your current account but still using disk space.\n\n"
+                                    "**Two options:**\n"
+                                    "1. **Delete it** if the user is gone and you don't need their files. "
+                                    "Frees the full size immediately.\n"
+                                    "2. **Take ownership** to keep the files but make them yours. "
+                                    "Useful if you want to review what's in there first.\n\n"
+                                    "Both options require your sudo password. DustPan cannot run "
+                                    "either silently — open Terminal and paste the command."
+                                ),
+                                "action":           takeover,
+                                "rebuild":          "You decide — delete frees the space; chown preserves the data",
+                                "source":           "dynamic",
+                                "owner":            owner,
+                                "owner_uid":        uid,
+                                "owner_exists":     exists,
+                                "takeover_command": takeover,
+                            })
+                except Exception:
+                    pass
+
         # Run dynamic discovery in parallel threads, collect via queue
         threads = [
-            threading.Thread(target=discover_worktrees, daemon=True),
-            threading.Thread(target=discover_build_artifacts, daemon=True),
+            threading.Thread(target=discover_worktrees,         daemon=True),
+            threading.Thread(target=discover_build_artifacts,   daemon=True),
             threading.Thread(target=discover_large_node_modules, daemon=True),
+            threading.Thread(target=discover_foreign_ownership, daemon=True),
         ]
         for th in threads:
             th.start()

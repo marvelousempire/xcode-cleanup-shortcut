@@ -25,7 +25,7 @@ export interface SurveyTarget {
   path:               string;
   size_gb:            number;
   category:           string;
-  confidence:         "easy" | "check_first" | "caution";
+  confidence:         "easy" | "check_first" | "caution" | "takeover";
   confidence_label:   string;
   notes:              string;
   action?:            string;
@@ -35,6 +35,11 @@ export interface SurveyTarget {
   /** Worktree-specific: per-sub-dir breakdown */
   sub_worktrees?:     Array<{ name: string; size_gb: number; merged: boolean }>;
   merged_count?:      number;
+  /** Foreign-ownership-specific (plan 0024) */
+  owner?:             string;
+  owner_uid?:         number;
+  owner_exists?:      boolean;
+  takeover_command?:  string;
 }
 
 interface NotWorthItItem {
@@ -78,6 +83,12 @@ const CONFIDENCE_CONFIG = {
     desc:  "Use the specific tool — do not delete directly",
     cls:   "border-danger/30 bg-[hsl(var(--danger)/0.1)] text-danger",
     dot:   "bg-danger",
+  },
+  takeover: {
+    label: "Takeover",
+    desc:  "Locked by a previous user — needs sudo password in Terminal",
+    cls:   "border-accent/40 bg-[hsl(var(--accent)/0.12)] text-accent-strong",
+    dot:   "bg-accent",
   },
 } as const;
 
@@ -156,8 +167,10 @@ export function SurveyPanel() {
   const totalFound = targets.reduce((s, t) => s + t.size_gb, 0);
 
   // Split easy vs needs-review for recommended order
-  const easyTargets    = targets.filter(t => t.confidence === "easy");
-  const reviewTargets  = targets.filter(t => t.confidence !== "easy");
+  const easyTargets      = targets.filter(t => t.confidence === "easy");
+  const reviewTargets    = targets.filter(t => t.confidence !== "easy" && t.confidence !== "takeover");
+  const takeoverTargets  = targets.filter(t => t.confidence === "takeover");
+  const takeoverTotalGb  = takeoverTargets.reduce((s, t) => s + t.size_gb, 0);
 
   return (
     <div className="flex flex-col gap-5">
@@ -227,6 +240,37 @@ export function SurveyPanel() {
         )}
       </div>
 
+      {/* ── 🔒 Locked by previous users — prominent above everything else ── */}
+      <AnimatePresence>
+        {takeoverTargets.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg border-2 border-accent/40 bg-[hsl(var(--accent)/0.06)] p-4"
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <span className="text-[22px] mt-0.5" aria-hidden>🔒</span>
+              <div className="flex-1">
+                <div className="text-[14px] font-bold text-accent-strong">
+                  Locked by previous users — {takeoverTotalGb.toFixed(1)} GB recoverable
+                </div>
+                <div className="text-[12px] text-fg-dim mt-0.5 leading-[1.6]">
+                  Disk space owned by user accounts that aren't yours. DustPan can't
+                  touch this — macOS file permissions protect it — but each one can be
+                  unlocked with a single Terminal command. Tap a card below for the
+                  exact command and what it does.
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {takeoverTargets.map((t, idx) => (
+                <TakeoverCard key={t.id} target={t} rank={idx + 1} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Recommended order — shown after done ── */}
       <AnimatePresence>
         {phase === "done" && targets.length > 0 && (
@@ -293,7 +337,7 @@ export function SurveyPanel() {
               )}
             </div>
 
-            {targets.map((t, idx) => (
+            {targets.filter(t => t.confidence !== "takeover").map((t, idx) => (
               <SurveyTargetCard
                 key={t.id}
                 target={t}
@@ -544,6 +588,106 @@ function SurveyTargetCard({
 
               {/* Full path */}
               <div className="mt-3 text-[10px] text-fg-faint font-mono break-all">{target.path}</div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ── TakeoverCard — special rendering for foreign-ownership targets (plan 0024) ──
+
+function TakeoverCard({ target, rank }: { target: SurveyTarget; rank: number }) {
+  const [copied, setCopied]   = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const cmd = target.takeover_command ?? target.action ?? "";
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: select-and-show
+      setCopied(false);
+    }
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 3 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-md border border-accent/30 bg-[hsl(var(--bg-2)/0.6)] overflow-hidden"
+    >
+      <button type="button" onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-3 px-3 py-2.5 text-left">
+        <span className="text-[12px] text-fg-faint tabular-nums w-5 flex-shrink-0">{rank}</span>
+        <div className="flex-shrink-0 text-[13px] font-bold tabular-nums w-14 text-right text-accent-strong">
+          {target.size_gb >= 10 ? `${Math.round(target.size_gb)} GB` : `${target.size_gb.toFixed(1)} GB`}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-fg truncate">{target.label}</div>
+          <div className="text-[11px] text-fg-faint truncate font-mono">{target.path}</div>
+        </div>
+        {target.owner && (
+          <div className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-[0.05em] px-2 py-0.5 rounded-full border border-accent/30 text-accent-strong">
+            owner: {target.owner}{!target.owner_exists ? " (gone)" : ""}
+          </div>
+        )}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+          className={cn("h-4 w-4 flex-shrink-0 text-fg-faint transition-transform", expanded && "rotate-180")}>
+          <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 pt-1 border-t border-border/10">
+              <p className="text-[12px] text-fg-dim leading-[1.7] mb-3 whitespace-pre-line">{target.notes}</p>
+
+              {/* The actual command */}
+              <div className="rounded-md border border-accent/25 bg-[hsl(var(--bg-1)/0.85)] overflow-hidden mb-3">
+                <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/10 bg-[hsl(var(--bg-2)/0.5)]">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-fg-faint">
+                    Run this in Terminal
+                  </span>
+                  <button type="button" onClick={copy}
+                    className={cn(
+                      "text-[11px] font-semibold px-2 py-0.5 rounded transition-colors",
+                      copied
+                        ? "bg-[hsl(var(--safe)/0.15)] text-safe"
+                        : "bg-[hsl(var(--accent)/0.15)] text-accent hover:bg-[hsl(var(--accent)/0.25)]",
+                    )}>
+                    {copied ? "✓ Copied" : "📋 Copy"}
+                  </button>
+                </div>
+                <pre className="px-3 py-2 font-mono text-[11px] text-fg-dim whitespace-pre-wrap break-all m-0">{cmd}</pre>
+              </div>
+
+              {/* Recovery summary */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] mb-1">
+                <div className="rounded-md border border-border/15 bg-[hsl(var(--bg-1)/0.6)] px-2 py-1.5">
+                  <div className="text-fg-faint text-[10px] uppercase tracking-[0.05em] mb-0.5">Recoverable</div>
+                  <div className="font-bold text-accent-strong tabular-nums">{target.size_gb.toFixed(1)} GB</div>
+                </div>
+                <div className="rounded-md border border-border/15 bg-[hsl(var(--bg-1)/0.6)] px-2 py-1.5">
+                  <div className="text-fg-faint text-[10px] uppercase tracking-[0.05em] mb-0.5">Cost</div>
+                  <div className="text-fg-dim leading-tight">{target.rebuild}</div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-fg-faint mt-2 leading-[1.5]">
+                ⓘ DustPan can't run sudo commands — macOS requires you to type your password in Terminal directly.
+                Copy the command, paste it into Terminal, and macOS will prompt you for your Mac password.
+              </p>
             </div>
           </motion.div>
         )}

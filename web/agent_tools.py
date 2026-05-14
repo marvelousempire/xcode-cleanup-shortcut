@@ -344,6 +344,95 @@ def _h_get_recent_runs(args: dict, ctx: dict) -> dict:
         return {"error": f"failed to read runs: {e}"}
 
 
+def _h_find_foreign_ownership(args: dict, ctx: dict) -> dict:
+    """
+    Scan known multi-user-cruft locations for files/dirs owned by users other
+    than the current one. This is huge for systems passed down between accounts.
+
+    Returns a list of foreign-owned things with sizes + recommended sudo command.
+    NEVER runs sudo — only reports.
+    """
+    import pwd as _pwd
+
+    try:
+        current_user = os.environ.get("USER") or _pwd.getpwuid(os.getuid()).pw_name
+    except Exception:
+        return {"error": "could not determine current user"}
+
+    roots = [
+        (Path("/opt/homebrew"),       "whole"),
+        (Path("/opt/local"),          "whole"),
+        (Path("/usr/local/Homebrew"), "whole"),
+        (Path("/usr/local/Cellar"),   "whole"),
+        (Path("/Users"),              "enumerate"),
+    ]
+
+    findings = []
+
+    def _owner(p: Path):
+        try:
+            uid = p.lstat().st_uid
+            try:
+                return _pwd.getpwuid(uid).pw_name, uid, True
+            except KeyError:
+                return f"uid-{uid}", uid, False
+        except OSError:
+            return "unknown", -1, False
+
+    for root, mode in roots:
+        if not root.exists():
+            continue
+        try:
+            if mode == "whole":
+                owner, uid, exists = _owner(root)
+                if owner == current_user or uid == 0:
+                    continue
+                size = _du_gb(root, timeout=20)
+                if size < 0.05:
+                    continue
+                findings.append({
+                    "path":             str(root),
+                    "owner":            owner,
+                    "owner_uid":        uid,
+                    "owner_still_exists": exists,
+                    "size_gb":          size,
+                    "kind":             "system-tool" if str(root).startswith("/opt") or str(root).startswith("/usr") else "user-home",
+                    "takeover_command": f"sudo chown -R $(whoami) {root}",
+                })
+            else:
+                skip = {current_user, "Shared", ".localized", "root"}
+                for child in root.iterdir():
+                    if child.name in skip or child.name.startswith(".") or not child.is_dir():
+                        continue
+                    owner, uid, exists = _owner(child)
+                    if owner == current_user or uid == 0:
+                        continue
+                    size = _du_gb(child, timeout=20)
+                    if size < 0.05:
+                        continue
+                    findings.append({
+                        "path":             str(child),
+                        "owner":            owner,
+                        "owner_uid":        uid,
+                        "owner_still_exists": exists,
+                        "size_gb":          size,
+                        "kind":             "user-home",
+                        "takeover_command": f"sudo chown -R $(whoami) {child}",
+                        "delete_command":   f"sudo rm -rf {child}  # only if you don't need their files",
+                    })
+        except (PermissionError, OSError):
+            continue
+
+    findings.sort(key=lambda f: f["size_gb"], reverse=True)
+    total_gb = round(sum(f["size_gb"] for f in findings), 2)
+    return {
+        "current_user": current_user,
+        "findings":     findings,
+        "total_gb_locked": total_gb,
+        "count":        len(findings),
+    }
+
+
 def _h_run_disk_survey(args: dict, ctx: dict) -> dict:
     """Run a synchronous version of the survey. Returns the final target list.
 
@@ -514,6 +603,21 @@ TOOLS: list[dict] = [
         },
         "tier": "A", "requires_approval": False,
         "handler": _h_list_directory,
+    },
+    {
+        "name": "find_foreign_ownership",
+        "description": (
+            "Find disk space locked behind another user's file ownership. Detects: "
+            "(a) Homebrew or other system tools installed by a previous user "
+            "(e.g. /opt/homebrew owned by 'olivia'), and (b) old user home "
+            "directories still on disk (e.g. /Users/oldperson). Returns paths, "
+            "sizes, owner names, and the exact `sudo chown` or `sudo rm` command "
+            "to recover the space. DustPan CANNOT run sudo itself — the user must "
+            "paste these commands into Terminal."
+        ),
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+        "tier": "A", "requires_approval": False,
+        "handler": _h_find_foreign_ownership,
     },
     {
         "name": "get_recent_runs",
