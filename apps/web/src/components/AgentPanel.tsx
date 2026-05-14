@@ -140,12 +140,12 @@ export function AgentPanel() {
       <div className="flex items-start gap-3">
         <div className="flex-1">
           <div className="text-[13px] font-semibold text-fg">
-            {hasKey ? "AI Diagnosis Agent" : "Disk Analysis Agent"}
+            Smart Auto-Detector Protector Agent
           </div>
           <div className="text-[12px] text-fg-dim mt-0.5">
             {hasKey
-              ? "Measures your disk, identifies root causes, and gives you a ranked action plan — powered by AI."
-              : "No AI key configured — runs rule-based analysis using live disk measurements. Add a key in Settings for AI-powered explanations."}
+              ? "Measures your actual disk — beyond the predefined categories — identifies root causes, and hands you a ranked action plan powered by AI."
+              : "No AI key configured — runs rule-based analysis using live measurements. Add a key in Settings for AI-powered root-cause explanations."}
           </div>
         </div>
         <button

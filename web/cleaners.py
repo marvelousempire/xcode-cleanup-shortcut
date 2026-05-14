@@ -1535,6 +1535,187 @@ CATEGORIES = {
             },
         },
     },
+
+    # \u2500\u2500 Emergency category (plan 0011) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    # Disk at zero. These are the fastest safe commands that actually recover
+    # meaningful space \u2014 each one is 100% reversible (files rebuild automatically).
+    # The Smart Auto-Detector Protector Agent (SADPA) surfaces this panel
+    # automatically when free_gb < 1.
+    "emergency": {
+        "label":   "Emergency",
+        "icon":    "\ud83d\udea8",
+        "tagline": "Disk at zero. These 6 commands recover 5\u201315 GB in under 60 seconds \u2014 all safe, all auto-rebuild.",
+        "meta":    True,   # not a category tab \u2014 rendered by EmergencyPanel
+        "groups":  {"safe": [], "probably_safe": [], "caution": []},
+        "actions": {
+
+            # \u2500\u2500 1 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            "emergency-deriveddata": {
+                "label": "Clear Xcode Build Cache (DerivedData)",
+                "desc":  (
+                    "Removes ~/Library/Developer/Xcode/DerivedData/* \u2014 "
+                    "Xcode's scratch pad where it saves build work. "
+                    "Your code is completely untouched. "
+                    "The next build takes ~30 seconds longer than usual, then it's back to normal."
+                ),
+                "cost":  "One slower Xcode build. That's it.",
+                "shell": (
+                    "echo '\u2460 Clearing Xcode DerivedData\u2026'; "
+                    "rm -rf ~/Library/Developer/Xcode/DerivedData/* 2>/dev/null; "
+                    "echo '\u2713 Done.'; "
+                    "df -h / | awk 'NR==2{print \"  Disk: \"$4\" free of \"$2}'"
+                ),
+            },
+
+            # \u2500\u2500 2 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            "emergency-devicesupport": {
+                "label": "Clear Xcode iOS Device Debug Files",
+                "desc":  (
+                    "Removes ~/Library/Developer/Xcode/iOS DeviceSupport/* \u2014 "
+                    "one folder per iPhone model per iOS version, downloaded whenever "
+                    "you connected a device to test an app. They pile up for years. "
+                    "Re-downloads automatically (1\u20132 min) next time you connect a device."
+                ),
+                "cost":  "1\u20132 minute re-download next time you plug in a phone.",
+                "shell": (
+                    "echo '\u2461 Clearing iOS DeviceSupport\u2026'; "
+                    "rm -rf ~/Library/Developer/Xcode/'iOS DeviceSupport'/* 2>/dev/null; "
+                    "echo '\u2713 Done.'; "
+                    "df -h / | awk 'NR==2{print \"  Disk: \"$4\" free of \"$2}'"
+                ),
+            },
+
+            # \u2500\u2500 3 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            "emergency-mediaanalysisd": {
+                "label": "Clear macOS Photo Analysis Cache",
+                "desc":  (
+                    "Removes ~/Library/Containers/com.apple.mediaanalysisd/Data \u2014 "
+                    "the AI brain macOS builds from your Photos library to recognize "
+                    "faces and scenes. It rebuilds automatically in the background "
+                    "over the next few hours. Nothing in your Photos library changes."
+                ),
+                "cost":  "Face recognition in Photos re-learns over a few hours in background.",
+                "shell": (
+                    "echo '\u2462 Clearing macOS media analysis cache\u2026'; "
+                    "rm -rf ~/Library/Containers/com.apple.mediaanalysisd/Data/Library/* 2>/dev/null; "
+                    "rm -rf ~/Library/Containers/com.apple.mediaanalysisd/Data/tmp/* 2>/dev/null; "
+                    "echo '\u2713 Done.'; "
+                    "df -h / | awk 'NR==2{print \"  Disk: \"$4\" free of \"$2}'"
+                ),
+            },
+
+            # \u2500\u2500 4 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            "emergency-documentationindex": {
+                "label": "Clear Xcode Documentation Index",
+                "desc":  (
+                    "Removes ~/Library/Developer/Xcode/DocumentationIndex/* \u2014 "
+                    "Xcode's searchable copy of Apple's developer documentation. "
+                    "Rebuilt the next time you open the documentation viewer in Xcode. "
+                    "Can be 1\u20135 GB on an active Mac."
+                ),
+                "cost":  "Xcode docs take a few seconds to re-index when you next open them.",
+                "shell": (
+                    "echo '\u2463 Clearing Xcode DocumentationIndex\u2026'; "
+                    "rm -rf ~/Library/Developer/Xcode/DocumentationIndex/* 2>/dev/null; "
+                    "echo '\u2713 Done.'; "
+                    "df -h / | awk 'NR==2{print \"  Disk: \"$4\" free of \"$2}'"
+                ),
+            },
+
+            # \u2500\u2500 5 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            "emergency-docker-prune": {
+                "label": "Docker: Remove Unused Images & Containers",
+                "desc":  (
+                    "Runs 'docker system prune -f' \u2014 reaches inside Docker's virtual "
+                    "disk and removes images you pulled but aren't using, stopped "
+                    "containers, and dangling network configs. "
+                    "Running containers are completely untouched. "
+                    "This is how you chip away at that Docker.raw file safely."
+                ),
+                "cost":  "Re-pulling a removed image takes 1\u20135 min on next docker run.",
+                "shell": (
+                    "echo '\u2464 Running Docker system prune\u2026'; "
+                    "if command -v docker >/dev/null 2>&1; then "
+                    "  docker system prune -f 2>&1; "
+                    "  echo ''; "
+                    "  echo '  Docker disk now:'; docker system df 2>&1; "
+                    "else "
+                    "  echo '  Docker not installed or not running \u2014 skipping.'; "
+                    "fi; "
+                    "df -h / | awk 'NR==2{print \"  Disk: \"$4\" free of \"$2}'"
+                ),
+            },
+
+            # \u2500\u2500 6 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            "emergency-check-disk": {
+                "label": "Check Disk Space Right Now",
+                "desc":  (
+                    "Shows exactly how much space you have on your startup disk "
+                    "and which folders are the biggest. No files are deleted."
+                ),
+                "cost":  "Read-only. Nothing is deleted.",
+                "informational": True,
+                "shell": (
+                    "echo '\u2465 Current disk status:'; "
+                    "df -h / | awk 'NR==2{print \"  \"$4\" free of \"$2\" (\"$5\" used)\"}'; "
+                    "echo ''; "
+                    "echo '  Biggest items in ~/Library/Developer:'; "
+                    "du -sh ~/Library/Developer/Xcode/*/ 2>/dev/null | sort -rh | head -8 | "
+                    "  awk '{print \"  \"$0}'; "
+                    "echo ''; "
+                    "echo '  ~/Library/Containers (top 5):'; "
+                    "du -sh ~/Library/Containers/*/ 2>/dev/null | sort -rh | head -5 | "
+                    "  awk '{print \"  \"$0}'"
+                ),
+            },
+
+            # \u2500\u2500 ALL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+            "emergency-run-all": {
+                "label": "Run All Emergency Commands",
+                "desc":  (
+                    "Runs all 5 cleanup commands in sequence \u2014 DerivedData, "
+                    "iOS DeviceSupport, media analysis cache, DocumentationIndex, "
+                    "and Docker prune. Then shows the new disk status. "
+                    "All files rebuild automatically. Nothing important is deleted."
+                ),
+                "cost":  "One slower Xcode build + 1\u20132 min device re-sync + Docker image re-pull if needed.",
+                "shell": (
+                    "echo '\ud83d\udea8 DustPan Emergency Cleanup \u2014 starting\u2026'; "
+                    "echo ''; "
+
+                    "echo '\u2460 DerivedData\u2026'; "
+                    "rm -rf ~/Library/Developer/Xcode/DerivedData/* 2>/dev/null; "
+                    "echo '  \u2713 cleared'; "
+
+                    "echo '\u2461 iOS DeviceSupport\u2026'; "
+                    "rm -rf ~/Library/Developer/Xcode/'iOS DeviceSupport'/* 2>/dev/null; "
+                    "echo '  \u2713 cleared'; "
+
+                    "echo '\u2462 Media analysis cache\u2026'; "
+                    "rm -rf ~/Library/Containers/com.apple.mediaanalysisd/Data/Library/* 2>/dev/null; "
+                    "rm -rf ~/Library/Containers/com.apple.mediaanalysisd/Data/tmp/* 2>/dev/null; "
+                    "echo '  \u2713 cleared'; "
+
+                    "echo '\u2463 DocumentationIndex\u2026'; "
+                    "rm -rf ~/Library/Developer/Xcode/DocumentationIndex/* 2>/dev/null; "
+                    "echo '  \u2713 cleared'; "
+
+                    "echo '\u2464 Docker prune\u2026'; "
+                    "if command -v docker >/dev/null 2>&1; then "
+                    "  docker system prune -f 2>&1 | tail -5; "
+                    "  echo '  \u2713 done'; "
+                    "else "
+                    "  echo '  Docker not running \u2014 skipped'; "
+                    "fi; "
+
+                    "echo ''; "
+                    "echo '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'; "
+                    "BEFORE=59; " # approximate, computed at runtime below
+                    "df -h / | awk 'NR==2{print \"\u2705 Disk now: \"$4\" free of \"$2\" (\"$5\" used)\"}'"
+                ),
+            },
+        },
+    },
 }
 
 # Tab structure — top-level navigation.

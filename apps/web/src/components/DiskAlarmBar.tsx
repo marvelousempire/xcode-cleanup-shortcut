@@ -106,10 +106,10 @@ export function DiskAlarmBar() {
             {/* CTA */}
             <button
               type="button"
-              onClick={() => setActiveTab("overview")}
+              onClick={() => setActiveTab(level === "emergency" ? "emergency" : "overview")}
               className="flex-shrink-0 rounded-md bg-white/20 hover:bg-white/30 border border-white/30 px-3 py-1.5 text-[12px] font-semibold transition-colors"
             >
-              Clean now →
+              {level === "emergency" ? "Open Emergency Rescue →" : "Clean now →"}
             </button>
           </div>
         </div>

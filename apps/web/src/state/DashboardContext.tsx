@@ -159,18 +159,27 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     api.report().then(setHistory).catch(() => {});
   }, []);
 
-  // Auto-scan on startup when disk is critically low (< 10 GB free).
-  // This ensures the RescueBanner, QuickWins, and DiskAlarmBar have real data
-  // immediately — without waiting for the user to click "Scan everything".
-  const autoScannedRef = useRef(false);
+  // ── SADPA: Smart Auto-Detector Protector Agent (plan 0011) ───────────────
+  // Monitors free_gb via the live SSE channel (already running — no extra
+  // polling). Two tiers of response:
+  //   < 1 GB  → navigate immediately to Emergency Rescue panel
+  //   < 10 GB → auto-scan so RescueBanner / QuickWins have real data
+  const autoScannedRef   = useRef(false);
+  const autoEmergencyRef = useRef(false);
   useEffect(() => {
-    if (!status || autoScannedRef.current) return;
-    if (status.free_gb < 10) {
+    if (!status) return;
+    // Tier 1 — absolute zero: open Emergency panel immediately
+    if (status.free_gb < 1 && !autoEmergencyRef.current) {
+      autoEmergencyRef.current = true;
+      setActiveTab("emergency");
+    }
+    // Tier 2 — critically low: kick off a full scan in background
+    if (status.free_gb < 10 && !autoScannedRef.current) {
       autoScannedRef.current = true;
-      // Small delay so the UI has time to paint first.
       setTimeout(() => void scanEverythingRef.current?.(), 800);
     }
-  }, [status]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status?.free_gb]);
 
   // Plan 0006: load AI status + habits on mount. Both are soft — failures are silent.
   useEffect(() => {
