@@ -8,6 +8,7 @@ import { CategoryPanel } from "./components/CategoryPanel";
 import { AISettingsPanel } from "./components/AISettingsPanel";
 import { AgentPanel } from "./components/AgentPanel";
 import { EmergencyPanel } from "./components/EmergencyPanel";
+import { SurveyPanel } from "./components/SurveyPanel";
 import { OutputConsole } from "./components/OutputConsole";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { AboutModal } from "./components/AboutModal";
@@ -103,7 +104,9 @@ function AppBody() {
               mounts) instead of an outer AnimatePresence that depends on a
               composite key. */}
           <div key={activeTab + ":" + (currentSub || "")}>
-            {activeTab === "emergency" ? (
+            {activeTab === "survey" ? (
+              <SurveyPanel />
+            ) : activeTab === "emergency" ? (
               <EmergencyPanel />
             ) : activeTab === "agent" ? (
               <AgentPanel />

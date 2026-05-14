@@ -527,6 +527,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == "/api/doctor":
             return self._serve_json(self._build_doctor_report())
 
+        # ── /api/survey — live-streaming comprehensive disk survey (plan 0022) ─
+        # Goes BEYOND predefined categories: dynamically crawls the filesystem
+        # for worktrees, stale build artifacts, large node_modules, etc.
+        # Streams SSE: {event:"target", data:{...}} per target found,
+        #              {event:"done",   data:{targets, total_gb}} at end.
+        if path == "/api/survey":
+            return self._stream_survey()
+
         if path == "/api/ai/status":
             providers = _store.list_key_providers() if _db_available() else []
             return self._serve_json({
@@ -850,6 +858,411 @@ class Handler(http.server.BaseHTTPRequestHandler):
             "total_cleanable_gb": round(sum(w["size_gb"] for w in quick_wins), 1),
             "categories_scanned": len(cache),
         }
+
+    # ── /api/survey — plan 0022 ───────────────────────────────────────────────
+    # Comprehensive live-streaming disk survey. Goes beyond predefined categories:
+    # dynamically discovers worktrees, stale build artifacts, large node_modules,
+    # git worktrees, and any other filesystem-level large items.
+    #
+    # Streams SSE so the frontend can show targets as they're found rather than
+    # waiting for a 30-second full crawl to complete:
+    #   {event:"progress", data:{phase, msg}}
+    #   {event:"target",   data:{SurveyTarget}}
+    #   {event:"done",     data:{targets:[], total_gb, elapsed_s}}
+    def _stream_survey(self):
+        import threading
+        import queue as _queue
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+
+        home   = Path.home()
+        t0     = time.time()
+        result_q: _queue.Queue = _queue.Queue()
+
+        # ── Helper: measure a path ────────────────────────────────────────────
+        def _du(p: Path, timeout: int = 8) -> float:
+            """Return on-disk size in GB, or 0 on error / timeout."""
+            try:
+                r = subprocess.run(
+                    ["du", "-sh", str(p)],
+                    capture_output=True, text=True, timeout=timeout,
+                )
+                s = r.stdout.split("\t")[0].strip()
+                if not s or s in ("-", "0"):
+                    return 0.0
+                mult = {"K": 1/1024/1024, "M": 1/1024, "G": 1.0, "T": 1024.0}
+                for suffix, factor in mult.items():
+                    if s.endswith(suffix):
+                        return round(float(s[:-1]) * factor, 2)
+                return round(int(s) / 1024**3, 2)
+            except Exception:
+                return 0.0
+
+        def _emit_target(t: dict):
+            result_q.put(("target", t))
+
+        def _emit_progress(phase: str, msg: str):
+            result_q.put(("progress", {"phase": phase, "msg": msg}))
+
+        # ── Phase 1: Known high-value paths ───────────────────────────────────
+        KNOWN = [
+            {
+                "id": "docker-raw",
+                "label": "Docker disk image (Docker.raw)",
+                "category": "docker",
+                "confidence": "caution",
+                "confidence_label": "Use Docker Desktop or prune — do not delete directly",
+                "notes": (
+                    "Docker.raw is a sparse virtual disk that holds all your images, "
+                    "containers, and volumes. The file may appear 200+ GB but only uses "
+                    "what's allocated inside it. Use `docker system prune -a` or "
+                    "'Reset disk image' in Docker Desktop to reclaim space safely."
+                ),
+                "action": "docker system prune -a --volumes",
+                "action_id": "emergency-docker-prune",
+                "rebuild": "Re-pull images as needed (1–5 min each)",
+                "paths": [
+                    home / "Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw",
+                    home / "Library/Containers/com.docker.docker/Data/vms/0/Docker.raw",
+                ],
+            },
+            {
+                "id": "xcode-deriveddata",
+                "label": "Xcode Build Cache (DerivedData)",
+                "category": "xcode",
+                "confidence": "easy",
+                "confidence_label": "Safe — rebuilds automatically",
+                "notes": "Xcode's scratch pad. Completely safe to delete. One slightly slower build after.",
+                "action": "rm -rf ~/Library/Developer/Xcode/DerivedData/*",
+                "action_id": "emergency-deriveddata",
+                "rebuild": "~30s slower next Xcode build",
+                "paths": [home / "Library/Developer/Xcode/DerivedData"],
+            },
+            {
+                "id": "ios-devicesupport",
+                "label": "Xcode iOS Device Debug Files (iOS DeviceSupport)",
+                "category": "xcode",
+                "confidence": "easy",
+                "confidence_label": "Safe — re-downloads when you plug in a device",
+                "notes": "One folder per iPhone model per iOS version you've ever debugged on. Piles up for years.",
+                "action": "rm -rf ~/Library/Developer/Xcode/'iOS DeviceSupport'/*",
+                "action_id": "emergency-devicesupport",
+                "rebuild": "1–2 min re-download on next device connect",
+                "paths": [home / "Library/Developer/Xcode/iOS DeviceSupport"],
+            },
+            {
+                "id": "xcode-docindex",
+                "label": "Xcode Documentation Index",
+                "category": "xcode",
+                "confidence": "easy",
+                "confidence_label": "Safe — rebuilds on demand",
+                "notes": "Xcode's searchable copy of Apple developer docs. Rebuilds in seconds.",
+                "action_id": "emergency-documentationindex",
+                "action": "rm -rf ~/Library/Developer/Xcode/DocumentationIndex/*",
+                "rebuild": "Seconds on next docs open",
+                "paths": [home / "Library/Developer/Xcode/DocumentationIndex"],
+            },
+            {
+                "id": "cursor-caches",
+                "label": "Cursor IDE Caches",
+                "category": "apps",
+                "confidence": "easy",
+                "confidence_label": "Safe — IDE rebuilds on next launch",
+                "notes": "Code Cache, GPU Cache, CachedData, CachedExtensions. Your settings and extensions stay installed.",
+                "action": "rm -rf ~/Library/'Application Support'/Cursor/'Code Cache'/* ~/Library/'Application Support'/Cursor/GPUCache/* ~/Library/'Application Support'/Cursor/CachedData/*",
+                "rebuild": "~10s slower Cursor launch once",
+                "paths": [
+                    home / "Library/Application Support/Cursor/Code Cache",
+                    home / "Library/Application Support/Cursor/GPUCache",
+                    home / "Library/Application Support/Cursor/CachedData",
+                    home / "Library/Application Support/Cursor/CachedExtensions",
+                    home / "Library/Application Support/Cursor/CachedExtensionVSIXs",
+                    home / "Library/Application Support/Cursor/logs",
+                ],
+            },
+            {
+                "id": "cursor-workspace-state",
+                "label": "Cursor Workspace State History",
+                "category": "apps",
+                "confidence": "check_first",
+                "confidence_label": "Check first — contains session history",
+                "notes": "Workspace state, recent file lists, editor tabs per project. Clearing loses your open-tabs memory across projects.",
+                "action": "rm -rf ~/Library/'Application Support'/Cursor/User/workspaceStorage/*",
+                "rebuild": "Open tabs and recent file lists reset",
+                "paths": [home / "Library/Application Support/Cursor/User/workspaceStorage"],
+            },
+            {
+                "id": "mediaanalysisd",
+                "label": "macOS Photo Recognition Cache",
+                "category": "system",
+                "confidence": "easy",
+                "confidence_label": "Safe — macOS rebuilds in background",
+                "notes": "AI model macOS builds from your Photos library for face/scene recognition. Your photos are untouched.",
+                "action_id": "emergency-mediaanalysisd",
+                "action": "rm -rf ~/Library/Containers/com.apple.mediaanalysisd/Data/Library/* ~/Library/Containers/com.apple.mediaanalysisd/Data/tmp/*",
+                "rebuild": "Face recognition re-learns over hours in background",
+                "paths": [
+                    home / "Library/Containers/com.apple.mediaanalysisd/Data/Library",
+                    home / "Library/Containers/com.apple.mediaanalysisd/Data/tmp",
+                ],
+            },
+            {
+                "id": "pnpm-store",
+                "label": "pnpm Content-Addressable Store",
+                "category": "temp",
+                "confidence": "easy",
+                "confidence_label": "Safe — pnpm rebuilds on next install",
+                "notes": "Run `pnpm store prune` (removes only unreferenced packages). `rm -rf ~/.pnpm-store` nukes everything.",
+                "action": "pnpm store prune",
+                "rebuild": "pnpm re-downloads as packages are needed",
+                "paths": [
+                    home / ".pnpm-store",
+                    home / "Library/pnpm",
+                ],
+            },
+            {
+                "id": "npm-cache",
+                "label": "npm Cache (~/.npm)",
+                "category": "temp",
+                "confidence": "easy",
+                "confidence_label": "Safe — npm rebuilds from registry",
+                "notes": "npm's download cache. `npm cache clean --force` is the safe way.",
+                "action": "npm cache clean --force",
+                "rebuild": "npm re-downloads on next install (slower once)",
+                "paths": [home / ".npm"],
+            },
+            {
+                "id": "homebrew-cache",
+                "label": "Homebrew Cellar + Downloads Cache",
+                "category": "temp",
+                "confidence": "easy",
+                "confidence_label": "Safe — Homebrew re-downloads if needed",
+                "notes": "Old formula versions and downloaded tarballs. Run `brew cleanup -s && brew autoremove`.",
+                "action": "brew cleanup -s && brew autoremove",
+                "rebuild": "Re-download if you need an old version",
+                "paths": [
+                    home / "Library/Caches/Homebrew",
+                    Path("/opt/homebrew/Cellar"),
+                ],
+            },
+            {
+                "id": "generic-cache",
+                "label": "~/.cache (generic tool caches)",
+                "category": "temp",
+                "confidence": "easy",
+                "confidence_label": "Safe — tools rebuild on demand",
+                "notes": "Puppeteer, pip, various CLI tools. All rebuild automatically.",
+                "action": "rm -rf ~/.cache/*",
+                "rebuild": "Tools re-download/re-build caches as needed",
+                "paths": [home / ".cache"],
+            },
+        ]
+
+        def measure_known():
+            _emit_progress("known", "Measuring known cache locations…")
+            for spec in KNOWN:
+                total = 0.0
+                found_path = None
+                for p in spec["paths"]:
+                    if p.exists():
+                        s = _du(p)
+                        total += s
+                        if s > 0 and found_path is None:
+                            found_path = str(p)
+                if total >= 0.05:
+                    t = {k: v for k, v in spec.items() if k != "paths"}
+                    t["size_gb"]   = round(total, 2)
+                    t["path"]      = found_path or str(spec["paths"][0])
+                    t["source"]    = "known"
+                    _emit_target(t)
+        threading.Thread(target=measure_known, daemon=True).start()
+
+        # ── Phase 2: Dynamic discovery ────────────────────────────────────────
+
+        def discover_worktrees():
+            """Find all .claude/worktrees/ directories anywhere under ~."""
+            _emit_progress("worktrees", "Scanning for Claude Code worktrees…")
+            try:
+                r = subprocess.run(
+                    ["find", str(home), "-maxdepth", "7", "-type", "d",
+                     "-name", "worktrees", "-path", "*/.claude/worktrees"],
+                    capture_output=True, text=True, timeout=25,
+                )
+                for line in r.stdout.strip().splitlines():
+                    p = Path(line.strip())
+                    if not p.exists():
+                        continue
+                    size = _du(p, timeout=12)
+                    if size < 0.05:
+                        continue
+                    # Count sub-worktrees
+                    try:
+                        wt_count = sum(1 for _ in p.iterdir() if _.is_dir())
+                    except PermissionError:
+                        wt_count = 0
+                    project = p.parent.parent.name
+                    _emit_target({
+                        "id":               f"worktrees-{project}",
+                        "label":            f"Claude Code worktrees — {project}/",
+                        "path":             str(p),
+                        "size_gb":          size,
+                        "category":         "space-eaters",
+                        "confidence":       "easy",
+                        "confidence_label": "Safe — worktrees are temporary copies",
+                        "notes": (
+                            f"{wt_count} worktree(s) found. Each carries its own node_modules. "
+                            "Merged worktrees are dead weight — `git worktree remove <path>` "
+                            "or `rm -rf` each sub-folder."
+                        ),
+                        "action": f"git -C '{p.parent.parent}' worktree list && echo '---' && du -sh '{p}'/*/ 2>/dev/null | sort -rh | head -10",
+                        "rebuild": "Claude Code recreates worktrees on demand",
+                        "source": "dynamic",
+                    })
+            except Exception:
+                pass
+
+        def discover_build_artifacts():
+            """Find stale .next, .next-local, dist, build folders > 200 MB in ~/Developer."""
+            _emit_progress("builds", "Scanning for stale build artifacts…")
+            dev_dirs = [
+                home / "Developer",
+                home / "Documents",
+                home / "Projects",
+                home / "Code",
+            ]
+            ARTIFACT_NAMES = {".next-local", ".next", "dist", ".build", "build"}
+            for base in dev_dirs:
+                if not base.exists():
+                    continue
+                try:
+                    r = subprocess.run(
+                        ["find", str(base), "-maxdepth", "6", "-type", "d",
+                         "-not", "-path", "*/node_modules/*",
+                         "-not", "-path", "*/.git/*",
+                         "-not", "-path", "*/.claude/worktrees/*"],
+                        capture_output=True, text=True, timeout=20,
+                    )
+                    for line in r.stdout.strip().splitlines():
+                        p = Path(line.strip())
+                        if p.name not in ARTIFACT_NAMES:
+                            continue
+                        size = _du(p, timeout=6)
+                        if size < 0.2:
+                            continue
+                        project = p.parent.name
+                        _emit_target({
+                            "id":               f"build-{project}-{p.name}",
+                            "label":            f"Build artifact: {project}/{p.name}",
+                            "path":             str(p),
+                            "size_gb":          size,
+                            "category":         "temp",
+                            "confidence":       "easy",
+                            "confidence_label": "Safe — rebuilt by next build/deploy",
+                            "notes": (
+                                f"Stale {p.name} output in {project}. "
+                                "Rebuild with `pnpm build` / `next build` when needed."
+                            ),
+                            "action": f"rm -rf '{p}'",
+                            "rebuild": "Next `pnpm build` / `next build`",
+                            "source": "dynamic",
+                        })
+                except Exception:
+                    pass
+
+        def discover_large_node_modules():
+            """Find node_modules > 500 MB outside of predefined categories."""
+            _emit_progress("node_modules", "Scanning for large node_modules…")
+            SKIP_PARENTS = {"worktrees"}  # already covered by discover_worktrees
+            dev_dirs = [home / "Developer", home / "Documents", home / "Projects", home / "Code"]
+            for base in dev_dirs:
+                if not base.exists():
+                    continue
+                try:
+                    r = subprocess.run(
+                        ["find", str(base), "-maxdepth", "6", "-type", "d",
+                         "-name", "node_modules",
+                         "-not", "-path", "*/node_modules/*/node_modules"],
+                        capture_output=True, text=True, timeout=20,
+                    )
+                    for line in r.stdout.strip().splitlines():
+                        p = Path(line.strip())
+                        # Skip if parent is a known worktree dir
+                        if any(part in SKIP_PARENTS for part in p.parts):
+                            continue
+                        size = _du(p, timeout=8)
+                        if size < 0.5:
+                            continue
+                        project = p.parent.name
+                        _emit_target({
+                            "id":               f"nm-{project}",
+                            "label":            f"node_modules — {project}/",
+                            "path":             str(p),
+                            "size_gb":          size,
+                            "category":         "temp",
+                            "confidence":       "check_first",
+                            "confidence_label": "Check first — delete only if project is inactive",
+                            "notes": (
+                                f"node_modules in {project}. "
+                                "If this project is inactive, delete and run `pnpm install` when you return."
+                            ),
+                            "action": f"rm -rf '{p}' && echo 'Run pnpm install to restore'",
+                            "rebuild": "`pnpm install` in the project directory",
+                            "source": "dynamic",
+                        })
+                except Exception:
+                    pass
+
+        # Run dynamic discovery in parallel threads, collect via queue
+        threads = [
+            threading.Thread(target=discover_worktrees, daemon=True),
+            threading.Thread(target=discover_build_artifacts, daemon=True),
+            threading.Thread(target=discover_large_node_modules, daemon=True),
+        ]
+        for th in threads:
+            th.start()
+
+        # ── Drain queue, stream results, wait for all threads ─────────────────
+        all_targets: list[dict] = []
+        deadline = t0 + 60  # max 60s survey
+
+        try:
+            while True:
+                # Check if all threads are done and queue is empty
+                all_done = all(not th.is_alive() for th in threads)
+                try:
+                    kind, data = result_q.get(timeout=0.5)
+                    if kind == "target":
+                        all_targets.append(data)
+                        self._send_sse({"event": "target", "data": data})
+                    elif kind == "progress":
+                        self._send_sse({"event": "progress", "data": data})
+                except _queue.Empty:
+                    pass
+                if all_done and result_q.empty():
+                    break
+                if time.time() > deadline:
+                    break
+
+            # Sort and emit final summary
+            all_targets.sort(key=lambda x: x["size_gb"], reverse=True)
+            status = get_status()
+            self._send_sse({
+                "event": "done",
+                "data": {
+                    "targets":       all_targets,
+                    "total_gb":      round(sum(t["size_gb"] for t in all_targets), 1),
+                    "free_gb":       status["free_gb"],
+                    "total_gb_disk": status["total_gb"],
+                    "elapsed_s":     round(time.time() - t0, 1),
+                    "target_count":  len(all_targets),
+                },
+            })
+        except (BrokenPipeError, ConnectionResetError):
+            return
 
     def _serve_json_status(self, status: int, data: dict):
         body = json.dumps(data, default=str).encode("utf-8")

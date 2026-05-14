@@ -107,6 +107,13 @@ export function SidebarLeft() {
         })}
         {/* SADPA + Emergency + Settings — hard-coded footer, not server-driven */}
         <div className="mt-1.5 border-t border-border/10 pt-1.5 flex flex-col gap-0.5">
+          {/* Space Survey — SADPA's full filesystem crawl */}
+          <SidebarFooterBtn
+            label="📊 Space Survey"
+            active={activeTab === "survey"}
+            onClick={() => setActiveTab("survey")}
+            icon={null}
+          />
           {/* Emergency Rescue — shown prominently; auto-activated by SADPA */}
           <SidebarFooterBtn
             label="🚨 Emergency Rescue"
