@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useDashboard } from "../state/DashboardContext";
 import { streamChat, ChatStreamHandle } from "../lib/streamChat";
 import { cn } from "../lib/utils";
+import { ProposalsInbox } from "./ProposalsInbox";
 
 /**
  * AIAgentChat — Plan 0023.
@@ -53,7 +54,7 @@ const STARTER_PROMPTS = [
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function AIAgentChat() {
-  const { status, aiStatus, setActiveTab } = useDashboard();
+  const { status, aiStatus, setActiveTab, refreshProposalsCount } = useDashboard();
 
   const [turns,    setTurns]    = useState<Turn[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -61,6 +62,7 @@ export function AIAgentChat() {
   const [busy,     setBusy]     = useState(false);
   const [providerInfo, setProviderInfo] = useState<{provider: string; model: string; tool_use_supported?: boolean} | null>(null);
   const [allowSafeAuto, setAllowSafeAuto] = useState(false);
+  const [proposalSignal, setProposalSignal] = useState(0);  // bump → ProposalsInbox reloads
 
   const streamRef    = useRef<ChatStreamHandle | null>(null);
   const pendingMsgs  = useRef<ChatMessage[] | null>(null);
@@ -183,6 +185,11 @@ export function AIAgentChat() {
             ? { ...t, status: data.ok === false ? "error" : "done", result: data.result ?? data }
             : t
         ));
+        // If the AI just persisted a new cleaner proposal, refresh the inbox + sidebar badge
+        if (data.name === "propose_new_cleaner" && data.ok !== false) {
+          setProposalSignal(s => s + 1);
+          refreshProposalsCount();
+        }
         break;
       }
       case "tool_approval_needed": {
@@ -229,7 +236,7 @@ export function AIAgentChat() {
         break;
       }
     }
-  }, []);
+  }, [refreshProposalsCount]);
 
   // Helper — read last streaming assistant text out of state
   const turnsLastAssistantText = useCallback((): string => {
@@ -375,6 +382,9 @@ export function AIAgentChat() {
           )}
         </div>
       </div>
+
+      {/* ── Proposals inbox ── */}
+      <ProposalsInbox refreshSignal={proposalSignal} />
 
       {/* ── Input ── */}
       <form onSubmit={(e) => { e.preventDefault(); send(input); }}
