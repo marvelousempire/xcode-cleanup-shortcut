@@ -477,6 +477,111 @@ def _h_clean_path(args: dict, ctx: dict) -> dict:
     return exec_clean(cid, path)
 
 
+def _h_list_applescript_library(args: dict, ctx: dict) -> dict:
+    """
+    Returns the contents of the applescripts/ library so SADPA knows what
+    already exists before proposing a new script. Reads the docs/ folder
+    and returns one entry per documented script with title, status, type,
+    and the rationale (the "moment that prompted it" section).
+    """
+    repo_root = Path(__file__).resolve().parent.parent
+    docs_dir  = repo_root / "applescripts" / "docs"
+
+    if not docs_dir.exists():
+        return {"library_available": False, "note": "applescripts/docs/ not found"}
+
+    entries = []
+    for f in sorted(docs_dir.glob("*.md")):
+        try:
+            body = f.read_text()
+        except Exception:
+            continue
+        # Pull the title (first # heading)
+        title = f.stem
+        for line in body.splitlines():
+            if line.startswith("# "):
+                title = line[2:].strip()
+                break
+        # Pull the moment/intention section (between "## The moment that prompted it" and the next ##)
+        intent = ""
+        in_intent = False
+        for line in body.splitlines():
+            if line.startswith("## The moment that prompted it"):
+                in_intent = True
+                continue
+            if in_intent:
+                if line.startswith("## "):
+                    break
+                intent += line + "\n"
+        entries.append({
+            "doc":    str(f.relative_to(repo_root)),
+            "title":  title,
+            "intent": intent.strip()[:500],
+        })
+
+    snippets_dir = repo_root / "applescripts" / "snippets"
+    snippets = []
+    if snippets_dir.exists():
+        for f in sorted(snippets_dir.glob("*.md")):
+            try:
+                first_line = f.read_text().splitlines()[0]
+            except Exception:
+                first_line = ""
+            snippets.append({
+                "path":  str(f.relative_to(repo_root)),
+                "title": first_line.lstrip("# ").strip() if first_line.startswith("#") else f.stem,
+            })
+
+    return {
+        "library_available": True,
+        "scripts":   entries,
+        "snippets":  snippets,
+        "philosophy": "Every script in this library uses native macOS UI (display alert, progress, display notification) — never echo/Terminal output. DustPan never runs sudo from a script; it surfaces the command for the user to paste into Terminal.",
+    }
+
+
+def _h_propose_new_applescript(args: dict, ctx: dict) -> dict:
+    """
+    Propose a new AppleScript for the library. Same review-inbox pattern as
+    propose_new_cleaner: never writes to applescripts/ directly; saves a
+    proposal record the user can review and accept.
+    """
+    try:
+        import proposals_store
+    except ImportError:
+        return {"error": "proposals_store module not available"}
+
+    name = (args.get("name") or "").strip()
+    if not name:
+        return {"error": "name is required"}
+    body = (args.get("script_body") or "").strip()
+    if not body:
+        return {"error": "script_body is required (the actual AppleScript code)"}
+    intent = (args.get("intent") or "").strip()
+    if not intent:
+        return {"error": "intent is required (why this script exists, the moment that prompted it)"}
+
+    record = proposals_store.create({
+        "name":                  f"[applescript] {name}",
+        "category_id_suggested": "applescript-library",
+        "rationale":             intent,
+        "cost_to_user":          (args.get("cost") or "User pastes the snippet into applescripts/").strip(),
+        "paths":                 [{
+            "label": args.get("file_name") or f"{name.lower().replace(' ', '-')}.applescript",
+            "path":  body,  # The full script body lives in 'path' for simplicity — snippet generator handles it
+            "tier":  "safe",
+        }],
+        "shell":                 None,  # Not used for AppleScript proposals
+        "source":                "ai-chat-applescript",
+    })
+    return {
+        "ok":          True,
+        "proposal_id": record["id"],
+        "summary":     f"Proposed AppleScript '{name}' filed to review inbox (id {record['id']}).",
+        "ui_hint":     "User can review at the bottom of the Chat with SADPA panel.",
+    }
+
+
 def _h_propose_new_cleaner(args: dict, ctx: dict) -> dict:
     """
     Persist a proposal for a new DustPan cleaner to the review inbox.
@@ -718,6 +823,66 @@ TOOLS: list[dict] = [
         },
         "tier": "B", "requires_approval": True,
         "handler": _h_clean_path,
+    },
+
+    {
+        "name": "list_applescript_library",
+        "description": (
+            "List the AppleScripts in DustPan's library (applescripts/) with each "
+            "script's title and the 'moment that prompted it' rationale. Call this "
+            "BEFORE proposing a new AppleScript so you know what already exists "
+            "and what reusable snippets (native-confirmation, native-progress-bar, "
+            "native-notification, native-clipboard-copy) are available."
+        ),
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+        "tier": "A", "requires_approval": False,
+        "handler": _h_list_applescript_library,
+    },
+    {
+        "name": "propose_new_applescript",
+        "description": (
+            "Propose a NEW AppleScript for DustPan's library — one-tap utilities "
+            "that use native macOS UI (display alert, progress block, system "
+            "notification, choose from list). Use when you spot a recurring task "
+            "the user would benefit from binding to a Shortcut or hotkey. "
+            "Examples of fit: 'show me free space right now', 'one-tap clean of X', "
+            "'show me which Macs on the network have low disk', 'pop a dialog "
+            "asking which Xcode runtime to delete'. \n\n"
+            "Hard rules for any script you propose:\n"
+            "  - Use display alert / display dialog / progress / display notification — never echo to Terminal.\n"
+            "  - NEVER `do shell script ... with administrator privileges` — DustPan does not run sudo.\n"
+            "  - If sudo is needed, show the command via display dialog with a Copy button (see snippets/native-clipboard-copy.md).\n"
+            "  - Include `on run` and end with sensible feedback (alert or notification).\n\n"
+            "Call list_applescript_library first so you can reuse snippets and avoid duplicating existing scripts."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Short human-readable name (e.g. 'Show Xcode Cache Sizes', 'Quick Docker Prune', 'Pick a Simulator to Delete')",
+                },
+                "file_name": {
+                    "type": "string",
+                    "description": "Filename for the script, kebab-case with .applescript extension (e.g. 'show-xcode-cache-sizes.applescript')",
+                },
+                "intent": {
+                    "type": "string",
+                    "description": "Plain-English explanation: why does this script need to exist? What pain or recurring task does it solve? Becomes the 'moment that prompted it' doc section.",
+                },
+                "cost": {
+                    "type": "string",
+                    "description": "What does running this script do? If it deletes something, what rebuilds? Becomes the docstring cost annotation.",
+                },
+                "script_body": {
+                    "type": "string",
+                    "description": "The full AppleScript code. Must include `on run` and use native UI patterns. Reference snippets/native-*.md for reusable patterns.",
+                },
+            },
+            "required": ["name", "intent", "script_body"],
+        },
+        "tier": "B-meta", "requires_approval": False,  # Save-for-review needs no approval — it's just a record
+        "handler": _h_propose_new_applescript,
     },
 
     # ── Tier B-meta: proposes a new cleaner, never auto-executes ──

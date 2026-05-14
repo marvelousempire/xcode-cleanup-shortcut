@@ -75,6 +75,18 @@ check: ## Verify AppleScript, bin/xcc, Python imports, and that every Makefile-r
 	@# Web Python modules import cleanly
 	@cd web && python3 -c "import server, cleaners, ai, agent, agent_tools, agent_chat, proposals_store" \
 		&& echo "✓ Python modules import cleanly"
+	@# Every script in applescripts/ must compile (catches regressions to the library)
+	@if [ -d applescripts ]; then \
+		ok=1; \
+		for f in applescripts/*.applescript; do \
+			if [ -f "$$f" ]; then \
+				osacompile -o /tmp/dustpan-asc-check.scpt "$$f" 2>/dev/null \
+					&& rm -f /tmp/dustpan-asc-check.scpt \
+					|| { echo "✗ AppleScript fails to compile: $$f" >&2; ok=0; }; \
+			fi; \
+		done; \
+		if [ "$$ok" = "1" ]; then echo "✓ AppleScript library compiles"; else exit 1; fi; \
+	fi
 
 history: ## Show the run history log
 	@if [ -f ~/Library/Logs/dustpan.log ]; then \
