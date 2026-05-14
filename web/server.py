@@ -73,6 +73,11 @@ try:
 except ImportError:
     _ai = None  # type: ignore
 
+try:
+    import agent as _agent
+except ImportError:
+    _agent = None  # type: ignore
+
 def _init_store():
     """Pick the best available store. Called once at startup."""
     global _store
@@ -510,6 +515,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._stream_live()
 
         # ── Plan 0006: AI + DB endpoints ──────────────────────────────────
+        # ── /api/ai/diagnose — AI agent diagnosis (plan 0010) ────────────────
+        # Streams SSE: thinking → context → analysis → done
+        if path == "/api/ai/diagnose":
+            return self._stream_diagnose()
+
         # ── /api/doctor — active disk diagnosis (plan 0009) ──────────────────
         # Returns the top safe-tier paths ranked by size across ALL categories
         # that have been scanned this session, plus disk health thresholds.
@@ -762,6 +772,39 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
+
+    def _stream_diagnose(self):
+        """
+        POST /api/ai/diagnose — plan 0010.
+        Streams the agent's thinking, context measurements, and final analysis
+        as SSE frames. Works with or without a configured LLM key.
+        """
+        if _agent is None:
+            return self._serve_json_status(501, {"error": "agent_unavailable",
+                "message": "web/agent.py not found."})
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+
+        # Use AI module only when a key/provider is actually configured.
+        # Falls back to rule-based analysis gracefully when no key is set.
+        ai_module = _ai if (_ai is not None and _ai.has_configured_provider()) else None
+
+        status = get_status()
+        cache  = _get_scan_cache()
+
+        try:
+            for frame in _agent.diagnose(cache, status, ai_module):
+                event_name = frame.get("event", "message")
+                data_str   = json.dumps(frame.get("data", {}))
+                msg = f"event: {event_name}\ndata: {data_str}\n\n"
+                self.wfile.write(msg.encode())
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def _build_doctor_report(self) -> dict:
         """

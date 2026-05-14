@@ -141,6 +141,139 @@ def complete(
     else:
         raise ValueError(f"Unknown format {fmt!r}")
 
+def has_configured_provider() -> bool:
+    """Return True if any AI key or Ollama URL is available."""
+    # Check env vars for keys
+    key_env_vars = ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY",
+                    "GROQ_API_KEY", "PERPLEXITY_API_KEY"]
+    for var in key_env_vars:
+        if os.environ.get(var, "").strip():
+            return True
+    # Check Ollama
+    if os.environ.get("OLLAMA_URL", "").strip():
+        return True
+    # Check DB-stored keys via store module if available
+    try:
+        sys.path.insert(0, os.path.dirname(__file__))
+        import sqlite_store as ss
+        if ss.is_available():
+            keys = ss.list_api_keys()
+            if keys:
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def complete_agent(
+    system: str,
+    user: str,
+    max_tokens: int = 2048,
+    temperature: float = 0.2,
+) -> str:
+    """
+    Higher-level complete() for agent use — takes separate system + user
+    strings, uses a larger token budget, and auto-selects the first
+    configured provider.
+
+    Called from agent.py; the agent passes its own system prompt and
+    full context as the user message.
+    """
+    # Auto-detect first configured provider
+    provider_order = [
+        ("anthropic",  os.environ.get("ANTHROPIC_API_KEY", "")),
+        ("openai",     os.environ.get("OPENAI_API_KEY",    "")),
+        ("gemini",     os.environ.get("GEMINI_API_KEY",    "")),
+        ("groq",       os.environ.get("GROQ_API_KEY",      "")),
+        ("perplexity", os.environ.get("PERPLEXITY_API_KEY","")),
+    ]
+    provider, key = next(
+        ((p, k) for p, k in provider_order if k.strip()),
+        (None, None)
+    )
+
+    # Try DB-stored keys if env vars not set
+    if not provider:
+        try:
+            sys.path.insert(0, os.path.dirname(__file__))
+            import sqlite_store as ss
+            if ss.is_available():
+                for p in ["anthropic", "openai", "gemini", "groq", "perplexity"]:
+                    k = ss.get_api_key(p)
+                    if k:
+                        provider, key = p, k
+                        break
+        except Exception:
+            pass
+
+    # Try Ollama as last resort
+    if not provider:
+        ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+        provider, key = "ollama", ""
+
+    pinfo   = PROVIDERS[provider]
+    model   = pinfo["default_model"]
+    fmt     = pinfo["fmt"]
+    base    = pinfo["base"] or os.environ.get("OLLAMA_URL", "http://localhost:11434")
+
+    # Compose the chat body with the agent's system + user messages
+    if fmt == "anthropic":
+        resp = _post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01",
+            },
+            body={
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "system": system,
+                "messages": [{"role": "user", "content": user}],
+            },
+            timeout=60,
+        )
+        return resp["content"][0]["text"].strip()
+
+    elif fmt == "openai":
+        url = base.rstrip("/") + "/v1/chat/completions"
+        resp = _post(
+            url,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {key}",
+            },
+            body={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user",   "content": user},
+                ],
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            },
+            timeout=60,
+        )
+        return resp["choices"][0]["message"]["content"].strip()
+
+    elif fmt == "gemini":
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent?key={key}"
+        )
+        combined = f"{system}\n\n{user}"
+        resp = _post(
+            url,
+            headers={"Content-Type": "application/json"},
+            body={"contents": [{"parts": [{"text": combined}]}]},
+            timeout=60,
+        )
+        return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+    raise ValueError(f"Unknown format: {fmt!r}")
+
+
 def build_scan_prompt(category: str, scan_result: dict, habit: Optional[dict] = None) -> str:
     """
     Build the structured prompt sent to the AI after a scan.

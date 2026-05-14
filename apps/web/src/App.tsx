@@ -6,6 +6,7 @@ import { SidebarRight } from "./components/SidebarRight";
 import { OverviewPanel } from "./components/OverviewPanel";
 import { CategoryPanel } from "./components/CategoryPanel";
 import { AISettingsPanel } from "./components/AISettingsPanel";
+import { AgentPanel } from "./components/AgentPanel";
 import { OutputConsole } from "./components/OutputConsole";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { AboutModal } from "./components/AboutModal";
@@ -101,7 +102,9 @@ function AppBody() {
               mounts) instead of an outer AnimatePresence that depends on a
               composite key. */}
           <div key={activeTab + ":" + (currentSub || "")}>
-            {activeTab === "settings" ? (
+            {activeTab === "agent" ? (
+              <AgentPanel />
+            ) : activeTab === "settings" ? (
               <AISettingsPanel />
             ) : tab?.meta && tab.id === "overview" ? (
               <OverviewPanel />
@@ -118,7 +121,7 @@ function AppBody() {
               render a second copy at the bottom of the viewport. Settings has
               no terminal. On every other tab, the bottom console is the only
               place output appears. */}
-          {activeTab !== "overview" && activeTab !== "settings" && <OutputConsole />}
+          {activeTab !== "overview" && activeTab !== "settings" && activeTab !== "agent" && <OutputConsole />}
         </main>
 
         {hasSub ? <SidebarRight /> : null}

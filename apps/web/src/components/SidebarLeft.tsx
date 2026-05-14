@@ -104,8 +104,26 @@ export function SidebarLeft() {
             </button>
           );
         })}
-        {/* AI & Settings entry — hard-coded footer, not server-driven */}
-        <div className="mt-1.5 border-t border-border/10 pt-1.5">
+        {/* AI Agent + Settings entries — hard-coded footer, not server-driven */}
+        <div className="mt-1.5 border-t border-border/10 pt-1.5 flex flex-col gap-0.5">
+          {/* AI Diagnosis Agent — primary AI entry point */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("agent")}
+            className={cn(
+              "flex w-full items-center gap-2.5 rounded-md border-l-[3px] border-transparent px-3 py-2.5 pl-[11px] text-left text-[13px] font-semibold transition-colors",
+              activeTab === "agent"
+                ? "text-accent-strong border-l-accent"
+                : "text-fg-dim hover:bg-bg-3 hover:text-fg",
+            )}
+            style={activeTab === "agent" ? { background: "hsl(var(--accent) / 0.10)" } : undefined}
+          >
+            <Sparkles
+              className={cn("h-4 w-4 flex-shrink-0", activeTab === "agent" ? "text-accent" : "text-fg-faint")}
+            />
+            <span className="flex-1 truncate">AI Diagnose</span>
+          </button>
+          {/* Settings */}
           <button
             type="button"
             onClick={() => setActiveTab("settings")}
@@ -117,10 +135,13 @@ export function SidebarLeft() {
             )}
             style={activeTab === "settings" ? { background: "hsl(var(--accent) / 0.10)" } : undefined}
           >
-            <Sparkles
-              className={cn("h-4 w-4 flex-shrink-0", activeTab === "settings" ? "text-accent" : "text-fg-faint")}
-            />
-            <span className="flex-1 truncate">AI & Settings</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}
+              strokeLinecap="round" strokeLinejoin="round" aria-hidden
+              className={cn("h-4 w-4 flex-shrink-0", activeTab === "settings" ? "text-accent" : "text-fg-faint")}>
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span className="flex-1 truncate">Settings</span>
           </button>
         </div>
 
