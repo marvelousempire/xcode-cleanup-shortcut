@@ -159,6 +159,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     api.report().then(setHistory).catch(() => {});
   }, []);
 
+  // Auto-scan on startup when disk is critically low (< 10 GB free).
+  // This ensures the RescueBanner, QuickWins, and DiskAlarmBar have real data
+  // immediately — without waiting for the user to click "Scan everything".
+  const autoScannedRef = useRef(false);
+  useEffect(() => {
+    if (!status || autoScannedRef.current) return;
+    if (status.free_gb < 10) {
+      autoScannedRef.current = true;
+      // Small delay so the UI has time to paint first.
+      setTimeout(() => void scanEverythingRef.current?.(), 800);
+    }
+  }, [status]);
+
   // Plan 0006: load AI status + habits on mount. Both are soft — failures are silent.
   useEffect(() => {
     api.aiStatus().then(setAiStatus).catch(() => {});

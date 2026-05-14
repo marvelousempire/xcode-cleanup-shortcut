@@ -18,13 +18,19 @@ export function Hero({ status, embedded = false }: Props) {
   const used = status?.used_gb ?? 0;
   const pct = status?.used_pct ?? 0;
 
+  // 5-tier urgency scale — calibrated so 0.67 GB free looks completely
+  // different from 15 GB free (previously both landed in "danger").
   const tier = !status
     ? "loading"
     : free >= 50
-      ? "good"
+      ? "good"          // green  ≥ 50 GB
       : free >= 20
-        ? "warn"
-        : "danger";
+        ? "ok"          // normal 20–50 GB
+        : free >= 10
+          ? "warn"      // yellow 10–20 GB
+          : free >= 5
+            ? "critical"  // orange 5–10 GB
+            : "emergency"; // red + pulse < 5 GB
 
   // Tween the displayed free-GB number.
   const heroValue = useMotionValue(free);
@@ -51,8 +57,10 @@ export function Hero({ status, embedded = false }: Props) {
           "font-bold leading-none tabular tracking-[-0.04em] transition-colors",
           embedded ? "text-[56px]" : "text-[80px]",
           tier === "good" && "text-safe",
+          tier === "ok" && "text-fg",
           tier === "warn" && "text-warn",
-          tier === "danger" && "text-danger",
+          tier === "critical" && "text-[hsl(var(--warn))]",
+          tier === "emergency" && "text-danger animate-pulse",
           tier === "loading" && "text-fg-faint",
         )}
       >
@@ -81,7 +89,11 @@ export function Hero({ status, embedded = false }: Props) {
         <motion.div
           className={cn(
             "h-full",
-            tier === "warn" ? "bg-warn" : tier === "danger" ? "bg-danger" : "bg-accent",
+            tier === "warn" ? "bg-warn"
+          : tier === "critical" ? "bg-[hsl(var(--warn))]"
+          : tier === "emergency" ? "bg-danger"
+          : tier === "good" ? "bg-safe"
+          : "bg-accent",
           )}
           initial={{ width: "0%" }}
           animate={{ width: widthPct + "%" }}
