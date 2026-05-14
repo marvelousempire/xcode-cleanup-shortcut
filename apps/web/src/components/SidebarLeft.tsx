@@ -1,5 +1,6 @@
+import type { ReactNode } from "react";
 import { useDashboard } from "../state/DashboardContext";
-import { TabIcon, Settings, Sparkles } from "./icons";
+import { TabIcon, Sparkles } from "./icons";
 import { ThemeToggle } from "./ThemeToggle";
 import { cn, fmt } from "../lib/utils";
 
@@ -104,9 +105,16 @@ export function SidebarLeft() {
             </button>
           );
         })}
-        {/* AI Agent + Settings entries — hard-coded footer, not server-driven */}
+        {/* SADPA + Emergency + Settings — hard-coded footer, not server-driven */}
         <div className="mt-1.5 border-t border-border/10 pt-1.5 flex flex-col gap-0.5">
-          {/* AI Diagnosis Agent — primary AI entry point */}
+          {/* Emergency Rescue — shown prominently; auto-activated by SADPA */}
+          <SidebarFooterBtn
+            label="🚨 Emergency Rescue"
+            active={activeTab === "emergency"}
+            onClick={() => setActiveTab("emergency")}
+            icon={null}
+          />
+          {/* Smart Auto-Detector Protector Agent (SADPA) */}
           <button
             type="button"
             onClick={() => setActiveTab("agent")}
@@ -121,7 +129,7 @@ export function SidebarLeft() {
             <Sparkles
               className={cn("h-4 w-4 flex-shrink-0", activeTab === "agent" ? "text-accent" : "text-fg-faint")}
             />
-            <span className="flex-1 truncate">AI Diagnose</span>
+            <span className="flex-1 truncate">SADPA Agent</span>
           </button>
           {/* Settings */}
           <button
@@ -160,6 +168,33 @@ export function SidebarLeft() {
 // 16x16 inline donut showing safe/opt-in/caution split for a tab (elevation H).
 // Hidden when the tab has no scanned data so first-load doesn't show six grey
 // rings before any data is back. Three stroke-dasharray segments around r=13.
+/** Simple footer button for non-category tabs (Emergency, SADPA, Settings). */
+function SidebarFooterBtn({
+  label, active, onClick, icon,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  icon: ReactNode | null;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-md border-l-[3px] border-transparent px-3 py-2.5 pl-[11px] text-left text-[13px] font-semibold transition-colors",
+        active
+          ? "text-accent-strong border-l-accent"
+          : "text-fg-dim hover:bg-bg-3 hover:text-fg",
+      )}
+      style={active ? { background: "hsl(var(--accent) / 0.10)" } : undefined}
+    >
+      {icon}
+      <span className="flex-1 truncate">{label}</span>
+    </button>
+  );
+}
+
 function MiniDonut({ sums }: { sums: { safe: number; optin: number; caution: number } }) {
   const { safe, optin, caution } = sums;
   const total = safe + optin + caution;
