@@ -1,5 +1,5 @@
 #!/bin/bash
-# Xcode Cleanup — pure shell version for SSH / headless / non-interactive contexts.
+# DustPan — pure shell version for SSH / headless / non-interactive contexts.
 # Writes only to stdout; no `display alert`, no `display notification`, no progress bar.
 #
 # Usage (local):
@@ -9,15 +9,15 @@
 #   bash <(curl -fsSL https://raw.githubusercontent.com/marvelousempire/xcode-cleanup-shortcut/main/scripts/remote-cleanup.sh)
 #
 # Environment overrides:
-#   XCODE_CLEANUP_DRY_RUN=1       Measure only; don't delete
-#   XCODE_CLEANUP_FORCE=1         Skip the >50 GB threshold gate
-#   XCODE_CLEANUP_TMP_PATTERNS    Override the /tmp orphan globs (default empty for safety)
+#   DUSTPAN_DRY_RUN=1       Measure only; don't delete
+#   DUSTPAN_FORCE=1         Skip the >50 GB threshold gate
+#   DUSTPAN_TMP_PATTERNS    Override the /tmp orphan globs (default empty for safety)
 
 set -u
 
 # Parse flags
-DRY_RUN=${XCODE_CLEANUP_DRY_RUN:-0}
-FORCE=${FORCE:-${XCODE_CLEANUP_FORCE:-0}}
+DRY_RUN=${DUSTPAN_DRY_RUN:-0}
+FORCE=${FORCE:-${DUSTPAN_FORCE:-0}}
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
@@ -88,14 +88,14 @@ if [ "$DRY_RUN" != "1" ]; then
 fi
 
 # Optional /tmp patterns
-if [ -n "${XCODE_CLEANUP_TMP_PATTERNS:-}" ]; then
-  size_kb=$(eval "du -sk $XCODE_CLEANUP_TMP_PATTERNS 2>/dev/null" | awk '{s+=$1} END {print s+0}')
+if [ -n "${DUSTPAN_TMP_PATTERNS:-}" ]; then
+  size_kb=$(eval "du -sk $DUSTPAN_TMP_PATTERNS 2>/dev/null" | awk '{s+=$1} END {print s+0}')
   total_measured_kb=$((total_measured_kb + size_kb))
   if [ "$DRY_RUN" = "1" ]; then
     printf "  [measure] %-30s %s\n" "/tmp orphans" "${size_kb} KB"
   else
     printf "  [clean]   %-30s … " "/tmp orphans"
-    eval "rm -rf $XCODE_CLEANUP_TMP_PATTERNS 2>/dev/null" || true
+    eval "rm -rf $DUSTPAN_TMP_PATTERNS 2>/dev/null" || true
     printf "done\n"
   fi
 fi
@@ -117,6 +117,6 @@ else
     before_gb=$(awk "BEGIN { printf \"%.1f\", $free_kb / 1024 / 1024 }")
     after_gb=$(awk "BEGIN { printf \"%.1f\", $after_kb / 1024 / 1024 }")
     echo "${ts},real-ssh,${freed_gb},${before_gb},${after_gb}" \
-      >> "$HOME/Library/Logs/xcode-cleanup-history.csv"
+      >> "$HOME/Library/Logs/dustpan-history.csv"
   fi
 fi

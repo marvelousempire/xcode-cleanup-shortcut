@@ -105,7 +105,7 @@
 | "What if it deletes something I need?" | Read the source — 150 lines of AppleScript. Or run `--dry-run` first. The script never touches Archives, never touches active simulators, never touches project files. |
 | "I don't want a background process eating CPU." | All automation is opt-in. The base install is a manual Shortcut. The launchd agent (when you opt in) sleeps until the hour boundary and no-ops if disk is healthy. |
 | "Won't this break my Xcode?" | DerivedData and DeviceSupport are *designed* to be regenerated on next build/device-connect. The first build after cleanup takes ~30 sec longer; nothing else is affected. |
-| "Why should I trust a random GitHub repo?" | You shouldn't. Read the script first. It's `xcode-cleanup.applescript`, ~150 lines, one screen of code. |
+| "Why should I trust a random GitHub repo?" | You shouldn't. Read the script first. It's `dustpan.applescript`, ~150 lines, one screen of code. |
 
 **Anti-persona (people we are NOT for):**
 - **Non-Xcode developers** — the script targets Xcode-specific paths. Useless if you're a pure web dev / Windows / Linux.

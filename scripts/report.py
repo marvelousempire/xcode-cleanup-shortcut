@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Print a sparkline of freed disk space across recent xcode-cleanup runs.
+"""Print a sparkline of freed disk space across recent DustPan runs.
 
-Reads ~/Library/Logs/xcode-cleanup-history.csv (one row per run, written by
-xcode-cleanup.applescript) and renders a Unicode block sparkline.
+Reads ~/Library/Logs/dustpan-history.csv (one row per run, written by
+dustpan.applescript) and renders a Unicode block sparkline.
 """
 import csv
 import sys
 from pathlib import Path
 
-CSV = Path.home() / "Library/Logs/xcode-cleanup-history.csv"
+CSV = Path.home() / "Library/Logs/dustpan-history.csv"
 
 if not CSV.exists() or CSV.stat().st_size == 0:
     print("No history yet. Run cleanup at least once (e.g. `make run` or `xcc`).")
@@ -41,7 +41,7 @@ spark = "".join(blocks[int((v - mn) / rng * (len(blocks) - 1))] for v in vals)
 total_freed = sum(r["freed"] for r in real_runs)
 avg_freed = total_freed / len(real_runs)
 
-print(f"Xcode Cleanup history — last {len(vals)} real runs")
+print(f"DustPan history — last {len(vals)} real runs")
 print(f"  freed:  {spark}")
 print(f"          min {mn:.1f} GB · max {mx:.1f} GB · avg {avg_freed:.1f} GB")
 print(f"  total reclaimed: {total_freed:.1f} GB across {len(real_runs)} runs")

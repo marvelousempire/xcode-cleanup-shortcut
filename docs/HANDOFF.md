@@ -94,12 +94,12 @@ These were retrofitted in v0.9.0. From v0.9.0 onward, every change has followed 
 
 | Path | Purpose |
 |---|---|
-| **`xcode-cleanup.applescript`** | The original product — the AppleScript that the Apple Shortcut runs. Native progress bar + macOS notifications. ~250 lines. |
+| **`dustpan.applescript`** | The original product — the AppleScript that the Apple Shortcut runs. Native progress bar + macOS notifications. ~250 lines. |
 | **`scripts/remote-cleanup.sh`** | Pure-shell version for SSH / headless / CI. No UI. Same cleanup logic. |
-| **`scripts/report.py`** | Reads `~/Library/Logs/xcode-cleanup-history.csv` → renders Unicode-block sparkline. Powers `make report` and `xcc --report`. |
+| **`scripts/report.py`** | Reads `~/Library/Logs/dustpan-history.csv` → renders Unicode-block sparkline. Powers `make report` and `xcc --report`. |
 | **`bin/xcc`** | CLI wrapper. `make install-cli` symlinks to `~/.local/bin/xcc`. |
-| **`launchd/com.marvelousempire.xcode-cleanup.plist`** | Hourly background-cleanup LaunchAgent. `make install-launchd`. |
-| **`swiftbar/xcode-cleanup.30m.sh`** | SwiftBar menu-bar plugin. Click to clean. |
+| **`launchd/com.marvelousempire.dustpan.plist`** | Hourly background-cleanup LaunchAgent. `make install-launchd`. |
+| **`swiftbar/dustpan.30m.sh`** | SwiftBar menu-bar plugin. Click to clean. |
 | **`web/server.py`** | Localhost-only Python HTTP server. Stdlib only — no pip. Routes `/api/category/<id>/{scan,actions}`, `/api/run`, `/api/clean-path`, `/api/clean-all-safe`, `/api/clean-everything`, `/api/status`, `/api/changelog`, `/api/report`. SSE streams for cleanup output. Dynamic port discovery (falls back from 8765). Parallel `du` via ThreadPoolExecutor. |
 | **`web/cleaners.py`** | **Single source of truth** for what gets cleaned. ~70 path definitions across 6 categories, each with a cost annotation. Add a new cleanup phase here and the UI / CLI / launchd all pick it up. |
 | **`web/index.html`** | The dashboard. Tabbed UI, frosted-glass cards, SSE streaming output, version badge that reads from CHANGELOG, click-to-open changelog modal. Vanilla JS, system fonts, dark-mode auto via `prefers-color-scheme`. |
@@ -149,7 +149,7 @@ These were retrofitted in v0.9.0. From v0.9.0 onward, every change has followed 
 2. **Edit. Test. Commit by explicit path.** (Never `git add -A`.)
 3. **CHANGELOG entry in the same commit.** New section in `docs/CHANGELOG.md` with the canonical header (Eastern timestamp + tagline).
 4. **If a feature changes status**: update `docs/Feature Ledger.md`. If anything took longer than expected: add an `Issue-Log.md` entry.
-5. **Bump `property kVersion`** in `xcode-cleanup.applescript` if the version changed. (UI badge reads from CHANGELOG live, so don't forget the CHANGELOG.)
+5. **Bump `property kVersion`** in `dustpan.applescript` if the version changed. (UI badge reads from CHANGELOG live, so don't forget the CHANGELOG.)
 6. **Push the branch, open a PR.** Use `vX.Y.Z: <tagline>` as the PR title — this is what triggers auto-release on merge.
 7. **Wait for CI** (~10 seconds).
 8. **`cd` to main checkout, then `gh pr merge <N> --squash --delete-branch`.** Never merge from inside the branch directory (per `dev-discipline`).

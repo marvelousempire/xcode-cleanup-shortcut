@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.marvelousempire.xcode-cleanup</string>
+    <string>com.marvelousempire.dustpan</string>
 
     <key>ProgramArguments</key>
     <array>
@@ -13,9 +13,9 @@
 
     <key>EnvironmentVariables</key>
     <dict>
-        <key>XCODE_CLEANUP_AUTO_CONFIRM</key>
+        <key>DUSTPAN_AUTO_CONFIRM</key>
         <string>1</string>
-        <key>XCODE_CLEANUP_NO_UPDATE_CHECK</key>
+        <key>DUSTPAN_NO_UPDATE_CHECK</key>
         <string>1</string>
     </dict>
 
@@ -29,9 +29,9 @@
     <false/>
 
     <key>StandardOutPath</key>
-    <string>/tmp/xcode-cleanup.out.log</string>
+    <string>/tmp/dustpan.out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/tmp/xcode-cleanup.err.log</string>
+    <string>/tmp/dustpan.err.log</string>
 </dict>
 </plist>

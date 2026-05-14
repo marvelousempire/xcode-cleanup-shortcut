@@ -117,7 +117,7 @@ I built a free Xcode disk-cleanup Shortcut after fat-fingering my Archives once.
 > - **Never** touches Archives or active simulators
 > - Threshold-gated — silent when disk is healthy
 > - `--dry-run` measures what cleanup would free without deleting
-> - Per-run history in `~/Library/Logs/xcode-cleanup-history.csv`
+> - Per-run history in `~/Library/Logs/dustpan-history.csv`
 >
 > **How you install it (pick one or stack them):**
 > - Apple Shortcut (menu bar, hotkey, schedulable)
@@ -295,7 +295,7 @@ Re-launch budget: **one full retry, 30 days out.** After that, accept the result
 | **D+3** | Audit feedback themes. Group by: (a) missing features people want, (b) confusing parts of the docs, (c) edge cases not covered. Open issues for each cluster. |
 | **D+4** | Address the top 3 doc-clarity issues (low-hanging fruit). Ship as v0.5.0 with CHANGELOG entry. |
 | **D+5** | If a Show HN clone-post lands on a related topic (e.g. someone posts "Show HN: My macOS cache cleaner"), comment with a link to xcode-cleanup-shortcut as a related project. Only if genuinely relevant. |
-| **D+6** | Reach out to one iOSDevWeekly-style newsletter with a brief submission. Subject: "Submission for an upcoming issue: free Xcode cleanup tool [link]" + 2-sentence pitch. |
+| **D+6** | Reach out to one iOSDevWeekly-style newsletter with a brief submission. Subject: "Submission for an upcoming issue: free DustPan disk cleaner [link]" + 2-sentence pitch. |
 | **D+7** | Decide: keep promoting (re-launch in 30d for v1.0)? Shift to feature work? Audit star/install growth. |
 
 ---
