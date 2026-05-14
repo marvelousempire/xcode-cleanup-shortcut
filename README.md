@@ -732,8 +732,17 @@ Every cleanup action is defined in [`web/cleaners.py`](./web/cleaners.py). Every
 
 ## 📦 What's in the box
 
-| Feature | What it does |
-|---|---|
+> **📚 Want a deep-dive on any one feature?** See [`docs/marketing/`](./docs/marketing/) — every shipped feature lives in its own Markdown file with the problem, the solution, mockups, paste-ready channel copy, and FAQs. Start with the [index](./docs/marketing/README.md).
+
+| Feature | What it does | Deep-dive |
+|---|---|---|
+| 💬 **Chat with SADPA** | Conversational AI agent with tool-calling — BYO Anthropic or OpenAI key | [chat-with-sadpa.md](./docs/marketing/chat-with-sadpa.md) |
+| 🔒 **Locked-space recovery** | Finds disk space owned by previous Mac users (Homebrew, old /Users/<name>) | [locked-space-recovery.md](./docs/marketing/locked-space-recovery.md) |
+| 🚨 **Emergency Rescue** | Disk-at-zero rescue panel with live in-app terminal | [emergency-rescue.md](./docs/marketing/emergency-rescue.md) |
+| 📊 **Space Survey** | Live-streaming filesystem crawl beyond predefined categories | [space-survey.md](./docs/marketing/space-survey.md) |
+| 📋 **AI cleaner proposals** | SADPA proposes new cleaners → paste-ready Python snippets | [cleaner-proposals.md](./docs/marketing/cleaner-proposals.md) |
+| 💬 **Cost annotations everywhere** | Every cleanup tells you what you'll lose before you click | [every-cleanup-tells-you-the-cost.md](./docs/marketing/every-cleanup-tells-you-the-cost.md) |
+| 🧹 **The original Xcode pitch** | The 150-line AppleScript that started it all | [the-original-pitch.md](./docs/marketing/the-original-pitch.md) |
 | 🥧 **Live disk pie chart** | A donut that shows where your gigabytes are going. Each slice is one category. Click a slice → jump to that category. Updates every time you scan. |
 | 📊 **Hero free-space counter** | The big GB-free number at the top updates in real time. If anything outside Dustpan frees disk (like Time Machine, or you deleting a file in Finder), the number ticks immediately. |
 | 🪟 **Three dashboard versions** | The main one (built with React), a simpler vanilla one, and an experimental Next.js one. All run from the same Python server. |
