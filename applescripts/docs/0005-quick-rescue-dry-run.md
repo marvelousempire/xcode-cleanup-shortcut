@@ -1,3 +1,14 @@
+---
+name: 0005-quick-rescue-dry-run
+id: DS-0005
+hash: c0964d4
+keywords: [measure-space, preview-cleanup, check-savings]
+relations: []
+before: []
+governed_by: [global]
+meta: dynamic
+---
+
 # 0005 — Quick Rescue (Dry Run)
 
 **File:** [`applescripts/quick-rescue-dry-run.applescript`](../quick-rescue-dry-run.applescript)

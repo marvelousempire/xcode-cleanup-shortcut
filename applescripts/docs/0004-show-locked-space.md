@@ -1,3 +1,14 @@
+---
+name: 0004-show-locked-space
+id: DS-0004
+hash: c2ee718
+keywords: [scan-ownership, copy-command, unlock-space]
+relations: []
+before: []
+governed_by: [global]
+meta: dynamic
+---
+
 # 0004 — Show Locked Space (foreign-ownership recovery)
 
 **File:** [`applescripts/show-locked-space.applescript`](../show-locked-space.applescript)

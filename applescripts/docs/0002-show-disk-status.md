@@ -1,3 +1,14 @@
+---
+name: 0002-show-disk-status
+id: DS-0002
+hash: 3f6f1a3
+keywords: [show-disk, check-health, open-dashboard]
+relations: []
+before: []
+governed_by: [global]
+meta: dynamic
+---
+
 # 0002 — Show Disk Status
 
 **File:** [`applescripts/show-disk-status.applescript`](../show-disk-status.applescript)

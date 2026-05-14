@@ -1,3 +1,14 @@
+---
+name: 0001-dustpan-main
+id: DS-0001
+hash: e5aac88
+keywords: [run-cleanup, free-space, show-progress]
+relations: []
+before: []
+governed_by: [global]
+meta: dynamic
+---
+
 # 0001 — DustPan main cleanup
 
 **File:** [`/dustpan.applescript`](../../dustpan.applescript) (lives at repo root, not inside `applescripts/`)

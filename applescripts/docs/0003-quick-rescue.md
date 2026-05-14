@@ -1,3 +1,14 @@
+---
+name: 0003-quick-rescue
+id: DS-0003
+hash: 489d718
+keywords: [run-rescue, free-space, show-results]
+relations: []
+before: []
+governed_by: [global]
+meta: dynamic
+---
+
 # 0003 — Quick Rescue
 
 **File:** [`applescripts/quick-rescue.applescript`](../quick-rescue.applescript)
