@@ -129,7 +129,13 @@ CATEGORIES = {
             ],
             "probably_safe": [
                 ("Claude Code session transcripts",   "~/.claude/projects"),
-                ("Claude Desktop app state",          "~/Library/Application Support/Claude"),
+                # Claude Desktop app support — cache subdirs only (NOT the whole dir).
+                # ~/Library/Application Support/Claude contains user auth tokens and
+                # app-level settings. We scope to the safe cache subdirectories only.
+                ("Claude Desktop GPU cache",          "~/Library/Application Support/Claude/GPUCache"),
+                ("Claude Desktop code cache",         "~/Library/Application Support/Claude/Code Cache"),
+                ("Claude Desktop HTTP cache",         "~/Library/Application Support/Claude/Cache"),
+                ("Claude Desktop crash reports",      "~/Library/Application Support/Claude/Crashpad"),
             ],
             "caution": [
                 ("Claude Code config + settings",     "~/.claude/settings.json"),
@@ -226,7 +232,11 @@ CATEGORIES = {
                 ("ChatGPT logs",         "~/Library/Logs/com.openai.chat"),
             ],
             "probably_safe": [
-                ("ChatGPT app state",    "~/Library/Application Support/com.openai.chat"),
+                # Scoped to cache subdirs only — the parent com.openai.chat dir
+                # contains conversation data and user auth state. Never wipe it whole.
+                ("ChatGPT GPU cache",    "~/Library/Application Support/com.openai.chat/GPUCache"),
+                ("ChatGPT code cache",   "~/Library/Application Support/com.openai.chat/Code Cache"),
+                ("ChatGPT HTTP cache",   "~/Library/Application Support/com.openai.chat/Cache"),
             ],
             "caution": [],
         },
@@ -490,11 +500,20 @@ CATEGORIES = {
         "tagline": "Render files, optimized media, backups.",
         "groups": {
             "safe": [
+                # com.apple.FinalCut in Caches is render/thumbnail cache — safe.
                 ("Final Cut Pro caches",                   "~/Library/Caches/com.apple.FinalCut"),
-                ("Final Cut Pro app state",                "~/Library/Application Support/Final Cut Pro"),
+                # Motion + Compressor cache — safe, rebuilds automatically.
                 ("Motion templates cache",                 "~/Library/Caches/com.apple.motion"),
                 ("Compressor caches",                      "~/Library/Caches/com.apple.compressor"),
+                # FCP thumbnail + waveform analysis cache (inside app support but NOT the library).
+                ("Final Cut Pro analysis files",           "~/Library/Application Support/Final Cut Pro/Thumbnail"),
+                ("Final Cut Pro waveform cache",           "~/Library/Application Support/Final Cut Pro/Waveform Cache"),
             ],
+            # ⚠️  REMOVED from safe: "~/Library/Application Support/Final Cut Pro" (the entire
+            # directory). That path contains user library references, Motion project settings,
+            # and event data. Deleting it wipes Final Cut Pro's project memory. It does NOT
+            # belong in the safe tier. The actual render files live inside .fcpbundle packages
+            # (handled by the "Clear render files" action below) — those are never auto-deleted.
             "probably_safe": [
                 # Final Cut renders + optimized media live INSIDE the .fcpbundle library,
                 # which is a user-managed file (could be on external storage). Per-library
@@ -603,9 +622,13 @@ CATEGORIES = {
                 ("Blender crash dumps",                    "~/Library/Logs/Blender"),
             ],
             "probably_safe": [
-                # Blender stores Cycles bakes + render caches in per-version dirs.
-                # Wildcard at scan time so 4.0 / 4.1 / etc. all get measured together.
-                ("Blender per-version caches",             "~/Library/Application Support/Blender"),
+                # Blender stores Cycles bakes + render caches inside per-version dirs.
+                # ⚠️  We scan the top-level Blender dir for visibility, but the clean
+                # action (below) ONLY removes the cache/ subfolder in each version —
+                # never addons/, scripts/, or config/ (user preferences). Do NOT point
+                # this path at the whole ~/Library/Application Support/Blender tree and
+                # mark it safe — that would erase user addons and key bindings.
+                ("Blender Cycles render cache",            "~/Library/Application Support/Blender"),
             ],
             "caution": [
                 # User scripts + addons in the same Application Support tree.
@@ -726,9 +749,15 @@ CATEGORIES = {
                 ("Cursor cache",                            "~/Library/Application Support/Cursor/Cache"),
                 ("Cursor CachedData",                       "~/Library/Application Support/Cursor/CachedData"),
 
-                # Figma desktop caches document previews, fonts, and asset tiles
-                # — can easily reach 2–5 GB on an active design machine.
-                ("Figma cache",                             "~/Library/Application Support/Figma"),
+                # Figma desktop caches document previews, fonts, and asset tiles.
+                # ⚠️  We intentionally scope these to cache subdirs, NOT the parent
+                # ~/Library/Application Support/Figma — that directory contains user
+                # settings (plugins, key bindings, account state) which must be preserved.
+                ("Figma GPU cache",                         "~/Library/Application Support/Figma/GPUCache"),
+                ("Figma code cache",                        "~/Library/Application Support/Figma/Code Cache"),
+                ("Figma HTTP cache",                        "~/Library/Application Support/Figma/Cache"),
+                ("Figma Crashpad reports",                  "~/Library/Application Support/Figma/Crashpad"),
+                ("Figma logs",                              "~/Library/Application Support/Figma/logs"),
 
                 # ── Homebrew ──────────────────────────────────────────────
                 ("Homebrew downloads cache",                "~/Library/Caches/Homebrew/downloads"),
@@ -738,14 +767,16 @@ CATEGORIES = {
                 # loses workspace-level settings but not your code or extensions.
                 ("VS Code workspace storage",               "~/Library/Application Support/Code/User/workspaceStorage"),
                 ("VS Code cached extension VSIXs",          "~/Library/Application Support/Code/CachedExtensionVSIXs"),
-
-                # WhatsApp / Signal store received media. Re-downloadable from chat
-                # history, but clears local copies of photos/videos.
-                ("WhatsApp media",                          "~/Library/Application Support/WhatsApp"),
+                # Signal attachments — received photos/videos stored locally. Messages
+                # remain in Signal (server-synced). Only local copies are removed.
                 ("Signal attachments",                      "~/Library/Application Support/Signal/attachments.noindex"),
             ],
             "caution": [
                 ("Mail downloads (user data)",  "~/Library/Containers/com.apple.mail/Data/Library/Mail Downloads"),
+                # WhatsApp stores the ENTIRE local database here, not just media —
+                # messages, contacts, settings. Cleaning this is destructive.
+                # Surface it so users can see the size; never auto-clean.
+                ("WhatsApp local database + media",         "~/Library/Application Support/WhatsApp"),
             ],
         },
         "actions": {
@@ -834,6 +865,17 @@ CATEGORIES = {
                 # It contains Finder sidebar favorites (FavoriteItems.sfl3) and clearing it
                 # wipes the user's sidebar. Moved to caution-only; do not auto-clean.
                 ("DiagnosticReports",                   "~/Library/Logs/DiagnosticReports"),
+
+                # macOS Media Analysis daemon — builds face recognition + scene analysis
+                # models from your Photos library. Entirely safe to clear; macOS re-builds
+                # it in the background. Can reach 2–5 GB on an active Photos library.
+                # Found 3.6 GB on a test machine where DustPan was reporting no savings.
+                ("macOS media analysis cache",          "~/Library/Containers/com.apple.mediaanalysisd/Data/Library"),
+                ("macOS media analysis tmp",            "~/Library/Containers/com.apple.mediaanalysisd/Data/tmp"),
+
+                # Photo library analysis and geoservices caches — auto-rebuilds.
+                ("Photos analysis cache",               "~/Library/Containers/com.apple.photoanalysisd"),
+                ("Geo / maps cache",                    "~/Library/Containers/com.apple.geod"),
             ],
             "probably_safe": [
                 # /Applications and ~/Library/Logs are intentionally not measured here —
