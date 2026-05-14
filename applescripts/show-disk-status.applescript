@@ -38,10 +38,25 @@ on run
 		set healthLine to "Healthy"
 	end if
 
+	-- v0.27 enhancement: when the DustPan dashboard is running, fetch the doctor
+	-- report and inline the top 3 quick-wins so the dialog tells you what to
+	-- clean, not just how full the disk is.
+	set quickWinsBlock to ""
+	try
+		set doctorJSON to do shell script "curl -s --max-time 2 http://127.0.0.1:8765/api/doctor"
+		if doctorJSON is not "" and doctorJSON does not start with "<" then
+			-- crude top-3 extraction without a JSON parser: pull the first three "label" / "size_gb" pairs
+			set top3 to do shell script "echo " & quoted form of doctorJSON & " | /usr/bin/python3 -c 'import sys,json; d=json.loads(sys.stdin.read()); rows=d.get(\"quick_wins\",[])[:3]; print(\"\\n\".join(f\"  • {r[\\\"size_gb\\\"]:.1f} GB  {r[\\\"label\\\"]}\" for r in rows))' 2>/dev/null"
+			if top3 is not "" then
+				set quickWinsBlock to return & return & "Top reclaims (live from dashboard):" & return & top3
+			end if
+		end if
+	end try
+
 	set msgBody to healthEmoji & "  " & healthLine & return & return & ¬
 		"Free:    " & diskFree & return & ¬
 		"Used:    " & diskUsed & "  (" & diskPct & ")" & return & ¬
-		"Total:   " & diskTotal & return & return & ¬
+		"Total:   " & diskTotal & quickWinsBlock & return & return & ¬
 		"Tap 'Open DustPan' to launch the cleanup dashboard, or 'Run Quick Rescue' to free space without opening the dashboard."
 
 	set userChoice to display dialog msgBody ¬

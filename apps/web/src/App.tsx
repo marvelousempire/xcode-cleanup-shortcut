@@ -10,6 +10,7 @@ import { AgentPanel } from "./components/AgentPanel";
 import { EmergencyPanel } from "./components/EmergencyPanel";
 import { SurveyPanel } from "./components/SurveyPanel";
 import { AIAgentChat } from "./components/AIAgentChat";
+import { AppleScriptsPanel } from "./components/AppleScriptsPanel";
 import { OutputConsole } from "./components/OutputConsole";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { AboutModal } from "./components/AboutModal";
@@ -107,6 +108,8 @@ function AppBody() {
           <div key={activeTab + ":" + (currentSub || "")}>
             {activeTab === "ai-chat" ? (
               <AIAgentChat />
+            ) : activeTab === "applescripts" ? (
+              <AppleScriptsPanel />
             ) : activeTab === "survey" ? (
               <SurveyPanel />
             ) : activeTab === "emergency" ? (
@@ -130,8 +133,8 @@ function AppBody() {
               render a second copy at the bottom of the viewport. Settings has
               no terminal. On every other tab, the bottom console is the only
               place output appears. */}
-          {/* Emergency + Agent panels have their own output surface (the app-level terminal); Settings has none */}
-          {activeTab !== "overview" && activeTab !== "settings" && activeTab !== "agent" && activeTab !== "ai-chat" && <OutputConsole />}
+          {/* Emergency + Agent + Scripts panels have their own surfaces; Settings has none */}
+          {activeTab !== "overview" && activeTab !== "settings" && activeTab !== "agent" && activeTab !== "ai-chat" && activeTab !== "applescripts" && <OutputConsole />}
         </main>
 
         {hasSub ? <SidebarRight /> : null}

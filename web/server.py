@@ -611,6 +611,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except ImportError:
                 return self._serve_json_status(501, {"error": "proposals_store unavailable"})
 
+        # ── Plan 0025: AppleScript library — list / body / reveal ────────────
+        if path == "/api/applescripts":
+            return self._serve_json(self._list_applescripts_for_ui())
+
+        if path.startswith("/api/applescripts/") and path.endswith("/body"):
+            name = path[len("/api/applescripts/"):-len("/body")]
+            return self._serve_applescript_body(name)
+
+        if path.startswith("/api/applescripts/") and path.endswith("/doc"):
+            name = path[len("/api/applescripts/"):-len("/doc")]
+            return self._serve_applescript_doc(name)
+
         if path == "/api/habits":
             if not _db_available():
                 return self._serve_json_status(501, _no_db_response())
@@ -745,6 +757,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # ── Plan 0023: POST /api/settings/agent — auto-approve toggle ─────────
         if path == "/api/settings/agent":
             return self._save_agent_settings(body)
+
+        # ── Plan 0025: AppleScript library — run / reveal-in-Finder ───────────
+        if path.startswith("/api/applescripts/") and path.endswith("/run"):
+            name = path[len("/api/applescripts/"):-len("/run")]
+            return self._run_applescript(name)
+
+        if path.startswith("/api/applescripts/") and path.endswith("/reveal"):
+            name = path[len("/api/applescripts/"):-len("/reveal")]
+            return self._reveal_applescript(name)
+
+        # ── Plan 0025: PATCH a pending proposal (inline editing) ─────────────
+        if path.startswith("/api/ai/proposals/") and path.endswith("/edit"):
+            pid = path[len("/api/ai/proposals/"):-len("/edit")]
+            return self._patch_proposal(pid, body)
 
         # ── Plan 0023 Ship 2: proposal actions ────────────────────────────────
         if path.startswith("/api/ai/proposals/") and path.endswith("/accept"):
@@ -1745,6 +1771,272 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self._send_sse({"event": "error", "data": {"message": str(e)}})
             except Exception:
                 pass
+
+    # ── Plan 0025: AppleScript library helpers ───────────────────────────────
+
+    @staticmethod
+    def _applescript_repo_root() -> Path:
+        return Path(__file__).resolve().parent.parent
+
+    @classmethod
+    def _applescripts_dir(cls) -> Path:
+        return cls._applescript_repo_root() / "applescripts"
+
+    @staticmethod
+    def _safe_applescript_name(raw: str) -> Optional[str]:
+        """Validate a name parameter is a non-malicious filename. No '..', no '/'."""
+        if not raw:
+            return None
+        if "/" in raw or "\\" in raw or ".." in raw or raw.startswith("."):
+            return None
+        if not raw.endswith(".applescript"):
+            raw = raw + ".applescript"
+        return raw
+
+    def _list_applescripts_for_ui(self) -> dict:
+        """Walk applescripts/ and applescripts/docs/, return one entry per script."""
+        scripts_dir = self._applescripts_dir()
+        docs_dir    = scripts_dir / "docs"
+
+        if not scripts_dir.exists():
+            return {"library_available": False, "scripts": []}
+
+        # Build a docs index keyed by stem (filename without .applescript)
+        docs_by_stem: dict[str, dict] = {}
+        if docs_dir.exists():
+            for doc in sorted(docs_dir.glob("*.md")):
+                # Filename format: NNNN-<stem>.md
+                stem_match = doc.stem.split("-", 1)
+                if len(stem_match) != 2:
+                    continue
+                try:
+                    num = int(stem_match[0])
+                except ValueError:
+                    continue
+                stem = stem_match[1]
+                try:
+                    body = doc.read_text()
+                except Exception:
+                    continue
+                title  = doc.stem
+                status_line = ""
+                type_line   = ""
+                intent      = ""
+                in_intent   = False
+                for line in body.splitlines():
+                    if line.startswith("# ") and not title.startswith("# "):
+                        # Already used the stem; replace with the actual heading
+                        title = line[2:].strip()
+                    elif line.startswith("**Status:**"):
+                        status_line = line.replace("**Status:**", "").strip()
+                    elif line.startswith("**Type:**"):
+                        type_line = line.replace("**Type:**", "").strip()
+                    elif line.startswith("## The moment that prompted it"):
+                        in_intent = True
+                        continue
+                    elif in_intent:
+                        if line.startswith("## "):
+                            in_intent = False
+                        else:
+                            intent += line + "\n"
+                docs_by_stem[stem] = {
+                    "doc_number":  num,
+                    "doc_path":    str(doc.relative_to(self._applescript_repo_root())),
+                    "title":       title,
+                    "status":      status_line,
+                    "type":        type_line,
+                    "intent":      intent.strip()[:500],
+                }
+
+        # Enumerate scripts and pair with docs when available
+        entries = []
+        for script in sorted(scripts_dir.glob("*.applescript")):
+            stem = script.stem
+            doc = docs_by_stem.get(stem, {})
+            entries.append({
+                "name":         script.name,
+                "stem":         stem,
+                "script_path":  str(script.relative_to(self._applescript_repo_root())),
+                "size_bytes":   script.stat().st_size,
+                "title":        doc.get("title", stem),
+                "status":       doc.get("status", ""),
+                "type":         doc.get("type", ""),
+                "intent":       doc.get("intent", ""),
+                "doc_path":     doc.get("doc_path"),
+                "doc_number":   doc.get("doc_number"),
+            })
+
+        # Also surface the main dustpan.applescript at repo root as entry #0
+        main_script = self._applescript_repo_root() / "dustpan.applescript"
+        if main_script.exists():
+            entries.insert(0, {
+                "name":         "dustpan.applescript",
+                "stem":         "dustpan",
+                "script_path":  "dustpan.applescript",
+                "size_bytes":   main_script.stat().st_size,
+                "title":        "DustPan main cleanup",
+                "status":       "✅ Shipped — present in every release since v0.1.0",
+                "type":         "Cleanup (the reference implementation)",
+                "intent":       "The original DustPan script. Wipes well-known Xcode and developer caches in 4 phases with a native progress bar. Never touches Archives (crash symbolication stays intact).",
+                "doc_path":     "applescripts/docs/0001-dustpan-main.md",
+                "doc_number":   1,
+            })
+
+        return {
+            "library_available": True,
+            "scripts":   entries,
+            "count":     len(entries),
+            "philosophy": "Every script uses native macOS UI (display alert, progress, display notification). No echo to Terminal. No sudo from a script.",
+        }
+
+    def _serve_applescript_body(self, raw_name: str):
+        name = self._safe_applescript_name(raw_name)
+        if not name:
+            return self._serve_json_status(400, {"error": "invalid script name"})
+
+        # Either applescripts/<name> or the root-level dustpan.applescript
+        scripts_dir = self._applescripts_dir()
+        candidates = [
+            scripts_dir / name,
+            self._applescript_repo_root() / name,
+        ]
+        for p in candidates:
+            if p.exists() and p.is_file():
+                try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/plain; charset=utf-8")
+                    self.send_header("Cache-Control", "no-store")
+                    body = p.read_bytes()
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
+                except (OSError, BrokenPipeError, ConnectionResetError):
+                    return
+        return self._serve_json_status(404, {"error": "script not found"})
+
+    def _serve_applescript_doc(self, raw_name: str):
+        """Serve the markdown doc for a given script name (by stem)."""
+        name = self._safe_applescript_name(raw_name)
+        if not name:
+            return self._serve_json_status(400, {"error": "invalid script name"})
+        stem = name.replace(".applescript", "")
+
+        docs_dir = self._applescripts_dir() / "docs"
+        if not docs_dir.exists():
+            return self._serve_json_status(404, {"error": "docs folder not present"})
+
+        # Match NNNN-<stem>.md
+        match = None
+        for doc in docs_dir.glob(f"*-{stem}.md"):
+            match = doc
+            break
+
+        # Fallback for dustpan.applescript
+        if match is None and stem == "dustpan":
+            for doc in docs_dir.glob("*-dustpan-main.md"):
+                match = doc
+                break
+
+        if match is None:
+            return self._serve_json_status(404, {"error": "doc not found for that script"})
+
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            body = match.read_bytes()
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except (OSError, BrokenPipeError, ConnectionResetError):
+            pass
+
+    def _run_applescript(self, raw_name: str):
+        name = self._safe_applescript_name(raw_name)
+        if not name:
+            return self._serve_json_status(400, {"error": "invalid script name"})
+
+        scripts_dir = self._applescripts_dir()
+        candidates = [
+            scripts_dir / name,
+            self._applescript_repo_root() / name,
+        ]
+        target = None
+        for p in candidates:
+            if p.exists() and p.is_file():
+                target = p
+                break
+        if target is None:
+            return self._serve_json_status(404, {"error": "script not found"})
+
+        # Spawn osascript detached so the AppleScript's dialogs/progress don't
+        # block this HTTP response. The script will surface its own UI.
+        try:
+            proc = subprocess.Popen(
+                ["osascript", str(target)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            return self._serve_json({
+                "ok":     True,
+                "name":   name,
+                "pid":    proc.pid,
+                "hint":   "The script's native macOS UI will appear in its own window.",
+            })
+        except Exception as e:
+            return self._serve_json_status(500, {"error": f"failed to launch: {e}"})
+
+    def _reveal_applescript(self, raw_name: str):
+        name = self._safe_applescript_name(raw_name)
+        if not name:
+            return self._serve_json_status(400, {"error": "invalid script name"})
+
+        scripts_dir = self._applescripts_dir()
+        candidates = [
+            scripts_dir / name,
+            self._applescript_repo_root() / name,
+        ]
+        target = None
+        for p in candidates:
+            if p.exists():
+                target = p
+                break
+        if target is None:
+            return self._serve_json_status(404, {"error": "script not found"})
+
+        try:
+            subprocess.Popen(["open", "-R", str(target)],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return self._serve_json({"ok": True, "name": name})
+        except Exception as e:
+            return self._serve_json_status(500, {"error": f"failed to reveal: {e}"})
+
+    # ── Plan 0025: PATCH a pending proposal (inline editing) ─────────────────
+
+    def _patch_proposal(self, proposal_id: str, body: dict):
+        try:
+            import proposals_store
+        except ImportError:
+            return self._serve_json_status(501, {"error": "proposals_store unavailable"})
+        existing = proposals_store.get(proposal_id)
+        if not existing:
+            return self._serve_json_status(404, {"error": "proposal not found"})
+        if existing.get("status") != "pending":
+            return self._serve_json_status(409, {"error": "cannot edit non-pending proposal"})
+
+        # Whitelist editable fields (no id, no created_at, no status flips)
+        editable = ("name", "rationale", "cost_to_user", "category_id_suggested",
+                    "paths", "shell", "script_body", "file_name")
+        updates = {k: v for k, v in body.items() if k in editable}
+        if not updates:
+            return self._serve_json_status(400, {"error": "no editable fields in body"})
+
+        updated = proposals_store.update_fields(proposal_id, updates)
+        if not updated:
+            return self._serve_json_status(500, {"error": "update failed"})
+        return self._serve_json({"ok": True, "proposal": updated})
 
     def _serve_json_status(self, status: int, data: dict):
         body = json.dumps(data, default=str).encode("utf-8")

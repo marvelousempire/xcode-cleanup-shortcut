@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { api, type Proposal, type AppleScriptArtifacts } from "../lib/api";
 import { cn } from "../lib/utils";
@@ -114,6 +114,7 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
   const [snippet,     setSnippet]     = useState<string | null>(null);
   const [artifacts,   setArtifacts]   = useState<AppleScriptArtifacts | null>(null);
   const [expanded,    setExpanded]    = useState(proposal.status === "pending");
+  const [editing,     setEditing]     = useState(false);
 
   const isApplescript = proposal.kind === "applescript" || !!proposal.script_body;
 
@@ -291,11 +292,20 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
               <div className="flex gap-2 flex-wrap">
                 {proposal.status === "pending" && (
                   <>
-                    <button type="button" onClick={onAccept} disabled={busy}
+                    <button type="button" onClick={onAccept} disabled={busy || editing}
                       className="rounded-md border border-safe/30 bg-[hsl(var(--safe)/0.1)] text-safe hover:bg-[hsl(var(--safe)/0.2)] disabled:opacity-50 px-3 py-1.5 text-[12px] font-semibold transition-colors">
                       {isApplescript ? "✓ Accept & generate script + doc" : "✓ Accept & generate snippet"}
                     </button>
-                    <button type="button" onClick={onDismiss} disabled={busy}
+                    <button type="button" onClick={() => setEditing(!editing)} disabled={busy}
+                      className={cn(
+                        "rounded-md border px-3 py-1.5 text-[12px] font-semibold transition-colors",
+                        editing
+                          ? "border-warn/30 bg-[hsl(var(--warn)/0.1)] text-warn"
+                          : "border-border/25 bg-[hsl(var(--bg-3)/0.5)] text-fg-dim hover:text-fg",
+                      )}>
+                      {editing ? "✕ Cancel edit" : "✎ Edit"}
+                    </button>
+                    <button type="button" onClick={onDismiss} disabled={busy || editing}
                       className="rounded-md border border-border/25 bg-[hsl(var(--bg-3)/0.5)] text-fg-dim hover:text-fg disabled:opacity-50 px-3 py-1.5 text-[12px] font-semibold transition-colors">
                       ✕ Dismiss
                     </button>
@@ -308,6 +318,24 @@ function ProposalCard({ proposal, onChanged }: { proposal: Proposal; onChanged: 
                   </button>
                 )}
               </div>
+
+              {/* Inline edit panel */}
+              <AnimatePresence>
+                {editing && proposal.status === "pending" && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <ProposalEditor
+                      proposal={proposal}
+                      onSaved={() => { setEditing(false); onChanged(); }}
+                      onCancel={() => setEditing(false)}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         )}
@@ -355,5 +383,127 @@ function ArtifactBlock({
       <pre className="rounded-md border border-accent/25 bg-[hsl(var(--bg-1)/0.85)] px-3 py-2 font-mono text-[11px] text-fg-dim whitespace-pre-wrap break-all m-0 overflow-y-auto"
            style={{ maxHeight: `${maxHeight}px` }}>{body}</pre>
     </div>
+  );
+}
+
+/**
+ * Inline editor for pending proposals (Plan 0025).
+ *
+ * For AppleScript proposals: lets the user edit `name`, `rationale`,
+ * `cost_to_user`, and `script_body` before accepting.
+ * For cleaner proposals: edits `name`, `rationale`, `cost_to_user`, and
+ * `category_id_suggested`. Path-table editing is left for a future ship —
+ * for now the user can dismiss + ask SADPA again with a refined intent if
+ * paths need to change.
+ */
+function ProposalEditor({
+  proposal, onSaved, onCancel,
+}: {
+  proposal: Proposal;
+  onSaved:  () => void;
+  onCancel: () => void;
+}) {
+  const isApplescript = proposal.kind === "applescript" || !!proposal.script_body;
+  const [name, setName]                 = useState(proposal.name);
+  const [rationale, setRationale]       = useState(proposal.rationale);
+  const [cost, setCost]                 = useState(proposal.cost_to_user);
+  const [category, setCategory]         = useState(proposal.category_id_suggested);
+  const [scriptBody, setScriptBody]     = useState(proposal.script_body ?? "");
+  const [saving, setSaving]             = useState(false);
+  const [err, setErr]                   = useState<string | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    setErr(null);
+    try {
+      const updates: Partial<Proposal> = {
+        name, rationale, cost_to_user: cost,
+        category_id_suggested: category,
+      };
+      if (isApplescript) updates.script_body = scriptBody;
+      const r = await api.editProposal(proposal.id, updates);
+      if (!r.ok) throw new Error("save failed");
+      onSaved();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-md border border-warn/30 bg-[hsl(var(--warn)/0.04)] p-3 flex flex-col gap-2.5">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.05em] text-warn">Editing pending proposal</div>
+
+      <Field label="Name">
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="w-full rounded-md border border-border/20 bg-[hsl(var(--bg-1)/0.7)] px-2 py-1 text-[12px] text-fg focus:outline-none focus:border-accent/40"
+        />
+      </Field>
+
+      <Field label="Why it exists (rationale)">
+        <textarea
+          value={rationale}
+          onChange={e => setRationale(e.target.value)}
+          rows={3}
+          className="w-full rounded-md border border-border/20 bg-[hsl(var(--bg-1)/0.7)] px-2 py-1 text-[12px] text-fg-dim leading-[1.5] focus:outline-none focus:border-accent/40 resize-y"
+        />
+      </Field>
+
+      <Field label="Cost to the user">
+        <input
+          value={cost}
+          onChange={e => setCost(e.target.value)}
+          className="w-full rounded-md border border-border/20 bg-[hsl(var(--bg-1)/0.7)] px-2 py-1 text-[12px] text-fg focus:outline-none focus:border-accent/40"
+        />
+      </Field>
+
+      {!isApplescript && (
+        <Field label="Target category">
+          <input
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            className="w-full rounded-md border border-border/20 bg-[hsl(var(--bg-1)/0.7)] px-2 py-1 text-[12px] text-fg font-mono focus:outline-none focus:border-accent/40"
+          />
+        </Field>
+      )}
+
+      {isApplescript && (
+        <Field label="Script body (.applescript)">
+          <textarea
+            value={scriptBody}
+            onChange={e => setScriptBody(e.target.value)}
+            rows={12}
+            className="w-full rounded-md border border-border/20 bg-[hsl(var(--bg-1)/0.85)] px-2 py-1.5 font-mono text-[11px] text-fg-dim leading-[1.5] focus:outline-none focus:border-accent/40 resize-y"
+          />
+        </Field>
+      )}
+
+      {err && (
+        <div className="text-[11px] text-danger">Save failed: {err}</div>
+      )}
+
+      <div className="flex gap-2 mt-1">
+        <button type="button" onClick={save} disabled={saving}
+          className="rounded-md border border-warn/30 bg-[hsl(var(--warn)/0.1)] text-warn hover:bg-[hsl(var(--warn)/0.2)] disabled:opacity-50 px-3 py-1.5 text-[12px] font-semibold transition-colors">
+          {saving ? "Saving…" : "💾 Save changes"}
+        </button>
+        <button type="button" onClick={onCancel} disabled={saving}
+          className="rounded-md border border-border/25 bg-[hsl(var(--bg-3)/0.5)] text-fg-dim hover:text-fg px-3 py-1.5 text-[12px] font-semibold transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.05em] text-fg-faint">{label}</span>
+      {children}
+    </label>
   );
 }

@@ -17,15 +17,25 @@
 
 on run
 	-- Scan known multi-user-cruft locations
+	-- v0.27 enhancement: cross-reference `dscl . list /Users` to flag old
+	-- /Users/<name>/ homes as "(account deleted)" vs "(account still exists)"
+	-- so the user knows the consequence of `sudo rm -rf` vs `sudo chown -R`.
 	set scanScript to "
 		ME=$(whoami);
 		FINDINGS='';
+		# Get the list of accounts currently registered on this Mac. Lines like 'olivia'
+		# vs. system accounts starting with _. We'll match findings against this.
+		ACCOUNTS=$(dscl . list /Users 2>/dev/null | grep -v '^_' | tr '\\n' '|');
 		# /opt/homebrew
 		if [ -d /opt/homebrew ]; then
 			OWNER=$(stat -f '%Su' /opt/homebrew);
 			if [ \"$OWNER\" != \"$ME\" ] && [ \"$OWNER\" != \"root\" ]; then
 				SIZE=$(du -sh /opt/homebrew 2>/dev/null | cut -f1);
-				FINDINGS=\"${FINDINGS}|/opt/homebrew (Homebrew installed by '$OWNER')|$SIZE|sudo chown -R \\$(whoami) /opt/homebrew\";
+				ACCT_LABEL=\"installed by '$OWNER'\";
+				if ! echo \"$ACCOUNTS\" | tr '|' '\\n' | grep -qx \"$OWNER\"; then
+					ACCT_LABEL=\"installed by '$OWNER' — account no longer exists\";
+				fi;
+				FINDINGS=\"${FINDINGS}|/opt/homebrew (Homebrew $ACCT_LABEL)|$SIZE|sudo chown -R \\$(whoami) /opt/homebrew\";
 			fi;
 		fi;
 		# /usr/local/Homebrew (legacy)
@@ -33,7 +43,11 @@ on run
 			OWNER=$(stat -f '%Su' /usr/local/Homebrew);
 			if [ \"$OWNER\" != \"$ME\" ] && [ \"$OWNER\" != \"root\" ]; then
 				SIZE=$(du -sh /usr/local/Homebrew 2>/dev/null | cut -f1);
-				FINDINGS=\"${FINDINGS}|/usr/local/Homebrew (legacy, owned by '$OWNER')|$SIZE|sudo chown -R \\$(whoami) /usr/local/Homebrew\";
+				ACCT_LABEL=\"owned by '$OWNER'\";
+				if ! echo \"$ACCOUNTS\" | tr '|' '\\n' | grep -qx \"$OWNER\"; then
+					ACCT_LABEL=\"owned by '$OWNER' — account no longer exists\";
+				fi;
+				FINDINGS=\"${FINDINGS}|/usr/local/Homebrew (legacy, $ACCT_LABEL)|$SIZE|sudo chown -R \\$(whoami) /usr/local/Homebrew\";
 			fi;
 		fi;
 		# Old user homes in /Users
@@ -42,8 +56,13 @@ on run
 			if [ \"$name\" = \"$ME\" ] || [ \"$name\" = \"Shared\" ] || [ \"$name\" = \".localized\" ]; then continue; fi;
 			OWNER=$(stat -f '%Su' \"$d\" 2>/dev/null);
 			if [ \"$OWNER\" = \"root\" ] || [ -z \"$OWNER\" ]; then continue; fi;
+			# Flag whether the owner account still exists in dscl
+			ACCT_STATUS='active account';
+			if ! echo \"$ACCOUNTS\" | tr '|' '\\n' | grep -qx \"$OWNER\"; then
+				ACCT_STATUS='ACCOUNT DELETED — data orphaned';
+			fi;
 			SIZE=$(du -sh \"$d\" 2>/dev/null | cut -f1);
-			FINDINGS=\"${FINDINGS}|/Users/$name (old user home, owner '$OWNER')|$SIZE|sudo chown -R \\$(whoami) /Users/$name\";
+			FINDINGS=\"${FINDINGS}|/Users/$name (owner '$OWNER' — $ACCT_STATUS)|$SIZE|sudo chown -R \\$(whoami) /Users/$name\";
 		done;
 		echo \"$FINDINGS\"
 	"

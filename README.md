@@ -654,7 +654,7 @@ Every URL the Python server responds to.
 
 | Path | What it does |
 |---|---|
-| `/api/status` | `{ free_gb, used_gb, total_gb, used_pct }` |
+| `/api/status` | `{ free_gb, used_gb, total_gb, used_pct, version }` |
 | `/api/tabs` | The tab structure — what categories exist, with sub-tools |
 | `/api/report` | History summary: total runs, total GB freed, sparkline data |
 | `/api/changelog` | Raw CHANGELOG.md served as Markdown (modal renders this) |

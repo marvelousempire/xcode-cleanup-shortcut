@@ -115,6 +115,13 @@ export function SidebarLeft() {
             icon={null}
             badge={pendingProposals}
           />
+          {/* AppleScripts library — native-UI one-tap scripts */}
+          <SidebarFooterBtn
+            label="🍎 Scripts"
+            active={activeTab === "applescripts"}
+            onClick={() => setActiveTab("applescripts")}
+            icon={null}
+          />
           {/* Space Survey — SADPA's full filesystem crawl */}
           <SidebarFooterBtn
             label="📊 Space Survey"

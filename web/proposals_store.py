@@ -111,6 +111,28 @@ def create(payload: dict) -> dict:
     return record
 
 
+def update_fields(proposal_id: str, updates: dict) -> Optional[dict]:
+    """
+    Update arbitrary editable fields on a pending proposal (Plan 0025).
+    Returns the updated record or None if not found.
+
+    Caller is responsible for whitelisting allowed fields. This function
+    blindly merges and persists what it receives.
+    """
+    items = _read_all()
+    updated = None
+    for p in items:
+        if p.get("id") == proposal_id:
+            for k, v in updates.items():
+                p[k] = v
+            p["updated_at"] = int(time.time())
+            updated = p
+            break
+    if updated:
+        _write_all(items)
+    return updated
+
+
 def update_status(proposal_id: str, status: str) -> Optional[dict]:
     """Set the status of a proposal. Returns the updated record or None if not found."""
     if status not in ("pending", "accepted", "dismissed"):

@@ -175,6 +175,24 @@ export function AIAgentChat() {
         });
         break;
       }
+      case "assistant_text_delta": {
+        // v0.27 — token-by-token streaming. Append to the current streaming
+        // assistant bubble character-for-character (no \n\n join).
+        const chunk = data.text ?? "";
+        if (!chunk) break;
+        setTurns(prev => {
+          const next = [...prev];
+          for (let i = next.length - 1; i >= 0; i--) {
+            if (next[i].kind === "assistant" && (next[i] as any).streaming) {
+              next[i] = { ...next[i] as any, text: ((next[i] as any).text ?? "") + chunk, streaming: true };
+              return next;
+            }
+          }
+          next.push({ kind: "assistant", text: chunk, streaming: true });
+          return next;
+        });
+        break;
+      }
       case "tool_use_start": {
         setTurns(prev => [...prev, { kind: "tool", id: data.id, name: data.name, input: data.input ?? {}, status: "running" }]);
         break;

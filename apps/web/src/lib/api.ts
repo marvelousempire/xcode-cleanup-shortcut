@@ -34,6 +34,20 @@ export interface Proposal {
   file_name?:            string | null;
 }
 
+/** v0.27.0 — one entry per script in the AppleScript library */
+export interface AppleScriptEntry {
+  name:         string;       // e.g. "show-disk-status.applescript"
+  stem:         string;       // e.g. "show-disk-status"
+  script_path:  string;       // e.g. "applescripts/show-disk-status.applescript"
+  size_bytes:   number;
+  title:        string;       // from the doc's H1
+  status:       string;       // e.g. "✅ Shipped in v0.26.0"
+  type:         string;       // e.g. "Diagnostic + UI helper"
+  intent:       string;       // first 500 chars of "The moment that prompted it"
+  doc_path?:    string | null;
+  doc_number?:  number | null;
+}
+
 /** v0.26.1 — structured artifacts returned for AppleScript proposals from /accept and /snippet */
 export interface AppleScriptArtifacts {
   script:      string;
@@ -87,6 +101,26 @@ export const api = {
   proposalsCount:      () => jsonFetch<{ pending: number }>("/api/ai/proposals/count"),
   proposalSnippet:     (id: string) =>
     jsonFetch<{ proposal: Proposal; snippet: string; applescript?: AppleScriptArtifacts }>(`/api/ai/proposals/${id}/snippet`),
+  editProposal:        (id: string, updates: Partial<Proposal>) =>
+    fetch(API_BASE + `/api/ai/proposals/${id}/edit`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(updates),
+    }).then(r => r.json()) as Promise<{ ok: true; proposal: Proposal }>,
+
+  // ── Plan 0025: AppleScript library in-app surface ─────────────────────────
+  applescripts:        () =>
+    jsonFetch<{ library_available: boolean; scripts: AppleScriptEntry[]; count: number; philosophy: string }>("/api/applescripts"),
+  applescriptBody:     (name: string) =>
+    fetch(API_BASE + `/api/applescripts/${encodeURIComponent(name)}/body`).then(r => r.text()),
+  applescriptDoc:      (name: string) =>
+    fetch(API_BASE + `/api/applescripts/${encodeURIComponent(name)}/doc`).then(r => r.text()),
+  applescriptRun:      (name: string) =>
+    fetch(API_BASE + `/api/applescripts/${encodeURIComponent(name)}/run`, { method: "POST" })
+      .then(r => r.json()) as Promise<{ ok: true; name: string; pid: number; hint: string }>,
+  applescriptReveal:   (name: string) =>
+    fetch(API_BASE + `/api/applescripts/${encodeURIComponent(name)}/reveal`, { method: "POST" })
+      .then(r => r.json()) as Promise<{ ok: true; name: string }>,
   acceptProposal:      (id: string) =>
     fetch(API_BASE + `/api/ai/proposals/${id}/accept`, { method: "POST" }).then(r => r.json()) as Promise<{ ok: true; proposal: Proposal; snippet: string; applescript?: AppleScriptArtifacts }>,
   dismissProposal:     (id: string) =>

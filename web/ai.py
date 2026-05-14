@@ -52,6 +52,54 @@ def _post(url: str, headers: dict, body: dict, timeout: int = 20) -> dict:
         err_body = e.read().decode(errors="replace")
         raise RuntimeError(f"HTTP {e.code}: {err_body[:300]}") from e
 
+
+# ── Plan 0025: streaming helper for token-by-token chat ─────────────────────
+#
+# Yields parsed events from an SSE response. Each event is a dict with:
+#   - "event": event name (or "message" if unnamed)
+#   - "data":  parsed JSON dict (or raw string if not JSON)
+#
+# Used by complete_with_tools() when streaming is requested.
+
+def _post_streaming(url: str, headers: dict, body: dict, timeout: int = 300):
+    """
+    POST a body and yield SSE events as they arrive.
+
+    Yields dicts: {"event": <name>, "data": <parsed or str>}
+    OpenAI-style streams use unnamed events with `data: {json}\\n\\n`.
+    Anthropic-style streams use `event: <name>\\ndata: {json}\\n\\n`.
+    """
+    data = json.dumps(body).encode()
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            current_event = "message"
+            data_lines: list[str] = []
+            for line_bytes in resp:
+                line = line_bytes.decode("utf-8", errors="replace").rstrip("\n").rstrip("\r")
+                if not line:
+                    if data_lines:
+                        payload_raw = "\n".join(data_lines)
+                        data_lines = []
+                        if payload_raw == "[DONE]":
+                            return
+                        try:
+                            parsed = json.loads(payload_raw)
+                        except json.JSONDecodeError:
+                            parsed = payload_raw
+                        yield {"event": current_event, "data": parsed}
+                        current_event = "message"
+                    continue
+                if line.startswith(":"):
+                    continue   # SSE comment
+                if line.startswith("event:"):
+                    current_event = line[6:].strip()
+                elif line.startswith("data:"):
+                    data_lines.append(line[5:].lstrip())
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode(errors="replace")
+        raise RuntimeError(f"HTTP {e.code}: {err_body[:300]}") from e
+
 # ── Format handlers ───────────────────────────────────────────────────────────
 
 def _openai_complete(base_url: str, api_key: str, model: str, prompt: str) -> str:
@@ -384,23 +432,82 @@ def complete_with_tools(
                 "system":     system,
                 "messages":   msgs,
                 "tools":      tools or [],
+                "stream":     True,
             }
-            resp = _post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "Content-Type":      "application/json",
-                    "x-api-key":         api_key,
-                    "anthropic-version": "2023-06-01",
-                },
-                body=body,
-                timeout=120,
-            )
-            u = resp.get("usage", {}) or {}
-            usage["input_tokens"]  += u.get("input_tokens", 0)
-            usage["output_tokens"] += u.get("output_tokens", 0)
 
-            stop_reason = resp.get("stop_reason", "")
-            content     = resp.get("content", []) or []
+            # ── Stream the response and reconstruct the same content array
+            #    the non-streaming endpoint would have returned. Emit
+            #    assistant_text_delta events for token-by-token UX.
+            content: list[dict] = []
+            stop_reason = ""
+            # Index in `content` keyed by content_block index
+            blocks_by_idx: dict[int, dict] = {}
+            # Partial JSON for tool_use blocks (accumulated input_json_delta)
+            tool_partial_json: dict[int, str] = {}
+
+            try:
+                for ev in _post_streaming(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "Content-Type":      "application/json",
+                        "x-api-key":         api_key,
+                        "anthropic-version": "2023-06-01",
+                    },
+                    body=body,
+                ):
+                    name = ev.get("event")
+                    data = ev.get("data") or {}
+                    if not isinstance(data, dict):
+                        continue
+
+                    if name == "message_start":
+                        u = (data.get("message") or {}).get("usage", {}) or {}
+                        usage["input_tokens"] += u.get("input_tokens", 0)
+                    elif name == "content_block_start":
+                        idx = data.get("index", 0)
+                        block = data.get("content_block") or {}
+                        blocks_by_idx[idx] = dict(block)
+                        if block.get("type") == "tool_use":
+                            tool_partial_json[idx] = ""
+                    elif name == "content_block_delta":
+                        idx = data.get("index", 0)
+                        delta = data.get("delta") or {}
+                        dtype = delta.get("type")
+                        if dtype == "text_delta":
+                            chunk = delta.get("text", "")
+                            if chunk:
+                                # Accumulate into the block + emit a streaming delta
+                                blk = blocks_by_idx.setdefault(idx, {"type": "text", "text": ""})
+                                blk["text"] = (blk.get("text", "") or "") + chunk
+                                if on_event:
+                                    on_event({"event": "assistant_text_delta",
+                                              "data": {"text": chunk}})
+                        elif dtype == "input_json_delta":
+                            tool_partial_json[idx] = tool_partial_json.get(idx, "") + delta.get("partial_json", "")
+                    elif name == "content_block_stop":
+                        idx = data.get("index", 0)
+                        blk = blocks_by_idx.get(idx)
+                        if blk and blk.get("type") == "tool_use":
+                            try:
+                                blk["input"] = json.loads(tool_partial_json.get(idx, "{}") or "{}")
+                            except json.JSONDecodeError:
+                                blk["input"] = {}
+                    elif name == "message_delta":
+                        delta = data.get("delta") or {}
+                        if delta.get("stop_reason"):
+                            stop_reason = delta["stop_reason"]
+                        u = data.get("usage", {}) or {}
+                        usage["output_tokens"] += u.get("output_tokens", 0)
+                    elif name == "message_stop":
+                        break
+                    elif name == "error":
+                        raise RuntimeError(f"Anthropic streaming error: {data}")
+            except Exception as e:
+                raise
+
+            # Re-assemble content in index order
+            for idx in sorted(blocks_by_idx.keys()):
+                content.append(blocks_by_idx[idx])
 
             # Surface text blocks
             text_chunks = []
@@ -474,24 +581,66 @@ def complete_with_tools(
                 "tools":    tools or [],
                 "tool_choice": "auto" if (tools or []) else "none",
                 "max_tokens": max_tokens,
+                "stream":   True,
+                "stream_options": {"include_usage": True},
             }
-            resp = _post(
+
+            # ── Stream the response. Reconstruct the same {message, finish_reason}
+            #    the non-streaming endpoint would have returned. Emit
+            #    assistant_text_delta as text chunks arrive.
+            accumulated_text = ""
+            # tool_calls accumulated by index — each: {id, type, function: {name, arguments}}
+            tcalls_by_idx: dict[int, dict] = {}
+            finish = ""
+
+            for ev in _post_streaming(
                 url,
                 headers={
                     "Content-Type":  "application/json",
                     "Authorization": f"Bearer {api_key}",
                 },
                 body=body,
-                timeout=120,
-            )
-            u = resp.get("usage", {}) or {}
-            usage["input_tokens"]  += u.get("prompt_tokens", 0)
-            usage["output_tokens"] += u.get("completion_tokens", 0)
+            ):
+                chunk = ev.get("data")
+                if not isinstance(chunk, dict):
+                    continue
+                # Usage chunk at end (when stream_options include_usage)
+                if chunk.get("usage"):
+                    u = chunk["usage"] or {}
+                    usage["input_tokens"]  += u.get("prompt_tokens", 0)
+                    usage["output_tokens"] += u.get("completion_tokens", 0)
+                choices = chunk.get("choices") or []
+                if not choices:
+                    continue
+                ch = choices[0]
+                delta = ch.get("delta") or {}
+                if delta.get("content"):
+                    accumulated_text += delta["content"]
+                    if on_event:
+                        on_event({"event": "assistant_text_delta",
+                                  "data": {"text": delta["content"]}})
+                for tc_delta in (delta.get("tool_calls") or []):
+                    idx = tc_delta.get("index", 0)
+                    tc = tcalls_by_idx.setdefault(idx, {
+                        "id": None, "type": "function",
+                        "function": {"name": "", "arguments": ""},
+                    })
+                    if tc_delta.get("id"):
+                        tc["id"] = tc_delta["id"]
+                    fn = tc_delta.get("function") or {}
+                    if fn.get("name"):
+                        tc["function"]["name"] = (tc["function"]["name"] or "") + fn["name"]
+                    if fn.get("arguments"):
+                        tc["function"]["arguments"] = (tc["function"]["arguments"] or "") + fn["arguments"]
+                if ch.get("finish_reason"):
+                    finish = ch["finish_reason"]
 
-            msg = resp["choices"][0]["message"]
-            finish = resp["choices"][0].get("finish_reason", "")
-            text = (msg.get("content") or "").strip()
-            tool_calls = msg.get("tool_calls") or []
+            # Reassemble message in the same shape as the non-streaming endpoint
+            tool_calls = [tcalls_by_idx[k] for k in sorted(tcalls_by_idx.keys())]
+            text = accumulated_text.strip()
+            msg = {"role": "assistant", "content": text or None}
+            if tool_calls:
+                msg["tool_calls"] = tool_calls
 
             if text and on_event:
                 on_event({"event": "assistant_text", "data": {"text": text}})

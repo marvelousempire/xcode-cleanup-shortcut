@@ -2,7 +2,7 @@ SHORTCUT_NAME := DustPan
 SCRIPT        := dustpan.applescript
 
 .DEFAULT_GOAL := help
-.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-local ui-all ui-legacy ui-react ui-next ui-dev clean-docker update doctor
+.PHONY: help run dry-run demo force install-shortcut uninstall-shortcut shortcut-run record-demo check size-report history install-cli uninstall-cli install-launchd uninstall-launchd install-swiftbar uninstall-swiftbar package-shortcut report ui ui-local ui-all ui-legacy ui-react ui-next ui-dev clean-docker update doctor install-applescripts uninstall-applescripts
 
 help: ## Show this help
 	@echo "DustPan by AVERY GOODMAN — Make targets"
@@ -276,3 +276,35 @@ ui-next: ## Build + serve the Next.js static export (apps/web-next) only
 
 ui-dev: ## Run both frontends in dev mode (Vite :5174, Next :5175) via Turbo
 	@pnpm install --silent && pnpm turbo run dev
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AppleScript library installers (Plan 0025)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Copies the applescripts/*.applescript files to
+# ~/Library/Application Scripts/com.dustpan/ so Shortcuts.app's
+# "Run AppleScript" action can pick them up by name.
+
+install-applescripts: ## Install the AppleScript library to ~/Library/Application Scripts/com.dustpan/
+	@dest="$$HOME/Library/Application Scripts/com.dustpan"; \
+	mkdir -p "$$dest"; \
+	count=0; \
+	for f in applescripts/*.applescript; do \
+		[ -f "$$f" ] || continue; \
+		cp -f "$$f" "$$dest/$$(basename $$f)"; \
+		count=$$((count + 1)); \
+	done; \
+	echo "✓ Installed $$count AppleScript(s) to:"; \
+	echo "  $$dest"; \
+	echo ""; \
+	echo "Next: open Shortcuts.app → New Shortcut → 'Run AppleScript' →"; \
+	echo "the picker will list every script you just installed. Bind to a hotkey."
+
+uninstall-applescripts: ## Remove the installed AppleScript library
+	@dest="$$HOME/Library/Application Scripts/com.dustpan"; \
+	if [ -d "$$dest" ]; then \
+		rm -rf "$$dest"; \
+		echo "✓ Removed $$dest"; \
+	else \
+		echo "Nothing to remove. ($$dest does not exist)"; \
+	fi
