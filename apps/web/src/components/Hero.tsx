@@ -8,7 +8,7 @@ interface Props {
   status: DiskStatus | null;
   /** When `embedded`, the hero drops its own border/shadow/background — the
    * parent pane in the Overview 3-pane top owns those. Padding is also tighter
-   * so the hero shares the row with the pie + terminal cleanly. */
+   * so the hero shares the row with the mix panel + terminal cleanly. */
   embedded?: boolean;
 }
 

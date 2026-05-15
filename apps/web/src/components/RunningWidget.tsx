@@ -1,19 +1,10 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useDashboard } from "../state/DashboardContext";
+import { CATEGORY_TAB_COLORS } from "../lib/categoryColors";
 
-// Per-category color palette — must mirror PieChart.tsx's PIE_COLORS so the
-// header dots visually correspond to pie slices for the same category.
+// Header dots align with overview mix bar / legend (see CleanableMixPanel).
 const CAT_COLORS: Record<string, string> = {
-  xcode: "#0F766E",
-  llms: "#7C3AED",
-  docker: "#0EA5E9",
-  apps: "#F59E0B",
-  browsers: "#10B981",
-  downloads: "#F97316",
-  creative: "#EC4899",
-  temp: "#A3A3A3",
-  archives: "#92400E",
-  system: "#64748B",
+  ...CATEGORY_TAB_COLORS,
   ALL: "#0F766E",
 };
 

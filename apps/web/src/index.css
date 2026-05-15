@@ -122,6 +122,10 @@
     }
   }
 
+  html {
+    height: 100%;
+  }
+
   /* Surface alpha overrides so .bg-bg-2 uses the frosted-glass alpha values
      that match the v0.14 design system. Applied via class for clarity. */
   .glass {
@@ -134,13 +138,18 @@
   }
 
   body {
-    min-height: 100vh;
+    min-height: 100%;
+    min-height: 100dvh;
     background-image:
       radial-gradient(at 20% 0%, hsl(var(--accent) / 0.07) 0, transparent 50%),
       radial-gradient(at 80% 100%, hsl(var(--safe) / 0.05) 0, transparent 50%);
     background-color: hsl(var(--bg-1));
     color: hsl(var(--fg));
     font-feature-settings: "tnum" 0;
+  }
+
+  #root {
+    min-height: 100dvh;
   }
 
   ::selection {
@@ -185,17 +194,17 @@
 /* Search highlight — adapts hue to readable contrast on either bg. */
 .hl { background: hsl(var(--ansi-yellow) / 0.28); color: inherit; padding: 0 1px; border-radius: 2px; }
 
-/* Pulsing ring used by the OnboardingCoachmark to draw the eye to the pie pane. */
+/* Pulsing ring used by OnboardingCoachmark around `.pane-pie` (mix panel). */
 @keyframes coach-pulse {
   0%, 100% { box-shadow: 0 0 0 4px hsl(var(--accent) / 0.18); }
   50%      { box-shadow: 0 0 0 10px hsl(var(--accent) / 0.08); }
 }
 
-/* Overview 3-pane top — hero · pie · terminal. Tailwind can express grid-cols
+/* Overview 3-pane top — hero · cleanable mix · terminal. Tailwind can express grid-cols
    via arbitrary values, but the responsive breakpoints below are simpler in
    plain CSS (and match the vanilla v0.14.2 implementation 1:1). */
 .overview-top {
-  grid-template-columns: 1fr 0.92fr 1.05fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr) minmax(0, 1.05fr);
 }
 @media (max-width: 1100px) {
   .overview-top {
@@ -215,16 +224,186 @@
   }
 }
 
-/* v0.18.1 — Changelog modal body typography. Mirrors the vanilla `.modal-body`
-   styles in web/index.html so the rendered markdown is actually readable
-   instead of falling back to browser defaults. Each version block now reads
-   like: accent-colored title, uppercase-caps subheads, comfortable paragraph
-   spacing, monospace inline-code chips. */
+/* Changelog modal — per-release sections, readable typography, Eastern clock with seconds. */
 .changelog-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: hsl(var(--fg));
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+.changelog-preamble {
+  font-size: 13px;
+  line-height: 1.55;
+  color: hsl(var(--fg-dim));
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.55);
+}
+.changelog-preamble p {
+  margin: 0.35rem 0;
+}
+.changelog-preamble ul {
+  margin: 0.35rem 0 0.5rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.changelog-preamble code {
+  font-family: var(--mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 11.5px;
+  background: hsl(var(--bg-3));
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.changelog-release {
+  padding: 1.35rem 0;
+  border-bottom: 1px solid hsl(var(--border) / 0.4);
+}
+.changelog-release:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.changelog-release__hdr {
+  margin-bottom: 0.85rem;
+}
+.changelog-release__hdrTop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.changelog-release__ver {
+  display: inline-flex;
+  align-items: center;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: hsl(var(--accent));
+  line-height: 1.2;
+}
+
+.changelog-release__metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  font-size: 12px;
+  line-height: 1.45;
+  color: hsl(var(--fg-dim));
+}
+.changelog-release__date {
+  font-weight: 500;
+  color: hsl(var(--fg));
+}
+.changelog-release__sep {
+  color: hsl(var(--fg-faint));
+  font-weight: 400;
+}
+.changelog-release__timeBlock {
+  font-family: var(--mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: hsl(var(--fg-dim));
+  font-variant-numeric: tabular-nums;
+}
+.changelog-release__easternSuffix {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: hsl(var(--fg-faint));
+  margin-left: 0.2em;
+}
+
+.changelog-release__tagline {
+  margin: 0.55rem 0 0;
   font-size: 13px;
   line-height: 1.55;
   color: hsl(var(--fg));
+  font-weight: 500;
 }
+
+.changelog-release__body h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--fg-dim));
+  margin: 1rem 0 0.35rem;
+}
+.changelog-release__body h3:first-child {
+  margin-top: 0;
+}
+.changelog-release__body p {
+  margin: 0.35rem 0;
+  color: hsl(var(--fg));
+}
+.changelog-release__body ul {
+  margin: 0.35rem 0 0.65rem;
+  padding-left: 1.35rem;
+  list-style: disc;
+}
+.changelog-release__body li {
+  margin: 0.3rem 0;
+  color: hsl(var(--fg));
+}
+.changelog-release__body li::marker {
+  color: hsl(var(--fg-faint));
+}
+.changelog-release__body code {
+  font-family: var(--mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 12px;
+  background: hsl(var(--bg-3));
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: hsl(var(--fg));
+}
+.changelog-release__body strong {
+  font-weight: 600;
+  color: hsl(var(--fg));
+}
+.changelog-release__body em {
+  color: hsl(var(--fg-dim));
+  font-style: normal;
+}
+.changelog-release__body a {
+  color: hsl(var(--accent));
+  text-decoration: none;
+  border-bottom: 1px solid hsl(var(--accent) / 0.35);
+  transition: border-color 0.15s ease;
+}
+.changelog-release__body a:hover {
+  border-bottom-color: hsl(var(--accent));
+}
+
+.changelog-hr {
+  border: none;
+  height: 1px;
+  margin: 1rem 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--border) / 0.85) 12%,
+    hsl(var(--border) / 0.85) 88%,
+    transparent
+  );
+}
+
+/* Legacy humanized block (header did not match structured parser). */
+.changelog-release--legacy .changelog-release__h2-fallback {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  color: hsl(var(--accent));
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+/* Bare h2 inside modal (should only appear in legacy sections). */
 .changelog-body h2 {
   font-size: 17px;
   font-weight: 700;
@@ -232,49 +411,9 @@
   color: hsl(var(--accent));
   letter-spacing: -0.005em;
 }
-.changelog-body h2:first-child { margin-top: 0; }
-.changelog-body h3 {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: hsl(var(--fg-dim));
-  margin: 16px 0 6px;
+.changelog-body h2:first-child {
+  margin-top: 0;
 }
-.changelog-body p {
-  margin: 6px 0;
-  color: hsl(var(--fg));
-}
-.changelog-body ul {
-  margin: 6px 0 10px;
-  padding-left: 22px;
-  list-style: disc;
-}
-.changelog-body li {
-  margin: 4px 0;
-  color: hsl(var(--fg));
-}
-.changelog-body li::marker { color: hsl(var(--fg-faint)); }
-.changelog-body code {
-  font-family: var(--mono, ui-monospace, "SF Mono", Menlo, monospace);
-  font-size: 11.5px;
-  background: hsl(var(--bg-3));
-  padding: 1px 6px;
-  border-radius: 4px;
-  color: hsl(var(--fg));
-}
-.changelog-body strong { font-weight: 600; color: hsl(var(--fg)); }
-.changelog-body em {
-  color: hsl(var(--fg-dim));
-  font-style: normal; /* the markdown uses *…* for "why" callouts, not italics */
-}
-.changelog-body a {
-  color: hsl(var(--accent));
-  text-decoration: none;
-  border-bottom: 1px solid hsl(var(--accent) / 0.35);
-  transition: border-color 0.15s ease;
-}
-.changelog-body a:hover { border-bottom-color: hsl(var(--accent)); }
 
 @media (prefers-reduced-motion: reduce) {
   *,

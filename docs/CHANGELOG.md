@@ -1,6 +1,20 @@
 # Changelog
 
-## [0.27.4] — 2026-05-15 Eastern · *Changelog + version sync, human-readable release dates in the app, Growth Watch rollup, Home folder reclaim guidance*
+## [0.27.5] — 2026-05-15 14:45:00 Eastern · *Library atlas on Overview — ~/Library heavy zones with tab jumps*
+
+### Added — **Library atlas** (Overview)
+
+Expandable reference under **Home folder guidance** for the neighborhoods that usually hoard space: **Caches**, **Application Support**, **Containers**, **Group Containers**, **Developer**, **Logs**, **Mobile Documents** (iCloud pillar), and a short **Saved Application State / Preferences** caution. Each block shows the canonical path and **pill buttons** that jump to the right DustPan tab (including **LLM** sub-tabs for Cursor, ChatGPT, and Claude).
+
+**Implementation:** `apps/web/src/components/UserLibraryAtlas.tsx` (new), wired from `HomeFolderAdvice.tsx`.
+
+### kVersion / package bumps
+
+Root `package.json`, `apps/web/package.json`, `apps/web-next/package.json`, `dustpan.applescript` **`kVersion`** → `0.27.5`.
+
+---
+
+## [0.27.4] — 2026-05-15 12:00:00 Eastern · *Changelog + version sync, human-readable release dates in the app, Growth Watch rollup, Home folder reclaim guidance*
 
 ### Fixed / Changed — versioning & changelog UX
 

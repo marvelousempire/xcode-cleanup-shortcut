@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { useDashboard } from "../state/DashboardContext";
 import { Hero } from "./Hero";
-import { PieChart } from "./PieChart";
+import { CleanableMixPanel } from "./CleanableMixPanel";
 import { OutputConsole } from "./OutputConsole";
 import { SpaceBarChart } from "./SpaceBarChart";
 import { HabitBanner } from "./HabitBanner";
@@ -88,16 +88,16 @@ export function OverviewPanel() {
       {/* User-folder guidance (~ / Library) */}
       <HomeFolderAdvice />
 
-      {/* ── 2. 3-pane: hero · pie · terminal ─────────────────────────────── */}
+      {/* ── 2. 3-pane: hero · cleanable mix · terminal ───────────────────── */}
       <div className="mb-3.5 grid gap-3.5 overview-top">
         <div className="overflow-hidden rounded-lg border border-border/15 shadow-md" style={{ background: "hsl(var(--bg-2))" }}>
           <Hero status={status} embedded />
         </div>
         <div className="flex flex-col overflow-hidden rounded-lg border border-border/15 shadow-sm" style={{ background: "hsl(var(--bg-2))" }}>
           <div className="px-4 pb-2 pt-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">
-            Where the disk is going
+            Cleanable space by category
           </div>
-          <PieChart />
+          <CleanableMixPanel />
         </div>
         <div className="flex flex-col overflow-hidden rounded-lg border border-border/15 shadow-sm" style={{ background: "hsl(var(--bg-2))" }}>
           <div className="px-4 pb-2 pt-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">

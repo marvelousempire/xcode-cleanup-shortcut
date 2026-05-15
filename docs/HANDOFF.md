@@ -2,16 +2,16 @@
 
 > The bridge document. Read this first whenever you (a fresh Claude Code session, a teammate, or future-you) sit down at this repo. Everything else either feeds into this file or is referenced from it.
 
-**Last updated:** 2026-05-12 (v0.10.0)
+**Last updated:** 2026-05-15 (v0.27.5 — Library atlas on Overview)
 **Repo:** [`marvelousempire/xcode-cleanup-shortcut`](https://github.com/marvelousempire/xcode-cleanup-shortcut)
-**Latest release:** [`v0.10.0`](https://github.com/marvelousempire/xcode-cleanup-shortcut/releases) on `main`
+**Latest release:** See GitHub Releases (changelog in repo: `docs/CHANGELOG.md`)
 **Maintainer:** [@marvelousempire](https://github.com/marvelousempire)
 
 ---
 
 ## TL;DR
 
-Free, MIT, **localhost-only Mac cleanup dashboard** that finds disk-hogging caches across Xcode, LLM tools (Claude / Cursor / ChatGPT), everyday apps (browsers, chat, Spotify, Homebrew), and macOS system junk. **~70 paths · 21+ actions · 6 categories · 5 install surfaces.** Every action shows the *cost of doing this* before you click. Reaches the user via a web UI (`make ui`), an Apple Shortcut, a CLI (`xcc`), an hourly launchd agent, a SwiftBar menu-bar plugin, or `Run Script Over SSH` for remote Macs — all backed by one AppleScript + one cleaners.py.
+Free, MIT, **localhost-only Mac cleanup dashboard** that finds disk-hogging caches across Xcode, LLM tools (Claude / Cursor / ChatGPT), everyday apps (browsers, chat, Spotify, Homebrew), and macOS system junk. **~70 paths · 21+ actions · 6 categories · 5 install surfaces.** Every action shows the *cost of doing this* before you click. **Overview** also ships **home-folder guidance** plus a **Library atlas** (expandable map of heavy `~/Library` zones with tab jumps). Reaches the user via a web UI (`make ui`), an Apple Shortcut, a CLI (`xcc`), an hourly launchd agent, a SwiftBar menu-bar plugin, or `Run Script Over SSH` for remote Macs — all backed by one AppleScript + one cleaners.py.
 
 The most recent strategic move is now active: **`marvelousempire/ai-skills-library`** is the authoritative source for design + marketing + project skills and operating rules. A fresh session can lean on those instead of re-deriving everything.
 

@@ -1,7 +1,7 @@
 {
   "name": "@dustpan/web-next",
   "private": true,
-  "version": "0.27.4",
+  "version": "0.27.5",
   "description": "Next.js app for DustPan by AVERY GOODMAN. Built as a static export so the Python server (web/server.py) can serve it without a Node runtime. Reachable via ?next=1 alongside the Vite (default) and vanilla (?legacy=1) UIs.",
   "scripts": {
     "dev": "next dev --port 5175",

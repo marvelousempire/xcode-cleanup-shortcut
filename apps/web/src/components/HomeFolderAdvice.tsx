@@ -1,4 +1,5 @@
 import { useDashboard } from "../state/DashboardContext";
+import { UserLibraryAtlas } from "./UserLibraryAtlas";
 import { cn } from "../lib/utils";
 
 /**
@@ -66,6 +67,10 @@ export function HomeFolderAdvice() {
         <strong className="font-medium text-fg-dim">System Settings → Privacy &amp; Security → Full Disk Access</strong>,
         enable access for DustPan/Python, then quit and run <kbd className="font-mono">make ui</kbd> again so every row can populate.
       </p>
+
+      <div className="mt-4 border-t border-border/15 pt-4">
+        <UserLibraryAtlas />
+      </div>
     </section>
   );
 }

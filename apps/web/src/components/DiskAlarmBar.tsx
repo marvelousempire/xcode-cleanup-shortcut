@@ -78,7 +78,7 @@ export function DiskAlarmBar() {
         <div
           className={`${cfg.bg} ${cfg.text} ${cfg.pulse ? "animate-pulse" : ""} w-full`}
         >
-          <div className="mx-auto max-w-[1280px] px-6 py-2.5 flex items-center gap-3 flex-wrap">
+          <div className="w-full max-w-none px-4 py-2.5 sm:px-6 xl:px-10 2xl:px-14 flex items-center gap-3 flex-wrap">
             {/* Icon + message */}
             <span className="text-[15px] flex-shrink-0" aria-hidden>{cfg.icon}</span>
             <div className="flex-1 min-w-0">

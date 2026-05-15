@@ -5,12 +5,9 @@ import { motion, AnimatePresence } from "motion/react";
 const STORAGE_KEY = "cleanupHub.coachmark.v15";
 
 /**
- * First-visit coachmark that pulses a teal ring around the Overview pie pane
- * and shows a "New: click a slice to drill in" pill above it. Dismisses on
- * pie/legend click or 12s timeout, sets localStorage so it never re-shows.
- *
- * Mounted at the App level — finds the pie pane via querySelector. Mirrors
- * the vanilla v0.15.0 implementation but using React Portal + Motion.
+ * First-visit coachmark that pulses a teal ring around the Overview cleanable-mix
+ * panel; pill copy “click a category to drill in”. Dismisses on panel click or
+ * 12s timeout. Uses `.pane-pie` as the anchor (historical class name).
  */
 export function OnboardingCoachmark() {
   const [visible, setVisible] = useState(false);
@@ -20,7 +17,7 @@ export function OnboardingCoachmark() {
     // Skip if the user has already dismissed it once.
     try { if (localStorage.getItem(STORAGE_KEY) === "1") return; } catch { return; }
 
-    // Wait for the pie pane to mount.
+    // Wait for the mix panel to mount.
     let attempts = 0;
     let cancelled = false;
     const findPane = () => {
@@ -38,7 +35,7 @@ export function OnboardingCoachmark() {
     return () => { cancelled = true; };
   }, []);
 
-  // Auto-dismiss after 12s, or on pie/legend click. The click handlers attach
+  // Auto-dismiss after 12s, or on mix bar / legend click. The click handlers attach
   // 400ms after mount so the page's initial click (if any) doesn't trip them.
   useEffect(() => {
     if (!visible) return;
@@ -47,19 +44,15 @@ export function OnboardingCoachmark() {
       try { localStorage.setItem(STORAGE_KEY, "1"); } catch { /* ignore */ }
     };
     const timeoutId = setTimeout(dismiss, 12000);
-    let pieEl: HTMLElement | null = null;
-    let legendEl: HTMLElement | null = null;
+    let paneEl: HTMLElement | null = null;
     const attachId = setTimeout(() => {
-      pieEl = document.querySelector(".pane-pie svg");
-      legendEl = document.querySelector(".pane-pie .grid");
-      pieEl?.addEventListener("click", dismiss, true);
-      legendEl?.addEventListener("click", dismiss, true);
+      paneEl = document.querySelector(".pane-pie");
+      paneEl?.addEventListener("click", dismiss, true);
     }, 400);
     return () => {
       clearTimeout(timeoutId);
       clearTimeout(attachId);
-      pieEl?.removeEventListener("click", dismiss, true);
-      legendEl?.removeEventListener("click", dismiss, true);
+      paneEl?.removeEventListener("click", dismiss, true);
     };
   }, [visible]);
 
@@ -101,7 +94,7 @@ export function OnboardingCoachmark() {
             className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent px-3 py-1 text-[11px] font-semibold tracking-[0.01em] text-white shadow-md"
             style={{ top: -32 }}
           >
-            New: click a slice to drill in
+            New: click a category to drill in
             <span
               className="absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-accent"
               style={{ bottom: -3 }}

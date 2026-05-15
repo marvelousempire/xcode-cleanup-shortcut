@@ -48,139 +48,129 @@ function AppBody() {
 
   return (
     <>
-      {/* ── DiskAlarmBar: full-viewport-width emergency strip, outside the
-          max-width container so it bleeds edge-to-edge. Always visible
-          regardless of active tab. Updates every 2 s via SSE. ── */}
-      <DiskAlarmBar />
+      {/* Full-viewport shell: alarm bar stays edge-to-edge; content uses horizontal
+          padding only — no max-width gutter so TVs / ultrawide monitors use space. */}
+      <div className="flex min-h-dvh flex-col bg-bg-1">
+        {/* ── DiskAlarmBar — full viewport width, outside horizontal padding ── */}
+        <DiskAlarmBar />
 
-      <div className="mx-auto max-w-[1280px] px-6 pt-7 pb-24">
-        <div className="flex items-center">
-          <div className="flex-1 min-w-0">
-            <AppHeader status={status} onOpenChangelog={openChangelog} />
-          </div>
-          <RunningWidget />
-        </div>
-      <OnboardingCoachmark />
-
-      <div
-        className={cn(
-          // v0.18.2 — port the v0.14 vanilla breakpoint ladder so the layout
-          // works below 1024px instead of collapsing to one column. Before
-          // this, anything narrower than `lg:` (1024px) stacked the sidebar
-          // on top and the main viewport BELOW it — looked like the page was
-          // missing because you had to scroll down to find it.
-          //   < md (768px) → 1 column (sidebar on top, main scrolls below)
-          //   md to lg     → 2 columns (sidebar + main); subcategories show
-          //                  as an inline pill row above the panel
-          //   lg+          → 2 or 3 columns (right sidebar appears when the
-          //                  active tab has subcategories)
-          "grid items-start gap-4.5",
-          "md:grid-cols-[220px_1fr]",
-          hasSub ? "lg:grid-cols-[220px_1fr_220px]" : "lg:grid-cols-[220px_1fr]",
-        )}
-      >
-        <SidebarLeft />
-
-        <main className="min-w-0">
-          {/* Mobile/tablet sub-nav: shown when right sidebar collapses */}
-          {hasSub && tab?.subcategories && (
-            <div className="lg:hidden mb-3 flex flex-wrap gap-1.5 rounded-md border border-border/20 bg-[hsl(var(--bg-2)/0.78)] p-2">
-              {tab.subcategories.map((sub) => {
-                const active = currentSub === sub;
-                return (
-                  <SubPillButton key={sub} sub={sub} active={active} />
-                );
-              })}
+        <div className="flex w-full max-w-none min-w-0 flex-1 flex-col px-4 pt-6 sm:px-6 xl:px-10 2xl:px-14">
+          <header className="flex shrink-0 items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <AppHeader status={status} onOpenChangelog={openChangelog} />
             </div>
-          )}
+            <RunningWidget />
+          </header>
 
-          {/* v0.18.4 — removed the `<AnimatePresence mode="wait"><motion.div
-              initial={{opacity:0,x:6}} animate={{opacity:1,x:0}}>` wrapper. On
-              some environments Motion was leaving the wrapper stuck at the
-              initial opacity-0 state, which made the entire main viewport
-              invisible — exactly the bug the maintainer hit ("big dark side,
-              only the sidebar shows"). A non-animating div is a tiny UX
-              downgrade compared to "the page is missing." Tab switches are
-              instant now. If we want the slide-in back later, drive it from
-              the leaving/entering panel themselves (each one knows when it
-              mounts) instead of an outer AnimatePresence that depends on a
-              composite key. */}
-          <div key={activeTab + ":" + (currentSub || "")}>
-            {activeTab === "ai-chat" ? (
-              <AIAgentChat />
-            ) : activeTab === "applescripts" ? (
-              <AppleScriptsPanel />
-            ) : activeTab === "survey" ? (
-              <SurveyPanel />
-            ) : activeTab === "emergency" ? (
-              <EmergencyPanel />
-            ) : activeTab === "agent" ? (
-              <AgentPanel />
-            ) : activeTab === "settings" ? (
-              <AISettingsPanel />
-            ) : tab?.meta && tab.id === "overview" ? (
-              <OverviewPanel />
-            ) : hasSub && currentSub ? (
-              <CategoryPanel catId={currentSub} displayLabel={SUB_LABELS[currentSub]} />
-            ) : tab?.category ? (
-              <CategoryPanel catId={tab.category} />
-            ) : (
-              <div className="text-center text-fg-faint py-12">Loading…</div>
+          <OnboardingCoachmark />
+
+          <div
+            className={cn(
+              "grid w-full max-w-none min-w-0 flex-1 auto-rows-auto items-start gap-4 pb-6 md:gap-5 xl:gap-6",
+              // Fluid side rails: capped min/max width, center column absorbs TV width.
+              "grid-cols-1",
+              "md:grid-cols-[clamp(11rem,15vw,17.25rem)_minmax(0,1fr)]",
+              hasSub
+                ? "lg:grid-cols-[clamp(11rem,15vw,17.25rem)_minmax(0,1fr)_clamp(11rem,15vw,17.25rem)]"
+                : "lg:grid-cols-[clamp(11rem,15vw,17.25rem)_minmax(0,1fr)]",
             )}
+          >
+            <SidebarLeft />
+
+            <main className="min-w-0 max-w-none">
+              {/* Mobile/tablet sub-nav: shown when right sidebar collapses */}
+              {hasSub && tab?.subcategories && (
+                <div className="lg:hidden mb-3 flex flex-wrap gap-1.5 rounded-md border border-border/20 bg-[hsl(var(--bg-2)/0.78)] p-2">
+                  {tab.subcategories.map((sub) => {
+                    const active = currentSub === sub;
+                    return (
+                      <SubPillButton key={sub} sub={sub} active={active} />
+                    );
+                  })}
+                </div>
+              )}
+
+              <div key={activeTab + ":" + (currentSub || "")}>
+                {activeTab === "ai-chat" ? (
+                  <AIAgentChat />
+                ) : activeTab === "applescripts" ? (
+                  <AppleScriptsPanel />
+                ) : activeTab === "survey" ? (
+                  <SurveyPanel />
+                ) : activeTab === "emergency" ? (
+                  <EmergencyPanel />
+                ) : activeTab === "agent" ? (
+                  <AgentPanel />
+                ) : activeTab === "settings" ? (
+                  <AISettingsPanel />
+                ) : tab?.meta && tab.id === "overview" ? (
+                  <OverviewPanel />
+                ) : hasSub && currentSub ? (
+                  <CategoryPanel catId={currentSub} displayLabel={SUB_LABELS[currentSub]} />
+                ) : tab?.category ? (
+                  <CategoryPanel catId={tab.category} />
+                ) : (
+                  <div className="text-center text-fg-faint py-12">Loading…</div>
+                )}
+              </div>
+
+              {/* On Overview, the terminal lives inside the 3-pane top — don't
+                  render a second copy at the bottom of the viewport. Settings has
+                  no terminal. On every other tab, the bottom console is the only
+                  place output appears. */}
+              {activeTab !== "overview" && activeTab !== "settings" && activeTab !== "agent" && activeTab !== "ai-chat" && activeTab !== "applescripts" && <OutputConsole />}
+            </main>
+
+            {hasSub ? (
+              <div className="hidden min-w-0 lg:block">
+                <SidebarRight />
+              </div>
+            ) : null}
           </div>
 
-          {/* On Overview, the terminal lives inside the 3-pane top — don't
-              render a second copy at the bottom of the viewport. Settings has
-              no terminal. On every other tab, the bottom console is the only
-              place output appears. */}
-          {/* Emergency + Agent + Scripts panels have their own surfaces; Settings has none */}
-          {activeTab !== "overview" && activeTab !== "settings" && activeTab !== "agent" && activeTab !== "ai-chat" && activeTab !== "applescripts" && <OutputConsole />}
-        </main>
+          <footer className="mt-auto shrink-0 border-t border-border/15 pb-6 pt-4 text-center text-[12px] text-fg-dim">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+              <button
+                type="button"
+                onClick={() => setShowAbout(true)}
+                className="font-semibold text-fg border-b border-border/20 hover:border-accent hover:text-accent transition-colors"
+              >
+                About
+              </button>
+              <span className="text-fg-faint">·</span>
+              <a
+                href="https://github.com/marvelousempire/xcode-cleanup-shortcut"
+                target="_blank"
+                rel="noreferrer"
+                className="border-b border-border/20 text-fg no-underline transition-colors hover:border-accent hover:text-accent"
+              >
+                GitHub
+              </a>
+              <span className="text-fg-faint">·</span>
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); openChangelog(); }}
+                className="border-b border-border/20 text-fg no-underline transition-colors hover:border-accent hover:text-accent"
+              >
+                Changelog
+              </a>
+              <span className="text-fg-faint">·</span>
+              <span className="text-fg-faint">MIT</span>
+              <span className="text-fg-faint">·</span>
+              <span className="text-fg-faint">localhost-only</span>
+            </div>
+            {/* Copyright per the `learn-mappers-copyright` global rule —
+                AVERY GOODMAN in all caps, UCC 1-308 reservation in the same block. */}
+            <div className="mt-2 text-[11px] text-fg-faint tracking-[0.01em]">
+              © 2026 Learn Mappers LLC DBA AVERY GOODMAN · All rights reserved · Intellectual property · UCC 1-308
+            </div>
+          </footer>
 
-        {hasSub ? <SidebarRight /> : null}
+        </div>
       </div>
-
-      <footer className="mt-9 text-center text-[12px] text-fg-dim">
-        <div className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-          <button
-            type="button"
-            onClick={() => setShowAbout(true)}
-            className="font-semibold text-fg border-b border-border/20 hover:border-accent hover:text-accent transition-colors"
-          >
-            About
-          </button>
-          <span className="text-fg-faint">·</span>
-          <a
-            href="https://github.com/marvelousempire/xcode-cleanup-shortcut"
-            target="_blank"
-            rel="noreferrer"
-            className="border-b border-border/20 text-fg no-underline transition-colors hover:border-accent hover:text-accent"
-          >
-            GitHub
-          </a>
-          <span className="text-fg-faint">·</span>
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); openChangelog(); }}
-            className="border-b border-border/20 text-fg no-underline transition-colors hover:border-accent hover:text-accent"
-          >
-            Changelog
-          </a>
-          <span className="text-fg-faint">·</span>
-          <span className="text-fg-faint">MIT</span>
-          <span className="text-fg-faint">·</span>
-          <span className="text-fg-faint">localhost-only</span>
-        </div>
-        {/* Copyright per the `learn-mappers-copyright` global rule —
-            AVERY GOODMAN in all caps, UCC 1-308 reservation in the same block. */}
-        <div className="mt-2 text-[11px] text-fg-faint tracking-[0.01em]">
-          © 2026 Learn Mappers LLC DBA AVERY GOODMAN · All rights reserved · Intellectual property · UCC 1-308
-        </div>
-      </footer>
 
       <ChangelogModal open={showChangelog} onClose={closeChangelog} />
       <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
-    </div>
     </>
   );
 }

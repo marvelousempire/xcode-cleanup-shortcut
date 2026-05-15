@@ -1,6 +1,6 @@
 # Feature Ledger
 
-*Last updated: 2026-05-12 12:55 Eastern (v0.13.0)*
+*Last updated: 2026-05-15 Eastern (v0.27.5)*
 
 Status legend: **✅ shipped** · **✔️ partial / works but rough** · **🔜 next** · **❌ deferred / out of scope**
 
@@ -54,6 +54,7 @@ Status legend: **✅ shipped** · **✔️ partial / works but rough** · **🔜
 | 25i | `prefers-reduced-motion` honoured globally | ✅ | global | v0.11.0 |
 | 25j | Lucide tab icons (emoji dropped) | ✅ | tab bar | v0.11.0 |
 | 25k | Category callout in panel header (Docker.raw size highlight) | ✅ | Docker panel header | v0.13.0 |
+| 25l | **Library atlas** — expandable `~/Library` map (Caches, Application Support, Containers, Group Containers, Developer, Logs, Mobile Documents, prefs caution) with tab-jump pills incl. LLM sub-tabs | ✅ | Overview → Home folder guidance | v0.27.5 |
 
 ## Cleanup categories (~120 paths, 35+ actions)
 
@@ -110,6 +111,7 @@ These five releases substantially widened DustPan from "Xcode cleaner" to "local
 | **v0.23.0** | 💬 Chat with SADPA (Plan 0023 Ship 1) | Conversational agent with tool-calling. Anthropic + OpenAI tool-use loops. 13 curated tools (read-only + action). Sandboxed filesystem peek with allowlist. Approval cards pull desc+cost from `cleaners.py`. Settings toggle for safe-tier auto-approve. |
 | **v0.24.0** | 🔒 Foreign-ownership discovery (Plan 0024) | Finds disk locked by previous users (Homebrew owned by old account, `/Users/<oldname>/` still on disk). Survey + Emergency surfaces show takeover commands with [📋 Copy]. AI agent gets `find_foreign_ownership` tool. Never runs `sudo` — macOS password prompt is the consent gate. |
 | **v0.25.0** | AI cleaner proposals (Plan 0023 Ship 2) | `propose_new_cleaner` tool (#15). Proposals land in review inbox at `~/.dustpan/proposals.json`. Accept generates paste-ready Python snippet for `cleaners.py` — never auto-edits source. Sidebar badge with pending count. |
+| **v0.27.5** | Library atlas (Overview) | Teach **where macOS stacks weight** under the home folder, with one-click navigation to the matching category tabs — complements **Space Survey** and **Home folder guidance**. |
 
 ## Next (v0.26+ wishlist)
 
