@@ -425,6 +425,78 @@ CATEGORIES = {
         },
     },
 
+    # ─── Automation Workstation ────────────────────────────────────────
+    "automation": {
+        "label": "Automation Workstation",
+        "icon":  "⚙️",
+        "tagline": "Nephew, n8n, npm/pnpm, Docker, and local agent runtime pressure.",
+        "groups": {
+            "safe": [
+                ("npm cache",                         "~/.npm"),
+                ("pnpm store",                        "~/Library/pnpm/store"),
+                ("pnpm global store",                 "~/.local/share/pnpm"),
+                ("n8n user-space npm cache",          "~/.nephew/npm-cache"),
+                ("n8n failed install artifacts",      "~/.nephew/npm-global"),
+            ],
+            "probably_safe": [
+                ("n8n local config/state",            "~/.n8n"),
+                ("Nephew run traces",                 "~/Developer/nephew/data/run-traces"),
+                ("Cursor terminal/session caches",    "~/.cursor/projects"),
+            ],
+            "caution": [
+                ("Developer workspaces",              "~/Developer"),
+                ("Docker VM disk",                    "~/Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw"),
+                ("Claude Desktop app support",        "~/Library/Application Support/Claude"),
+                ("Cursor app support",                "~/Library/Application Support/Cursor"),
+            ],
+        },
+        "actions": {
+            "automation-diagnose": {
+                "label": "Diagnose automation workstation health",
+                "desc":  "Read-only check for disk, package-manager activity, known service ports, Docker state, Nephew/n8n processes, and cache pressure.",
+                "cost":  "Read-only. Nothing is stopped, deleted, or blocked.",
+                "informational": True,
+                "shell": (
+                    "echo 'Automation Workstation Health'; echo ''; "
+                    "echo 'Disk:'; df -h / | awk 'NR==2{print \"  \"$4\" free of \"$2\" (\"$5\" used)\"}'; echo ''; "
+                    "echo 'Active automation/package processes:'; "
+                    "pgrep -lf '[n]pm|[p]npm|[n]ode|[d]ocker|[D]ocker|[n]8n|[n]ephew|[o]llama' 2>/dev/null | sed 's/^/  /' || echo '  none'; echo ''; "
+                    "echo 'Known local ports:'; "
+                    "lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null | egrep ':(8765|7338|7337|5678|11434|3000|4000|5432|6379) ' | sed 's/^/  /' || echo '  none'; echo ''; "
+                    "echo 'Cache/state sizes:'; "
+                    "du -sh ~/.npm ~/Library/pnpm/store ~/.local/share/pnpm ~/.nephew ~/.n8n ~/Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw 2>/dev/null | sort -h | sed 's/^/  /'; echo ''; "
+                    "echo 'Docker:'; "
+                    "if command -v docker >/dev/null 2>&1; then docker system df 2>&1 | sed 's/^/  /'; else echo '  Docker CLI not found'; fi"
+                ),
+            },
+            "automation-package-cache-preflight": {
+                "label": "Show npm/pnpm cache pressure",
+                "desc":  "Lists npm, pnpm, and failed n8n install cache sizes before any cleanup.",
+                "cost":  "Read-only. Nothing is deleted.",
+                "informational": True,
+                "shell": (
+                    "echo 'Package manager cache pressure'; echo ''; "
+                    "du -sh ~/.npm ~/Library/pnpm/store ~/.local/share/pnpm ~/.nephew/npm-cache ~/.nephew/npm-global 2>/dev/null | sort -h | sed 's/^/  /'; echo ''; "
+                    "echo 'Active installs:'; "
+                    "pgrep -lf '[n]pm|[p]npm|[n]ode-gyp' 2>/dev/null | sed 's/^/  /' || echo '  none'"
+                ),
+            },
+            "automation-clear-failed-n8n-install-artifacts": {
+                "label": "Clear failed n8n install artifacts",
+                "desc":  "Removes DustPan/Nephew-specific failed n8n npm-global and npm-cache directories under ~/.nephew.",
+                "cost":  "Only the failed user-space n8n install cache is removed. A future n8n install re-downloads packages. Existing ~/.n8n workflow state is untouched.",
+                "shell": (
+                    "echo 'Before:'; du -sh ~/.nephew/npm-cache ~/.nephew/npm-global 2>/dev/null || true; "
+                    "ACTIVE=$(pgrep -lf '[n]pm|[p]npm|[n]8n' 2>/dev/null || true); "
+                    "if [ -n \"$ACTIVE\" ]; then echo 'Active npm/pnpm/n8n process found — refusing to delete caches mid-run:'; echo \"$ACTIVE\" | sed 's/^/  /'; exit 2; fi; "
+                    "rm -rf ~/.nephew/npm-cache ~/.nephew/npm-global 2>/dev/null; "
+                    "echo 'Done. ~/.n8n was not touched.'; "
+                    "df -h / | awk 'NR==2{print \"  Disk: \"$4\" free of \"$2}'"
+                ),
+            },
+        },
+    },
+
     # ─── Adobe (Creative sub-tab) ──────────────────────────────────────
     "creative-adobe": {
         "label": "Adobe",
@@ -1964,6 +2036,10 @@ GROWTH_WATCH_PATHS = [
     {"id": "docker-vm-raw", "label": "Docker VM disk (Docker.raw)", "path": "~/Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw"},
     {"id": "docker-group-container", "label": "Docker group container", "path": "~/Library/Group Containers/group.com.docker"},
     {"id": "npm-cache", "label": "npm cache", "path": "~/.npm"},
+    {"id": "pnpm-store", "label": "pnpm store", "path": "~/Library/pnpm/store"},
+    {"id": "nephew-n8n-cache", "label": "Nephew n8n failed-install cache", "path": "~/.nephew/npm-cache"},
+    {"id": "nephew-run-traces", "label": "Nephew run traces", "path": "~/Developer/nephew/data/run-traces"},
+    {"id": "cursor-project-cache", "label": "Cursor project/session cache", "path": "~/.cursor/projects"},
     {"id": "brew-cache", "label": "Homebrew cache", "path": "~/Library/Caches/Homebrew"},
 ]
 
@@ -1972,6 +2048,7 @@ GROWTH_WATCH_PATHS = [
 # treats them as special tabs (Overview aggregates everything across categories).
 TABS = [
     {"id": "overview",      "label": "Overview",      "meta": True},
+    {"id": "server-performance", "label": "Server Performance", "meta": True},
     {"id": "space-eaters",  "label": "Space Eaters",  "category": "space-eaters"},
     {"id": "icloud",        "label": "iCloud Drive",  "category": "icloud"},
     {"id": "xcode",         "label": "Xcode",         "category": "xcode"},
@@ -1979,6 +2056,7 @@ TABS = [
     {"id": "browsers",      "label": "Browsers",      "category": "browsers"},
     {"id": "apps",          "label": "Apps",          "category": "apps"},
     {"id": "docker",        "label": "Docker",        "category": "docker"},
+    {"id": "automation",    "label": "Automation",    "category": "automation"},
     {"id": "downloads",     "label": "Downloads",     "category": "downloads"},
     {"id": "creative",      "label": "Creative",      "subcategories": [
         "creative-adobe",

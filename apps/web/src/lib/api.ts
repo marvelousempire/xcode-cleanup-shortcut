@@ -9,6 +9,7 @@ import type {
   LiveEvent,
   AIStatus,
   Habit,
+  PerformancePayload,
   Run,
 } from "./types";
 
@@ -73,6 +74,7 @@ export interface EmergencyEstimate {
 
 export const api = {
   status:    () => jsonFetch<DiskStatus>("/api/status"),
+  performance: () => jsonFetch<PerformancePayload>("/api/performance/status"),
   emergencyEstimate: () => jsonFetch<EmergencyEstimate>("/api/emergency/estimate"),
   growth:    () => jsonFetch<GrowthPayload>("/api/growth"),
   report:    () => jsonFetch<HistoryReport>("/api/report"),

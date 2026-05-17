@@ -8,6 +8,7 @@ import { CategoryPanel } from "./components/CategoryPanel";
 import { AISettingsPanel } from "./components/AISettingsPanel";
 import { AgentPanel } from "./components/AgentPanel";
 import { EmergencyPanel } from "./components/EmergencyPanel";
+import { ServerPerformancePanel } from "./components/ServerPerformancePanel";
 import { SurveyPanel } from "./components/SurveyPanel";
 import { AIAgentChat } from "./components/AIAgentChat";
 import { AppleScriptsPanel } from "./components/AppleScriptsPanel";
@@ -99,6 +100,8 @@ function AppBody() {
                   <SurveyPanel />
                 ) : activeTab === "emergency" ? (
                   <EmergencyPanel />
+                ) : activeTab === "server-performance" ? (
+                  <ServerPerformancePanel />
                 ) : activeTab === "agent" ? (
                   <AgentPanel />
                 ) : activeTab === "settings" ? (
@@ -118,7 +121,7 @@ function AppBody() {
                   render a second copy at the bottom of the viewport. Settings has
                   no terminal. On every other tab, the bottom console is the only
                   place output appears. */}
-              {activeTab !== "overview" && activeTab !== "settings" && activeTab !== "agent" && activeTab !== "ai-chat" && activeTab !== "applescripts" && <OutputConsole />}
+              {activeTab !== "overview" && activeTab !== "server-performance" && activeTab !== "settings" && activeTab !== "agent" && activeTab !== "ai-chat" && activeTab !== "applescripts" && <OutputConsole />}
             </main>
 
             {hasSub ? (

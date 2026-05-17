@@ -60,6 +60,7 @@ writing them into the repo we get:
 | [0029](0029-xcode-build-rescue.md) | Xcode Build Rescue — disk/process diagnostics + guarded cleanup for DerivedData, DeviceSupport, SwiftPM, and Xcode caches | drafted | v0.27.6 |
 | [0030](0030-dev-build-rescue-payload.md) | Dev Build Rescue Payload — adds Claude VM bundle cleanup + LLM heavy-hitter diagnosis to the Xcode build rescue path | implemented in working tree | v0.27.7 |
 | [0031](0031-ai-agent-rules-handbook.md) | AI_AGENT_RULES Handbook — root AI binder plus Ask DustPan prompt/tool loading | implemented in working tree | v0.27.8 / v0.27.9 |
+| [0032](0032-server-performance-and-cleaning-split.md) | Server Performance and Cleaning split — second full page for iStat-style stats, Little Snitch-style network visibility, activity monitoring, and guarded controls | active | pending |
 
 ## When to add a plan
 

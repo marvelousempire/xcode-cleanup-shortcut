@@ -7,6 +7,11 @@ Reads cleanup definitions from cleaners.CATEGORIES.
 Endpoints:
     GET  /                              → index.html
     GET  /api/status                    → {free_gb, used_gb, total_gb, used_pct}
+    GET  /api/performance/status        → server-performance summary
+    GET  /api/performance/processes     → top local processes
+    GET  /api/performance/network       → listening ports + established TCP
+    GET  /api/performance/services      → known local/LAN/VPS service health
+    GET  /api/performance/activity      → recent activity and pressure signals
     GET  /api/tabs                      → tab structure for the UI
     GET  /api/category/<id>/scan        → {groups, totals} for that category
     GET  /api/category/<id>/actions     → list of {id, label, desc, cost} for that category
@@ -277,6 +282,284 @@ def get_status() -> dict:
         "total_gb": round(total / 1024**3, 1),
         "used_pct": round(used / total * 100, 1),
         "version":  get_version(),
+    }
+
+
+def _run_capture(cmd: list[str], timeout: float = 3.0) -> tuple[int, str, str]:
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return (r.returncode, r.stdout.strip(), r.stderr.strip())
+    except FileNotFoundError as exc:
+        return (127, "", str(exc))
+    except subprocess.TimeoutExpired:
+        return (124, "", "timed out")
+
+
+def _port_open(host: str, port: int, timeout: float = 0.25) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _load_stats() -> dict:
+    try:
+        load_1, load_5, load_15 = os.getloadavg()
+    except OSError:
+        load_1 = load_5 = load_15 = 0.0
+    cpu_count = os.cpu_count() or 1
+    return {
+        "load_1": round(load_1, 2),
+        "load_5": round(load_5, 2),
+        "load_15": round(load_15, 2),
+        "cpu_count": cpu_count,
+        "load_pct": round(min(load_1 / cpu_count * 100, 999), 1),
+    }
+
+
+def _memory_stats() -> dict:
+    total_mb = 0
+    free_mb = 0
+    rc, out, _err = _run_capture(["sysctl", "-n", "hw.memsize"], timeout=2)
+    if rc == 0:
+        try:
+            total_mb = int(out.strip()) // 1024 // 1024
+        except ValueError:
+            total_mb = 0
+
+    rc, out, _err = _run_capture(["vm_stat"], timeout=2)
+    if rc == 0:
+        page_size = 4096
+        pages: dict[str, int] = {}
+        for line in out.splitlines():
+            if "page size of" in line:
+                m = re.search(r"page size of (\d+) bytes", line)
+                if m:
+                    page_size = int(m.group(1))
+                continue
+            if ":" not in line:
+                continue
+            key, val = line.split(":", 1)
+            try:
+                pages[key.strip()] = int(re.sub(r"[^0-9]", "", val))
+            except ValueError:
+                continue
+        free_pages = (
+            pages.get("Pages free", 0)
+            + pages.get("Pages inactive", 0)
+            + pages.get("Pages speculative", 0)
+        )
+        free_mb = int(free_pages * page_size / 1024 / 1024)
+
+    used_mb = max(total_mb - free_mb, 0) if total_mb else 0
+    return {
+        "total_mb": total_mb,
+        "free_mb": free_mb,
+        "used_mb": used_mb,
+        "used_pct": round((used_mb / total_mb * 100), 1) if total_mb else 0.0,
+    }
+
+
+def _top_processes(limit: int = 12) -> list[dict]:
+    rc, out, _err = _run_capture(["ps", "-axo", "pid,pcpu,pmem,rss,comm"], timeout=3)
+    if rc != 0:
+        return []
+    rows = []
+    for line in out.splitlines()[1:]:
+        parts = line.split(None, 4)
+        if len(parts) < 5:
+            continue
+        try:
+            pid = int(parts[0])
+            cpu = float(parts[1])
+            mem = float(parts[2])
+            rss_mb = round(int(parts[3]) / 1024, 1)
+        except ValueError:
+            continue
+        rows.append({
+            "pid": pid,
+            "cpu_pct": cpu,
+            "mem_pct": mem,
+            "rss_mb": rss_mb,
+            "name": os.path.basename(parts[4]) or parts[4],
+        })
+    rows.sort(key=lambda r: (r["cpu_pct"], r["rss_mb"]), reverse=True)
+    return rows[:limit]
+
+
+def _parse_lsof(lines: list[str], limit: int = 80) -> list[dict]:
+    out = []
+    for line in lines[:limit]:
+        parts = line.split()
+        if len(parts) < 9:
+            continue
+        name = " ".join(parts[8:])
+        out.append({
+            "command": parts[0],
+            "pid": int(parts[1]) if parts[1].isdigit() else 0,
+            "user": parts[2],
+            "protocol": parts[7],
+            "name": name,
+        })
+    return out
+
+
+def _network_snapshot() -> dict:
+    if not shutil.which("lsof"):
+        return {"available": False, "listeners": [], "connections": [], "message": "lsof unavailable"}
+
+    rc_listen, listen_out, listen_err = _run_capture(
+        ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN"], timeout=4
+    )
+    rc_conn, conn_out, conn_err = _run_capture(
+        ["lsof", "-nP", "-iTCP", "-sTCP:ESTABLISHED"], timeout=4
+    )
+    listeners = _parse_lsof(listen_out.splitlines()[1:]) if rc_listen == 0 else []
+    connections = _parse_lsof(conn_out.splitlines()[1:]) if rc_conn == 0 else []
+    return {
+        "available": True,
+        "listeners": listeners[:50],
+        "connections": connections[:50],
+        "errors": [e for e in [listen_err if rc_listen else "", conn_err if rc_conn else ""] if e],
+    }
+
+
+def _known_services() -> list[dict]:
+    services = [
+        {"id": "dustpan", "label": "DustPan UI", "host": "127.0.0.1", "port": PREFERRED_PORT},
+        {"id": "nephew-loop", "label": "Nephew loop server", "host": "127.0.0.1", "port": 7338},
+        {"id": "nephew-loop-legacy", "label": "Nephew loop legacy port", "host": "127.0.0.1", "port": 7337},
+        {"id": "n8n", "label": "n8n", "host": "127.0.0.1", "port": 5678},
+        {"id": "ollama", "label": "Ollama", "host": "127.0.0.1", "port": 11434},
+        {"id": "gitlab", "label": "Self-hosted GitLab", "host": "clinic.yousirjuan.ai", "port": 443},
+    ]
+    out = []
+    for svc in services:
+        reachable = _port_open(svc["host"], svc["port"])
+        out.append({
+            **svc,
+            "reachable": reachable,
+            "status": "online" if reachable else "offline",
+            "scope": "local" if svc["host"].startswith("127.") else "remote",
+        })
+
+    rc, out_text, _err = _run_capture(["pgrep", "-lf", "Docker|n8n|nephew|ollama|node|python"], timeout=3)
+    process_lines = [line for line in out_text.splitlines() if line.strip()] if rc == 0 else []
+    return out + [{
+        "id": "active-automation-processes",
+        "label": "Automation processes",
+        "host": "localhost",
+        "port": 0,
+        "reachable": bool(process_lines),
+        "status": f"{len(process_lines)} matching processes" if process_lines else "none seen",
+        "scope": "local",
+        "details": process_lines[:20],
+    }]
+
+
+def _activity_snapshot() -> dict:
+    interesting = [
+        ("npm cache", "~/.npm"),
+        ("pnpm store", "~/Library/pnpm/store"),
+        ("pnpm home", "~/.local/share/pnpm"),
+        ("node_modules in Developer", "~/Developer"),
+        ("Docker VM disk", "~/Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw"),
+        ("Claude app support", "~/Library/Application Support/Claude"),
+        ("Cursor app support", "~/Library/Application Support/Cursor"),
+    ]
+    heavy_paths = []
+    for label, path in interesting:
+        _gn, _ln, _pth, size_kb, exists, denied = _measure_path(("-", label, path))
+        heavy_paths.append({
+            "label": label,
+            "path": path,
+            "exists": exists,
+            "permission_denied": denied,
+            "size_gb": round(size_kb / 1024 / 1024, 2),
+        })
+    heavy_paths.sort(key=lambda r: r["size_gb"], reverse=True)
+
+    rc, out, _err = _run_capture(["pgrep", "-lf", "npm|pnpm|node|docker|Docker|n8n|nephew"], timeout=3)
+    processes = [line for line in out.splitlines() if line.strip()] if rc == 0 else []
+    return {
+        "heavy_paths": heavy_paths,
+        "automation_processes": processes[:30],
+        "recommendations": _performance_recommendations(heavy_paths, processes),
+    }
+
+
+def _performance_recommendations(paths: list[dict], processes: list[str]) -> list[dict]:
+    recs = []
+    free_gb = get_status()["free_gb"]
+    if free_gb < 10:
+        recs.append({
+            "severity": "critical",
+            "title": "Disk pressure can break Docker, npm, pnpm, Xcode, and agent runs.",
+            "action": "Open Emergency Rescue, run read-only estimates first, then run guarded cleanup.",
+            "target_tab": "emergency",
+        })
+    elif free_gb < 25:
+        recs.append({
+            "severity": "warning",
+            "title": "Free space is low enough to slow builds and package installs.",
+            "action": "Run Cleaning scans and clear safe dev caches before large installs.",
+            "target_tab": "overview",
+        })
+    if any("npm" in p or "pnpm" in p for p in processes):
+        recs.append({
+            "severity": "warning",
+            "title": "Package manager activity is running.",
+            "action": "Avoid deleting package caches until the install finishes.",
+            "target_tab": "server-performance",
+        })
+    docker_path = next((p for p in paths if p["label"] == "Docker VM disk"), None)
+    if docker_path and docker_path["size_gb"] >= 20:
+        recs.append({
+            "severity": "warning",
+            "title": "Docker VM disk is a major space holder.",
+            "action": "Open Docker cleaning actions; start with docker system df, then prune guarded items.",
+            "target_tab": "docker",
+        })
+    return recs
+
+
+def get_performance_payload() -> dict:
+    status = get_status()
+    system = {
+        "disk": status,
+        "load": _load_stats(),
+        "memory": _memory_stats(),
+    }
+    processes = _top_processes()
+    network = _network_snapshot()
+    services = _known_services()
+    activity = _activity_snapshot()
+    return {
+        "ts": time.time(),
+        "host": socket.gethostname(),
+        "lan_ip": _local_ip(),
+        "system": system,
+        "processes": processes,
+        "network": network,
+        "services": services,
+        "activity": activity,
+        "controls": [
+            {
+                "id": "open-emergency-rescue",
+                "label": "Open Emergency Rescue",
+                "kind": "navigation",
+                "target_tab": "emergency",
+                "approval_required": False,
+            },
+            {
+                "id": "open-docker-cleaning",
+                "label": "Open Docker cleaning actions",
+                "kind": "navigation",
+                "target_tab": "docker",
+                "approval_required": False,
+            },
+        ],
     }
 
 
@@ -721,6 +1004,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._serve_file("index.html", "text/html; charset=utf-8")
         if path == "/api/status":
             return self._serve_json(get_status())
+        if path == "/api/performance/status":
+            return self._serve_json(get_performance_payload())
+        if path == "/api/performance/processes":
+            return self._serve_json({"processes": _top_processes()})
+        if path == "/api/performance/network":
+            return self._serve_json(_network_snapshot())
+        if path == "/api/performance/services":
+            return self._serve_json({"services": _known_services()})
+        if path == "/api/performance/activity":
+            return self._serve_json(_activity_snapshot())
         if path == "/api/tabs":
             return self._serve_json({"tabs": cleaners.TABS})
         if path == "/api/report":

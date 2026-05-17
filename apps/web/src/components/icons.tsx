@@ -33,11 +33,13 @@ import {
   Flame,
   Cloud,
   HardDriveDownload,
+  Activity,
 } from "lucide-react";
 
 // Tab-icon map keyed by tab id. Mirrors TAB_ICONS in the legacy vanilla UI.
 export const TAB_ICONS: Record<string, React.ElementType> = {
   overview:       LayoutGrid,
+  "server-performance": Activity,
   "space-eaters": Flame,
   icloud:         Cloud,
   xcode:          Hammer,

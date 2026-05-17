@@ -144,6 +144,91 @@ export interface Run {
   disk_after_gb: number | null;
 }
 
+export interface PerformanceProcess {
+  pid: number;
+  name: string;
+  cpu_pct: number;
+  mem_pct: number;
+  rss_mb: number;
+}
+
+export interface PerformanceNetworkRow {
+  command: string;
+  pid: number;
+  user: string;
+  protocol: string;
+  name: string;
+}
+
+export interface PerformanceService {
+  id: string;
+  label: string;
+  host: string;
+  port: number;
+  reachable: boolean;
+  status: string;
+  scope: "local" | "remote" | string;
+  details?: string[];
+}
+
+export interface PerformanceActivityPath {
+  label: string;
+  path: string;
+  exists: boolean;
+  permission_denied: boolean;
+  size_gb: number;
+}
+
+export interface PerformanceRecommendation {
+  severity: "critical" | "warning" | "info" | string;
+  title: string;
+  action: string;
+  target_tab?: string;
+}
+
+export interface PerformancePayload {
+  ts: number;
+  host: string;
+  lan_ip: string | null;
+  system: {
+    disk: DiskStatus;
+    load: {
+      load_1: number;
+      load_5: number;
+      load_15: number;
+      cpu_count: number;
+      load_pct: number;
+    };
+    memory: {
+      total_mb: number;
+      free_mb: number;
+      used_mb: number;
+      used_pct: number;
+    };
+  };
+  processes: PerformanceProcess[];
+  network: {
+    available: boolean;
+    listeners: PerformanceNetworkRow[];
+    connections: PerformanceNetworkRow[];
+    errors?: string[];
+    message?: string;
+  };
+  services: PerformanceService[];
+  activity: {
+    heavy_paths: PerformanceActivityPath[];
+    automation_processes: string[];
+    recommendations: PerformanceRecommendation[];
+  };
+  controls: Array<{
+    id: string;
+    label: string;
+    kind: string;
+    target_tab?: string;
+    approval_required: boolean;
+  }>;
+}
+
 // Live stream events pushed from /api/live
 export type LiveEvent =
   | { kind: "disk"; free_gb: number; used_gb: number; total_gb: number; used_pct: number; ts: number }

@@ -142,11 +142,14 @@ interface CardState {
 function useElapsed(startedAt: number | null, done: boolean) {
   const [elapsed, setElapsed] = useState(0);
   // Tick every second while running
-  useState(() => {
-    if (!startedAt || done) return;
+  useEffect(() => {
+    if (!startedAt || done) {
+      if (!startedAt) setElapsed(0);
+      return;
+    }
     const iv = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
     return () => clearInterval(iv);
-  });
+  }, [startedAt, done]);
   return elapsed;
 }
 
