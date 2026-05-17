@@ -1,4 +1,4 @@
-Status: drafted
+Status: shipped (commit ee26693, v0.27.6)
 
 # Plan 0029 — Xcode Build Rescue
 
