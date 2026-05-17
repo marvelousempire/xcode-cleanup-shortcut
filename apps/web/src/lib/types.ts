@@ -6,6 +6,9 @@ export interface DiskStatus {
   total_gb: number;
   used_pct: number;
   version?: string;
+  server_host?: string;
+  server_port?: number;
+  server_scope?: "localhost" | "network" | string;
 }
 
 export interface HistoryReport {
@@ -189,6 +192,7 @@ export interface PerformanceRecommendation {
 export interface PerformancePayload {
   ts: number;
   host: string;
+  platform?: string;
   lan_ip: string | null;
   system: {
     disk: DiskStatus;
@@ -215,6 +219,12 @@ export interface PerformancePayload {
     message?: string;
   };
   services: PerformanceService[];
+  series?: {
+    disk?: Array<DiskStatus & { ts: number }>;
+    load?: Array<PerformancePayload["system"]["load"] & { ts: number }>;
+    memory?: Array<PerformancePayload["system"]["memory"] & { ts: number }>;
+  };
+  bottlenecks?: PerformanceBottleneck[];
   activity: {
     heavy_paths: PerformanceActivityPath[];
     automation_processes: string[];
@@ -227,6 +237,26 @@ export interface PerformancePayload {
     target_tab?: string;
     approval_required: boolean;
   }>;
+}
+
+export interface PerformanceBottleneck {
+  severity: "critical" | "warning" | "info" | string;
+  title: string;
+  detail: string;
+  target_tab?: string;
+}
+
+export interface PerformanceBenchmarkResult {
+  ts: number;
+  duration_ms: number;
+  overall: number;
+  scores: Record<string, number | null>;
+  notes: string[];
+}
+
+export interface PerformanceBenchmarkStatus {
+  available: boolean;
+  last_result: PerformanceBenchmarkResult | null;
 }
 
 // Live stream events pushed from /api/live

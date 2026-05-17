@@ -9,6 +9,7 @@ import type {
   LiveEvent,
   AIStatus,
   Habit,
+  PerformanceBenchmarkStatus,
   PerformancePayload,
   Run,
 } from "./types";
@@ -75,6 +76,11 @@ export interface EmergencyEstimate {
 export const api = {
   status:    () => jsonFetch<DiskStatus>("/api/status"),
   performance: () => jsonFetch<PerformancePayload>("/api/performance/status"),
+  performanceSnapshot: () => jsonFetch<PerformancePayload>("/api/performance/snapshot"),
+  performanceBenchmark: () => jsonFetch<PerformanceBenchmarkStatus>("/api/performance/benchmark"),
+  runPerformanceBenchmark: () =>
+    fetch(API_BASE + "/api/performance/benchmark/run", { method: "POST", body: "{}" })
+      .then((r) => r.json()) as Promise<PerformanceBenchmarkStatus["last_result"]>,
   emergencyEstimate: () => jsonFetch<EmergencyEstimate>("/api/emergency/estimate"),
   growth:    () => jsonFetch<GrowthPayload>("/api/growth"),
   report:    () => jsonFetch<HistoryReport>("/api/report"),

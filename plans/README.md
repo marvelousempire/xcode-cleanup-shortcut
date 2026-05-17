@@ -61,6 +61,7 @@ writing them into the repo we get:
 | [0030](0030-dev-build-rescue-payload.md) | Dev Build Rescue Payload — adds Claude VM bundle cleanup + LLM heavy-hitter diagnosis to the Xcode build rescue path | implemented in working tree | v0.27.7 |
 | [0031](0031-ai-agent-rules-handbook.md) | AI_AGENT_RULES Handbook — root AI binder plus Ask DustPan prompt/tool loading | implemented in working tree | v0.27.8 / v0.27.9 |
 | [0032](0032-server-performance-and-cleaning-split.md) | Server Performance and Cleaning split — second full page for iStat-style stats, Little Snitch-style network visibility, activity monitoring, and guarded controls | active | pending |
+| [0033](0033-realtime-cross-platform-performance-analytics.md) | Realtime Cross-Platform Performance Analytics — live metrics spine, Mac/Linux probes, charts, bottleneck analytics, and DustBench benchmark suite | drafted | pending |
 
 ## When to add a plan
 
