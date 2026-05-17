@@ -48,6 +48,12 @@
       "path": "HISTORY.md",
       "required": true,
       "content_slot": "history"
+    },
+    {
+      "id": "orientation",
+      "path": "ORIENTATION.md",
+      "required": true,
+      "content_slot": "orientation"
     }
   ],
   "sources": [
