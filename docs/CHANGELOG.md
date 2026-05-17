@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.27.8] — 2026-05-17 11:36:05 Eastern · *AI_AGENT_RULES handbook for Ask DustPan*
+
+### Added — **AI_AGENT_RULES app binder**
+
+DustPan now carries a root `AI_AGENT_RULES/` handbook with agent assignments,
+operating rules, local AI skills, changelog context, and durable history. The
+folder is backed by Nephew's `ai-agent-rules.master` manifest contract so future
+agents can validate the binder by semantic content slots instead of fragile
+filenames.
+
+- **Ask DustPan** now loads compact handbook context into every system prompt.
+- **Ask DustPan tools** now include read-only `read_ai_agent_rules(section)` for
+  exact handbook sections on demand.
+- **Runtime safety** stays centralized: the prompt and tool both use
+  `web/ai_agent_rules.py`, so handbook loading has one code path.
+
+### kVersion / package bumps
+
+Root `package.json`, `apps/web/package.json`, `apps/web-next/package.json`,
+`dustpan.applescript` **`kVersion`** → `0.27.8`.
+
+---
+
+## [0.27.7] — 2026-05-17 11:10:05 Eastern · *Dev Build Rescue payload learns Claude VM bundles*
+
+### Added — **Dev Build Rescue Payload**
+
+DustPan now captures the full recovery path from the Red-E Play iPhone device-build incident in one guarded payload: inspect disk state, check active Xcode/compiler processes, measure Xcode/SwiftPM/LLM app-support heavy hitters, warn about mounted external volumes, then clear only rebuildable caches.
+
+- **Xcode tab**: `Diagnose dev build space` now shows Claude/Cursor application-support heavy hitters and mounted volumes, so an agent can spot the real 10+ GB culprit before guessing.
+- **Xcode tab**: `Dev build rescue payload: free local build space` clears Xcode scratch caches, SwiftPM/Xcode package caches, and Claude Desktop `vm_bundles` in one guarded action.
+- **LLMs → Claude**: new scoped `Clear Claude Desktop VM bundles` action targets the rebuildable runtime bundle directory without signing the user out or wiping Claude settings.
+- **Emergency panel**: card ③ is now the same **Dev Build Rescue Payload**, with reclaim estimates including `~/Library/Application Support/Claude/vm_bundles`.
+
+### kVersion / package bumps
+
+Root `package.json`, `apps/web/package.json`, `apps/web-next/package.json`, `dustpan.applescript` **`kVersion`** → `0.27.7`.
+
+---
+
 ## [0.27.6] — 2026-05-17 09:39:55 Eastern · *Xcode Build Rescue — guarded cleanup for disk-full builds*
 
 ### Added — **Xcode Build Rescue**

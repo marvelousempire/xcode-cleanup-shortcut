@@ -21,6 +21,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from ai_agent_rules import read_ai_agent_rules_section
+
 
 # ── Path safety: home-subtree allowlist + hard denies ────────────────────────
 
@@ -342,6 +344,17 @@ def _h_get_recent_runs(args: dict, ctx: dict) -> dict:
         return {"runs": rows[-limit:][::-1], "total": len(rows)}
     except Exception as e:
         return {"error": f"failed to read runs: {e}"}
+
+
+def _h_read_ai_agent_rules(args: dict, ctx: dict) -> dict:
+    """
+    Read one handbook section from AI_AGENT_RULES/.
+
+    This is read-only local law access. It never reads secrets, API keys, or
+    arbitrary paths; callers choose from a fixed section allowlist.
+    """
+    section = args.get("section") or "readme"
+    return read_ai_agent_rules_section(section)
 
 
 def _h_find_foreign_ownership(args: dict, ctx: dict) -> dict:
@@ -797,6 +810,28 @@ TOOLS: list[dict] = [
         },
         "tier": "A", "requires_approval": False,
         "handler": _h_get_recent_runs,
+    },
+    {
+        "name": "read_ai_agent_rules",
+        "description": (
+            "Read one full section from DustPan's root AI_AGENT_RULES handbook. "
+            "Use this when compact prompt context is not enough and you need exact "
+            "local agent assignments, operating rules, skills, changelog context, "
+            "or history. Allowed sections: readme, manifest, assignments, "
+            "operating_rules, skills, changelog_context, history."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "section": {
+                    "type": "string",
+                    "description": "One of: readme, manifest, assignments, operating_rules, skills, changelog_context, history",
+                }
+            },
+            "required": ["section"],
+        },
+        "tier": "A", "requires_approval": False,
+        "handler": _h_read_ai_agent_rules,
     },
 
     # ── Tier B: action, requires approval (toggle-able for safe-tier) ──

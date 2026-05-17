@@ -73,8 +73,8 @@ CATEGORIES = {
         },
         "actions": {
             "diagnose-build-space": {
-                "label": "Diagnose Xcode build space",
-                "desc":  "Read-only check: disk free, active Xcode/compiler processes, and the biggest Xcode + SwiftPM cache folders.",
+                "label": "Diagnose dev build space",
+                "desc":  "Read-only check: disk free, active Xcode/compiler processes, biggest Xcode + SwiftPM cache folders, LLM app-support heavy hitters, and mounted volumes.",
                 "cost":  "Read-only. Nothing is deleted.",
                 "informational": True,
                 "shell": (
@@ -86,13 +86,17 @@ CATEGORIES = {
                     "echo 'Xcode cache sizes:'; "
                     "du -sh ~/Library/Developer/Xcode/* 2>/dev/null | sort -h | sed 's/^/  /'; echo ''; "
                     "echo 'SwiftPM cache sizes:'; "
-                    "du -sh ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm 2>/dev/null | sort -h | sed 's/^/  /'"
+                    "du -sh ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm 2>/dev/null | sort -h | sed 's/^/  /'; echo ''; "
+                    "echo 'LLM app-support heavy hitters:'; "
+                    "du -sh \"$HOME/Library/Application Support/Claude\"/* \"$HOME/Library/Application Support/Cursor\"/* 2>/dev/null | sort -h | tail -12 | sed 's/^/  /'; echo ''; "
+                    "echo 'Mounted volumes:'; ls -la /Volumes 2>/dev/null | sed 's/^/  /'; echo ''; "
+                    "echo 'Tip: if DerivedData on a network/external volume throws disk I/O errors, free local space and rebuild with local DerivedData.'"
                 ),
             },
             "xcode-build-rescue-safe": {
-                "label": "Xcode build rescue: free build space",
-                "desc":  "Guarded cleanup for the exact failure mode where Xcode cannot build because DerivedData, DeviceSupport, SwiftPM, or Xcode caches filled the disk.",
-                "cost":  "Refuses to run while builds are active. Next build re-resolves packages, re-downloads device symbols, and rebuilds caches. Source, archives, profiles, and projects are untouched.",
+                "label": "Dev build rescue payload: free local build space",
+                "desc":  "Guarded one-payload cleanup for disk-full builds: Xcode scratch caches, SwiftPM/Xcode package caches, and Claude Desktop VM bundles that can quietly hold 10+ GB.",
+                "cost":  "Refuses to run while builds are active. Next build re-resolves packages, re-downloads device symbols, and rebuilds caches. Claude may re-create local VM bundles. Source, archives, profiles, settings, and projects are untouched.",
                 "shell": (
                     "echo '🧰 Xcode Build Rescue'; "
                     "ACTIVE=$(pgrep -lf '[x]codebuild|[s]wift-frontend|[c]lang|[l]d ' || true); "
@@ -105,12 +109,15 @@ CATEGORIES = {
                     "echo ''; echo 'Before:'; df -h / | awk 'NR==2{print \"  \"$4\" free of \"$2\" (\"$5\" used)\"}'; "
                     "echo ''; echo 'Top Xcode folders before cleanup:'; "
                     "du -sh ~/Library/Developer/Xcode/* 2>/dev/null | sort -h | tail -12 | sed 's/^/  /'; "
-                    "echo ''; echo 'Clearing DerivedData, DeviceSupport, SwiftPM, and Xcode caches…'; "
+                    "echo ''; echo 'Top Claude/Cursor support folders before cleanup:'; "
+                    "du -sh \"$HOME/Library/Application Support/Claude\"/* \"$HOME/Library/Application Support/Cursor\"/* 2>/dev/null | sort -h | tail -12 | sed 's/^/  /'; "
+                    "echo ''; echo 'Clearing DerivedData, DeviceSupport, SwiftPM, Xcode caches, and Claude VM bundles…'; "
                     "rm -rf ~/Library/Developer/Xcode/DerivedData/* "
                     "~/Library/Developer/Xcode/iOS\\ DeviceSupport/* "
                     "~/Library/Caches/org.swift.swiftpm/* "
                     "~/Library/org.swift.swiftpm/* "
-                    "~/Library/Caches/com.apple.dt.Xcode/* 2>/dev/null; "
+                    "~/Library/Caches/com.apple.dt.Xcode/* "
+                    "\"$HOME/Library/Application Support/Claude/vm_bundles\" 2>/dev/null; "
                     "xcrun simctl delete unavailable 2>/dev/null || true; "
                     "echo ''; echo 'After:'; df -h / | awk 'NR==2{print \"  \"$4\" free of \"$2\" (\"$5\" used)\"}'; "
                     "echo '✓ Xcode build rescue complete.'"
@@ -180,6 +187,7 @@ CATEGORIES = {
                 ("Claude Desktop code cache",         "~/Library/Application Support/Claude/Code Cache"),
                 ("Claude Desktop HTTP cache",         "~/Library/Application Support/Claude/Cache"),
                 ("Claude Desktop crash reports",      "~/Library/Application Support/Claude/Crashpad"),
+                ("Claude Desktop VM bundles",         "~/Library/Application Support/Claude/vm_bundles"),
             ],
             "caution": [
                 ("Claude Code config + settings",     "~/.claude/settings.json"),
@@ -207,6 +215,18 @@ CATEGORIES = {
                 "desc":  "Removes ~/.claude/projects (per-project session histories).",
                 "cost":  "You lose conversation history with Claude Code. Settings, skills, and plugins are preserved.",
                 "shell": "rm -rf ~/.claude/projects/* 2>/dev/null; true",
+            },
+            "clear-claude-vm-bundles": {
+                "label": "Clear Claude Desktop VM bundles",
+                "desc":  "Removes ~/Library/Application Support/Claude/vm_bundles — local runtime bundles that can quietly hold 10+ GB.",
+                "cost":  "Claude may re-create or re-download local runtime bundles when needed. Sign-in, settings, skills, and cloud conversation history are preserved.",
+                "shell": (
+                    "echo 'Claude VM bundles before:'; "
+                    "du -sh \"$HOME/Library/Application Support/Claude/vm_bundles\" 2>/dev/null || echo '  none'; "
+                    "rm -rf \"$HOME/Library/Application Support/Claude/vm_bundles\" 2>/dev/null; "
+                    "echo '✓ Claude VM bundles cleared.'; "
+                    "df -h / | awk 'NR==2{print \"  Disk: \"$4\" free of \"$2}'"
+                ),
             },
             "reset-claude-desktop": {
                 "label": "Reset Claude Desktop (sign out + clear local cache)",
@@ -1602,6 +1622,7 @@ CATEGORIES = {
                 "~/Library/Caches/org.swift.swiftpm",
                 "~/Library/org.swift.swiftpm",
                 "~/Library/Caches/com.apple.dt.Xcode",
+                "~/Library/Application Support/Claude/vm_bundles",
             ],
             "emergency-mediaanalysisd": [
                 "~/Library/Containers/com.apple.mediaanalysisd/Data/Library",
@@ -1651,26 +1672,36 @@ CATEGORIES = {
 
             # \u2500\u2500 3 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
             "emergency-swiftpm-xcode-caches": {
-                "label": "Clear SwiftPM + Xcode package caches",
+                "label": "Dev build rescue payload",
                 "desc":  (
-                    "Removes Swift Package Manager caches and Xcode's build-system "
-                    "cache. This targets the failure where package checkout or "
-                    "dependency resolution dies with 'No space left on device'."
+                    "Runs the incident-proven build-rescue payload in one process: "
+                    "checks active build processes, prints disk/cache context, then "
+                    "clears SwiftPM, Xcode package caches, and Claude VM bundles. "
+                    "This targets the failure where package resolution or local "
+                    "DerivedData builds die from disk pressure."
                 ),
-                "cost":  "Next build may re-resolve and re-download Swift packages. Project files, archives, provisioning profiles, and source are untouched.",
+                "cost":  "Next build may re-resolve packages and Claude may re-create local VM bundles. Project files, archives, provisioning profiles, settings, and source are untouched.",
                 "shell": (
-                    "echo '\u2462 Checking for active Xcode/compiler processes\u2026'; "
+                    "echo '③ Dev Build Rescue Payload'; echo ''; "
+                    "echo 'Checking for active Xcode/compiler processes…'; "
                     "ACTIVE=$(pgrep -lf '[x]codebuild|[s]wift-frontend|[c]lang|[l]d ' || true); "
                     "if [ -n \"$ACTIVE\" ]; then "
-                    "  echo 'Active build processes found \u2014 refusing to clean package caches mid-build:'; "
+                    "  echo 'Active build processes found — refusing to clean build caches mid-build:'; "
                     "  echo \"$ACTIVE\" | sed 's/^/  /'; "
                     "  echo 'Stop the build, then run this action again.'; "
                     "  exit 2; "
                     "fi; "
-                    "echo '\u2462 Clearing SwiftPM + Xcode caches\u2026'; "
+                    "echo ''; echo 'Before:'; df -h / | awk 'NR==2{print \"  \"$4\" free of \"$2\" (\"$5\" used)\"}'; "
+                    "echo ''; echo 'Xcode/SwiftPM sizes:'; "
+                    "du -sh ~/Library/Developer/Xcode ~/Library/Developer/CoreSimulator ~/Library/Caches/org.swift.swiftpm ~/Library/org.swift.swiftpm ~/Library/Caches/com.apple.dt.Xcode 2>/dev/null | sort -h | sed 's/^/  /'; "
+                    "echo ''; echo 'Claude/Cursor heavy hitters:'; "
+                    "du -sh \"$HOME/Library/Application Support/Claude\"/* \"$HOME/Library/Application Support/Cursor\"/* 2>/dev/null | sort -h | tail -12 | sed 's/^/  /'; "
+                    "echo ''; echo 'Mounted volumes:'; ls -la /Volumes 2>/dev/null | sed 's/^/  /'; "
+                    "echo ''; echo 'Clearing SwiftPM + Xcode caches + Claude VM bundles…'; "
                     "rm -rf ~/Library/Caches/org.swift.swiftpm/* "
                     "~/Library/org.swift.swiftpm/* "
-                    "~/Library/Caches/com.apple.dt.Xcode/* 2>/dev/null; "
+                    "~/Library/Caches/com.apple.dt.Xcode/* "
+                    "\"$HOME/Library/Application Support/Claude/vm_bundles\" 2>/dev/null; "
                     "echo '\u2713 Done.'; "
                     "df -h / | awk 'NR==2{print \"  Disk: \"$4\" free of \"$2}'"
                 ),
@@ -1856,12 +1887,12 @@ CATEGORIES = {
             "emergency-run-all": {
                 "label": "Run All Emergency Commands",
                 "desc":  (
-                    "Runs all 6 cleanup commands in sequence \u2014 DerivedData, "
-                    "iOS DeviceSupport, SwiftPM/Xcode caches, media analysis cache, "
+                    "Runs all 6 cleanup commands in sequence — DerivedData, "
+                    "iOS DeviceSupport, Dev Build Rescue payload, media analysis cache, "
                     "DocumentationIndex, and Docker prune. Then shows the new disk status. "
                     "All files rebuild automatically. Nothing important is deleted."
                 ),
-                "cost":  "One slower Xcode build + 1\u20132 min device re-sync + package re-resolve + Docker image re-pull if needed.",
+                "cost":  "One slower Xcode build + 1–2 min device re-sync + package re-resolve + Claude VM bundle rebuild + Docker image re-pull if needed.",
                 "shell": (
                     "echo '\ud83d\udea8 DustPan Emergency Cleanup \u2014 starting\u2026'; "
                     "echo ''; "
@@ -1882,10 +1913,11 @@ CATEGORIES = {
                     "rm -rf ~/Library/Developer/Xcode/'iOS DeviceSupport'/* 2>/dev/null; "
                     "echo '  \u2713 cleared'; "
 
-                    "echo '\u2462 SwiftPM + Xcode caches\u2026'; "
+                    "echo '③ Dev Build Rescue payload…'; "
                     "rm -rf ~/Library/Caches/org.swift.swiftpm/* 2>/dev/null; "
                     "rm -rf ~/Library/org.swift.swiftpm/* 2>/dev/null; "
                     "rm -rf ~/Library/Caches/com.apple.dt.Xcode/* 2>/dev/null; "
+                    "rm -rf \"$HOME/Library/Application Support/Claude/vm_bundles\" 2>/dev/null; "
                     "echo '  \u2713 cleared'; "
 
                     "echo '\u2463 Media analysis cache\u2026'; "

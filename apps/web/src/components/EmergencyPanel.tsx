@@ -45,11 +45,11 @@ const COMMANDS = [
   {
     id:      "emergency-swiftpm-xcode-caches",
     num:     "③",
-    label:   "SwiftPM + Xcode Package Caches",
-    shell:   "rm -rf ~/Library/Caches/org.swift.swiftpm/* ~/Library/org.swift.swiftpm/* ~/Library/Caches/com.apple.dt.Xcode/*",
-    what:    "Package checkouts and Xcode build-system caches. This is the cache family that can make Swift package resolution fail with 'No space left on device'.",
-    happens: "Next build may re-resolve and re-download Swift packages. Your projects, archives, profiles, and source stay untouched.",
-    typical: "0.5–5 GB",
+    label:   "Dev Build Rescue Payload",
+    shell:   "Checks active build processes, measures disk/Xcode/LLM cache state, then clears SwiftPM caches, Xcode caches, and Claude VM bundles in one guarded process.",
+    what:    "The real rescue path from the iPhone build incident: package caches were small, but Claude Desktop VM bundles held 10+ GB and the external build volume was unreliable.",
+    happens: "Next build may re-resolve packages and Claude may re-create local VM bundles. Projects, archives, profiles, settings, and source stay untouched.",
+    typical: "0.5–15 GB",
     readOnly: false,
   },
   {

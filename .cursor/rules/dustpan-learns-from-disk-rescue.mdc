@@ -1,0 +1,16 @@
+---
+description: Feed every manual disk/build rescue lesson back into DustPan
+alwaysApply: true
+---
+
+# DustPan Learns From Disk Rescue
+
+When you manually diagnose or fix disk pressure, Xcode build failures, package-cache failures, LLM cache bloat, or "No space left on device" on this Mac, turn the repeatable part into DustPan.
+
+- Put reusable cleanup/diagnosis in `web/cleaners.py` first. The UI, Emergency panel, AI tools, and agents read from that shared registry.
+- Prefer scoped rebuildable targets over broad app resets. Example: clear `~/Library/Application Support/Claude/vm_bundles` before offering a full Claude Desktop reset.
+- If the workflow took multiple shell commands, package it as one guarded payload with read-only context, active-process checks, cleanup, and after-state output.
+- Update `docs/CHANGELOG.md`, `docs/Feature Ledger.md`, and a numbered plan for substantive cleaner features.
+- Add `docs/Issue-Log.md` when the incident taught a reusable lesson.
+
+DRY test: if a future agent would paste the same `du`/`df`/`rm` sequence, DustPan should own it.

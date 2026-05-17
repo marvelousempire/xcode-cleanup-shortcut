@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
+from ai_agent_rules import load_compact_handbook_context
 import agent_tools
 
 
@@ -53,14 +54,22 @@ You have read-only tools (disk status, doctor report, survey, scan_category, mea
 - NEVER recommend `rm` on a path outside DustPan's known categories.
 - NEVER speculate about sizes — call `measure_path` or `scan_category` first.
 - If a tool errors with "path not allowed", explain to the user that DustPan sandboxes filesystem peek to safe locations.
+
+# Local AI handbook
+DustPan carries app-specific AI law in AI_AGENT_RULES/. Treat it as the local binder for agent assignments, operating rules, skills, changelog context, and history. Load this compact context before answering, and call `read_ai_agent_rules` only when you need a full section:
+{ai_agent_rules_context}
 """
 
 
 def build_system_prompt(disk_status: dict) -> str:
+    handbook_context = load_compact_handbook_context()
+    if not handbook_context:
+        handbook_context = "AI_AGENT_RULES/ is not available in this checkout yet."
     return SYSTEM_PROMPT.format(
         free_gb  = disk_status.get("free_gb", "?"),
         total_gb = disk_status.get("total_gb", "?"),
         used_pct = disk_status.get("used_pct", "?"),
+        ai_agent_rules_context = handbook_context,
     )
 
 

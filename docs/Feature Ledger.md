@@ -1,6 +1,6 @@
 # Feature Ledger
 
-*Last updated: 2026-05-17 Eastern (v0.27.6)*
+*Last updated: 2026-05-17 Eastern (v0.27.8)*
 
 Status legend: **✅ shipped** · **✔️ partial / works but rough** · **🔜 next** · **❌ deferred / out of scope**
 
@@ -60,8 +60,8 @@ Status legend: **✅ shipped** · **✔️ partial / works but rough** · **🔜
 
 | # | Category | Paths | Actions | Status | Added |
 |---|---|---|---|---|---|
-| 26 | Xcode | 20 | 6 | ✅ | v0.7.0 / refined v0.27.6 |
-| 27 | LLMs/Claude | 8 | 4 (incl. opt-in `reset-claude-desktop` for 10+ GB app state) | ✅ | v0.7.0 |
+| 26 | Xcode | 20 | 6 | ✅ | v0.7.0 / refined v0.27.7 |
+| 27 | LLMs/Claude | 9 | 5 (incl. scoped `clear-claude-vm-bundles` plus opt-in full reset) | ✅ | v0.7.0 / refined v0.27.7 |
 | 28 | LLMs/Cursor | 13 | 2 | ✅ | v0.7.0 |
 | 29 | LLMs/ChatGPT | 3 | 1 | ✅ | v0.7.0 |
 | 30 | Apps (browsers, chat, Homebrew) | 15 | 5 | ✅ | v0.7.0 |
@@ -113,6 +113,8 @@ These five releases substantially widened DustPan from "Xcode cleaner" to "local
 | **v0.25.0** | AI cleaner proposals (Plan 0023 Ship 2) | `propose_new_cleaner` tool (#15). Proposals land in review inbox at `~/.dustpan/proposals.json`. Accept generates paste-ready Python snippet for `cleaners.py` — never auto-edits source. Sidebar badge with pending count. |
 | **v0.27.5** | Library atlas (Overview) | Teach **where macOS stacks weight** under the home folder, with one-click navigation to the matching category tabs — complements **Space Survey** and **Home folder guidance**. |
 | **v0.27.6** | Xcode Build Rescue (Plan 0029) | Encodes the disk-full Xcode recovery path: read-only diagnostics, active-build guard, SwiftPM/Xcode cache cleanup, and Emergency coverage for package-resolution failures. |
+| **v0.27.7** | Dev Build Rescue Payload (Plan 0030) | Adds the Red-E Play recovery lesson: Claude Desktop `vm_bundles` can be the real 10+ GB blocker, and external/network DerivedData can cause Xcode `disk I/O error`; DustPan now diagnoses both and clears the rebuildable VM bundle cache without a full Claude reset. |
+| **v0.27.8** | AI_AGENT_RULES Handbook (Plan 0031) | Adds a root AI binder and wires Ask DustPan to load compact local-law context, with read-only section lookup through `read_ai_agent_rules`. |
 
 ## Next (v0.26+ wishlist)
 

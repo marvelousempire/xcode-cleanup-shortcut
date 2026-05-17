@@ -17,6 +17,27 @@ Keep entries short — 5–7 lines is fine. Cite specific files / PRs / versions
 
 ---
 
+## 2026-05-17
+
+### 11:36 Eastern — AI prompt law was spread across too many places
+
+**Symptom:** Ask DustPan had strong hard-coded safety rules, but repo-specific AI
+law also lived in `AGENTS.md`, `CLAUDE.md`, changelog, issue history, and chat
+plans.
+**Diagnosis:** Runtime prompts needed a compact local binder plus read-on-demand
+access, not a full-doc dump.
+**Fix:** v0.27.8 adds `AI_AGENT_RULES/`, shared prompt/tool loading in
+`web/ai_agent_rules.py`, and the read-only `read_ai_agent_rules` tool.
+**Would have prevented it:** Standard app binders should exist before AI runtime
+features need them.
+
+### 11:10 Eastern — Xcode build rescue was not Xcode-only
+
+**Symptom:** Red-E Play physical iPhone build kept failing after Xcode caches were empty; external `DerivedData` attempts also hit Xcode `disk I/O error`.
+**Diagnosis:** Local disk had only ~4.4 GB free, but the meaningful reclaim was `~/Library/Application Support/Claude/vm_bundles` at ~12 GB. `/Volumes/SeverD/Shared` was unavailable, explaining the external-volume I/O failures.
+**Fix:** Cleared the rebuildable Claude VM bundles, rebuilt with local `DerivedData`, installed, and launched on device. v0.27.7 turns that sequence into DustPan's Dev Build Rescue payload.
+**Would have prevented it:** DustPan should always inspect `~/Library/Application Support/{Claude,Cursor}` heavy hitters during build-space diagnosis, and agents should feed every disk-rescue lesson back into DustPan.
+
 ## 2026-05-12
 
 ### 13:05 Eastern — Preview server kept the wrong cwd through restart
