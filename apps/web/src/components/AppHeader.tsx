@@ -24,6 +24,9 @@ export function AppHeader({ status, onOpenChangelog }: Props) {
   const total = status?.total_gb ?? 1;
   const usedPct = free !== null ? Math.min(100, Math.max(0, ((total - free) / total) * 100)) : 0;
   const freePct = 100 - usedPct;
+  const connected = Boolean(status);
+  const port = status?.server_port ?? (typeof window !== "undefined" && window.location.port ? Number(window.location.port) : null);
+  const scope = status?.server_scope ?? "localhost";
 
   // Same 5-tier scale as Hero
   const tier =
@@ -119,14 +122,20 @@ export function AppHeader({ status, onOpenChangelog }: Props) {
         </span>
       </div>
 
-      {/* Version pill */}
+      {/* Changelog + server connection pill */}
       <button
         type="button"
         onClick={onOpenChangelog}
-        title="Click to view changelog"
-        className="flex-shrink-0 px-2.5 py-1.5 rounded-full text-[11px] text-fg-dim tabular border border-transparent hover:bg-bg-3 hover:border-border hover:text-fg transition-colors duration-150"
+        title="Open changelog and tech stack"
+        className="group flex-shrink-0 rounded-full border border-border/20 bg-[hsl(var(--bg-2)/0.78)] px-3 py-1.5 text-left shadow-sm transition-colors duration-150 hover:border-accent hover:bg-bg-3"
       >
-        {status?.version ? `${status.version} · localhost` : "…"}
+        <span className="flex items-center gap-2">
+          <span className={cn("h-2 w-2 rounded-full", connected ? "bg-safe shadow-[0_0_0_3px_hsl(var(--safe)/0.14)]" : "bg-warn animate-pulse")} />
+          <span className="text-[11px] font-bold tabular text-fg">{status?.version ?? "…"}</span>
+          <span className="hidden text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint group-hover:text-fg-dim sm:inline">
+            {connected ? `${scope} :${port ?? "?"}` : "connecting"}
+          </span>
+        </span>
       </button>
     </header>
   );

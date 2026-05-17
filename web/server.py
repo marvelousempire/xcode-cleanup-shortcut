@@ -95,6 +95,17 @@ except ImportError:
     _agent_chat  = None  # type: ignore
     _agent_tools = None  # type: ignore
 
+try:
+    from performance.benchmark import run as run_dustbench
+    from performance.benchmark import status as dustbench_status
+    from performance.sampler import get_snapshot as get_performance_snapshot
+    from performance.sampler import iter_live_events as iter_performance_events
+except ImportError:
+    run_dustbench = None  # type: ignore
+    dustbench_status = None  # type: ignore
+    get_performance_snapshot = None  # type: ignore
+    iter_performance_events = None  # type: ignore
+
 def _init_store():
     """Pick the best available store. Called once at startup."""
     global _store
@@ -127,6 +138,7 @@ APPS_DIR = REPO_DIR / "apps"
 REACT_DIST_CANDIDATES = [APPS_DIR / "web" / "dist", WEB_DIR / "app" / "dist"]
 NEXT_OUT_DIR = APPS_DIR / "web-next" / "out"
 PREFERRED_PORT = int(os.environ.get("XCC_UI_PORT", "8765"))
+SERVER_PORT = PREFERRED_PORT
 
 def _react_dist_dir() -> Optional[Path]:
     """Resolve the first React build directory that exists. None if no build."""
@@ -282,6 +294,9 @@ def get_status() -> dict:
         "total_gb": round(total / 1024**3, 1),
         "used_pct": round(used / total * 100, 1),
         "version":  get_version(),
+        "server_host": HOST,
+        "server_port": SERVER_PORT,
+        "server_scope": "network" if HOST == "0.0.0.0" else "localhost",
     }
 
 
@@ -1004,8 +1019,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._serve_file("index.html", "text/html; charset=utf-8")
         if path == "/api/status":
             return self._serve_json(get_status())
+        if path == "/api/performance/snapshot":
+            if get_performance_snapshot is None:
+                return self._serve_json(get_performance_payload())
+            return self._serve_json(get_performance_snapshot(preferred_port=PREFERRED_PORT))
+        if path == "/api/performance/live":
+            return self._stream_performance_live()
+        if path == "/api/performance/benchmark":
+            if dustbench_status is None:
+                return self._serve_json_status(501, {"error": "benchmark_unavailable"})
+            return self._serve_json(dustbench_status())
         if path == "/api/performance/status":
-            return self._serve_json(get_performance_payload())
+            if get_performance_snapshot is None:
+                return self._serve_json(get_performance_payload())
+            return self._serve_json(get_performance_snapshot(preferred_port=PREFERRED_PORT))
         if path == "/api/performance/processes":
             return self._serve_json({"processes": _top_processes()})
         if path == "/api/performance/network":
@@ -1237,6 +1264,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             _store.save_ollama_settings(ollama_url, ollama_model or "llama3.2")
             return self._serve_json({"ok": True})
 
+        if path == "/api/performance/benchmark/run":
+            if run_dustbench is None:
+                return self._serve_json_status(501, {"error": "benchmark_unavailable"})
+            return self._serve_json(run_dustbench())
+
         if path == "/api/ai/summary":
             category  = (body.get("category") or "").strip()
             if not category:
@@ -1411,6 +1443,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     except (BrokenPipeError, ConnectionResetError):
                         return
                     last_keepalive = time.time()
+        except (BrokenPipeError, ConnectionResetError):
+            return
+
+    def _stream_performance_live(self):
+        if iter_performance_events is None:
+            return self._serve_json_status(501, {"error": "performance_live_unavailable"})
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+        try:
+            for frame in iter_performance_events(preferred_port=PREFERRED_PORT):
+                self._send_sse(frame)
         except (BrokenPipeError, ConnectionResetError):
             return
 
@@ -2853,6 +2899,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 def main():
+    global SERVER_PORT
     # v0.20.4: init persistence (SQLite default, Postgres when DATABASE_URL set)
     _init_store()
     if _store is not None:
@@ -2862,6 +2909,7 @@ def main():
             print(f"[store] startup migration error (non-fatal): {e}", file=sys.stderr)
 
     port = find_open_port(PREFERRED_PORT)
+    SERVER_PORT = port
     if port != PREFERRED_PORT:
         print(f"⚠  Port {PREFERRED_PORT} is busy — using {port} instead.")
 

@@ -11,6 +11,9 @@
   orchestrator. Check `complete`, `complete_agent`, and tool loops together.
 - Runtime AI should preserve the same safety model as the UI: measure first,
   curated actions only, and approval before destructive work.
+- User-visible dashboard shell changes need release discipline immediately:
+  bump every version surface, add a fresh changelog record, and keep the
+  in-product Tech Stack modal aligned with what was actually built.
 
 ## Source History
 

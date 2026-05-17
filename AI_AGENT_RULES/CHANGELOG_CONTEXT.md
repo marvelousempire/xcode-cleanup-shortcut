@@ -2,21 +2,25 @@
 
 ## Current Version
 
-DustPan is moving from `0.27.8` to `0.27.9`.
+DustPan is moving from `0.28.1` to `0.28.2`.
 
 ## Recent Releases
 
-- `0.27.8` — AI_AGENT_RULES Handbook. Added the root handbook and wired Ask
-  DustPan chat to load compact local-law context with read-on-demand section
-  lookup.
-- `0.27.7` — Dev Build Rescue Payload. DustPan learned that Claude Desktop
-  `vm_bundles` can be the real 10+ GB blocker during iOS device builds, and
-  encoded scoped cleanup plus broader build-space diagnosis.
-- `0.27.6` — Xcode Build Rescue. Added guarded Xcode/SwiftPM cleanup for
-  disk-full build failures.
+- `0.28.2` — AI rule refresh for dashboard release discipline. Codifies server
+  status visibility, version/changelog coupling, Tech Stack modal updates, and
+  meter-rich Server Performance behavior.
+- `0.28.1` — Header status pill and system stack modal. The top-left version
+  chip now shows a live server LED, connected host/port, and opens a two-tab
+  Change Log + Tech Stack modal.
+- `0.28.0` — Realtime Server Performance analytics. Adds Mac/Linux snapshot and
+  SSE performance APIs, Ultra Dashboard live meter wall, Detailed Activity
+  Monitor, process/network/service views, bottleneck radar, and DustBench.
+- `0.27.9` — AI_AGENT_RULES Provider Coverage. Extends compact handbook loading
+  from Ask DustPan chat to every API-key provider call.
 
 ## This Release
 
-`0.27.9` extends the same compact `AI_AGENT_RULES` context to DustPan's lighter
-scan-summary and diagnosis provider calls, so every API-key AI path reads the
-local handbook before answering.
+`0.28.2` refreshes the app AI binder so future agents preserve the dashboard
+release discipline: server connection state must remain visible,
+changelog/version bumps travel together, the Tech Stack modal stays current,
+and Server Performance remains compact, live, meter-rich, and read-only.

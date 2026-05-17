@@ -1,5 +1,83 @@
 # Changelog
 
+## [0.28.2] — 2026-05-17 18:58:20 Eastern · *AI rules for dashboard release discipline*
+
+### Added — **AI agent release rules**
+
+DustPan's AI handbook now records the rules learned from the realtime dashboard
+work so future agents preserve the same behavior instead of rediscovering it.
+
+- **Server status rule**: dashboard shell changes must keep the top-left
+  version pill live, with server LED and connected host/port from `/api/status`.
+- **Version discipline rule**: user-visible dashboard, monitoring, modal,
+  AI-rule, or release-surface changes must bump all version surfaces and add a
+  fresh changelog record.
+- **Tech Stack rule**: major dashboard technology, backend probes, design tokens,
+  or packages must be reflected in the in-product Tech Stack modal.
+- **Server Performance skill**: monitoring changes should stay compact,
+  meter-rich, read-only, and consumer-readable while preserving realtime
+  snapshot + SSE behavior.
+
+### kVersion / package bumps
+
+Root `package.json`, `apps/web/package.json`, `apps/web-next/package.json`,
+`dustpan.applescript` **`kVersion`** → `0.28.2`.
+
+---
+
+## [0.28.1] — 2026-05-17 18:54:06 Eastern · *Header status pill and system stack modal*
+
+### Added — **Header system status**
+
+The top-left version control is now a live server-status pill. It shows a
+connection LED, the detected DustPan host/port, and opens a tabbed system modal.
+
+- **Connection pill**: `/api/status` now reports `server_host`, `server_port`,
+  and `server_scope` so the UI can show the actual port DustPan is connected to.
+- **Two-tab modal**: the version pill opens `Change Log` and `Tech Stack` tabs
+  in one clean popup.
+- **Tech Stack table**: the modal documents the backend runtime, dashboard UI,
+  design tokens, monitoring modules, packages, and dependencies used under the
+  hood.
+
+### kVersion / package bumps
+
+Root `package.json`, `apps/web/package.json`, `apps/web-next/package.json`,
+`dustpan.applescript` **`kVersion`** → `0.28.1`.
+
+---
+
+## [0.28.0] — 2026-05-17 18:26:04 Eastern · *Realtime Server Performance analytics*
+
+### Added — **Realtime Server Performance**
+
+Server Performance now renders from a realtime Mac/Linux performance spine
+instead of waiting on one monolithic payload. DustPan samples disk, CPU load,
+memory, process, network, service, and bottleneck data through snapshot and SSE
+APIs so the page can populate immediately and keep updating.
+
+- **Live APIs**: `/api/performance/snapshot`, `/api/performance/live`,
+  `/api/performance/benchmark`, and `POST /api/performance/benchmark/run`.
+- **Cross-platform probes**: macOS and Linux collectors degrade gracefully when a
+  platform command is unavailable.
+- **Ultra dashboard**: dense live meter wall for disk, CPU, memory, services,
+  network visibility, hot processes, heavy paths, bottleneck radar, and
+  automation stack so more monitors fit above the fold.
+- **Analytics gadgets**: pressure gauges, sparklines, service grid, process
+  leaderboard, network flow tables, and bottleneck radar.
+- **Detailed Activity Monitor**: new Server Performance sub-tab with htop-style
+  process density, CPU/RAM meters, sorting, filtering, and consumer-readable
+  process labels.
+- **DustBench**: DustPan-owned local benchmark for CPU, filesystem, JSON,
+  subprocess, loopback, and optional Docker responsiveness.
+
+### kVersion / package bumps
+
+Root `package.json`, `apps/web/package.json`, `apps/web-next/package.json`,
+`dustpan.applescript` **`kVersion`** → `0.28.0`.
+
+---
+
 ## [0.27.9] — 2026-05-17 12:41:28 Eastern · *AI handbook reaches every DustPan AI path*
 
 ### Fixed — **AI_AGENT_RULES loading for all API-key AI calls**

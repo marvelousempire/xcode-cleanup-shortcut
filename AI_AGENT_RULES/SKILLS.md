@@ -17,6 +17,23 @@ Use when a large repeated cache or rebuildable artifact is not yet covered by a
 category. Check existing categories first, then file a structured proposal with
 path, tier, rationale, and cost.
 
+## Server Performance Dashboard
+
+Use when changing Server Performance, Activity Monitor, DustBench, network,
+service, process, or dashboard-meter surfaces.
+
+1. Preserve realtime behavior through snapshot plus SSE endpoints.
+2. Keep monitors compact and meter-rich so more signals fit above the fold.
+3. Make power-user data consumer-readable with labels, status text, and safe
+   defaults.
+4. Keep cleanup actions separate from monitoring and approval-gated.
+
+## Release Surface Update
+
+Use when a dashboard or monitoring change affects what users see. Add a top
+changelog record, bump all version surfaces, update Feature Ledger if feature
+scope changes, and keep the header system pill + Tech Stack modal accurate.
+
 ## Handbook Lookup
 
 Use when the compact prompt summary is not enough. Call `read_ai_agent_rules`

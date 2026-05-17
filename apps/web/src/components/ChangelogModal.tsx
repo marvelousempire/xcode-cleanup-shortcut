@@ -9,6 +9,57 @@ interface Props {
   onClose: () => void;
 }
 
+type ModalTab = "changelog" | "stack";
+
+const TECH_STACK_SECTIONS = [
+  {
+    title: "Runtime Shell",
+    rows: [
+      ["Backend", "Python stdlib HTTP server", "Local-first server in `web/server.py`; no heavyweight framework required."],
+      ["Transport", "REST + Server-Sent Events", "`/api/status`, `/api/live`, and performance SSE keep the dashboard fresh."],
+      ["Platform", "macOS + Linux probes", "Disk, process, network, service, and benchmark collectors degrade gracefully."],
+      ["Storage", "SQLite optional store", "Stdlib `sqlite3` persistence when the local store is available."],
+    ],
+  },
+  {
+    title: "Dashboard UI",
+    rows: [
+      ["Frontend", "React 18 + TypeScript", "Vite app in `apps/web` with typed API contracts."],
+      ["Build", "Vite 6 + pnpm workspace", "Fast local builds and a small static asset output served by DustPan."],
+      ["Motion", "Motion for React", "Small, springy modal and meter transitions."],
+      ["Components", "Radix Dialog", "Accessible modal shell with focus management and escape handling."],
+    ],
+  },
+  {
+    title: "Design System",
+    rows: [
+      ["Tokens", "HSL CSS custom properties", "`--bg-*`, `--fg-*`, `--accent`, `--safe`, `--warn`, `--danger` drive themes."],
+      ["Styling", "Tailwind CSS 3", "Utility layout with custom token colors and responsive density."],
+      ["Theme", "Auto / light / dark", "CSS variable overrides and pre-paint theme handling avoid flash."],
+      ["UX Pattern", "Glass panels + live meters", "Compact cockpit surfaces with readable pressure labels."],
+    ],
+  },
+  {
+    title: "Monitoring Modules",
+    rows: [
+      ["Server Performance", "Realtime snapshot + live stream", "Disk, CPU, memory, services, network, bottlenecks, and activity."],
+      ["Ultra Dashboard", "Meter wall", "Dense live progress meters make more monitors visible at the same time."],
+      ["Activity Monitor", "Modern htop-style table", "Process search, sorting, CPU/RAM meters, and consumer-friendly labels."],
+      ["DustBench", "Local benchmark", "CPU, filesystem, JSON, subprocess, loopback, and optional Docker responsiveness."],
+    ],
+  },
+  {
+    title: "Key Packages",
+    rows: [
+      ["UI primitives", "@radix-ui/react-dialog, scroll-area, separator, slot, tooltip", "Accessible building blocks."],
+      ["Animation", "motion", "Modal and interaction polish."],
+      ["Styling helpers", "clsx, tailwind-merge, class-variance-authority", "Class composition and safe utility merging."],
+      ["Icons", "lucide-react + local icon wrappers", "Consistent dashboard iconography."],
+      ["Tooling", "typescript, vite, tailwindcss, postcss, autoprefixer", "Typed build, CSS generation, and browser output."],
+    ],
+  },
+] as const;
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
 }
@@ -184,9 +235,11 @@ function renderMarkdown(md: string): string {
 
 export function ChangelogModal({ open, onClose }: Props) {
   const [body, setBody] = useState<string>("Loading…");
+  const [activeTab, setActiveTab] = useState<ModalTab>("changelog");
 
   useEffect(() => {
     if (!open) return;
+    setActiveTab("changelog");
     setBody("Loading…");
     api.changelog()
       .then((md) => setBody(renderMarkdown(humanizeCanonicalChangelog(md))))
@@ -213,15 +266,15 @@ export function ChangelogModal({ open, onClose }: Props) {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.97, y: 8 }}
                     transition={{ duration: 0.22, ease: [0.34, 1.56, 0.64, 1] }}
-                    className="flex w-full max-w-[min(880px,calc(100vw-32px))] max-h-[88vh] flex-col overflow-hidden rounded-xl border border-border/25 bg-[hsl(var(--bg-1))] shadow-[0_24px_64px_-12px_hsl(240_6%_4%/0.45)]"
+                    className="flex w-full max-w-[min(1040px,calc(100vw-32px))] max-h-[88vh] flex-col overflow-hidden rounded-xl border border-border/25 bg-[hsl(var(--bg-1))] shadow-[0_24px_64px_-12px_hsl(240_6%_4%/0.45)]"
                   >
                     <header className="flex shrink-0 items-center justify-between border-b border-border/20 px-6 py-4 bg-[hsl(var(--bg-2)/0.45)]">
                       <div>
                         <Dialog.Title className="m-0 text-[17px] font-bold tracking-tight text-fg" style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"SF Pro Text\", sans-serif" }}>
-                          Changelog
+                          Changelog & System Stack
                         </Dialog.Title>
                         <p className="m-0 mt-1 text-[12px] text-fg-dim leading-snug">
-                          Each release shows US Eastern wall time with seconds (<span className="font-mono text-[11px] tabular-nums">HH:MM:SS</span>).
+                          Release history plus the live dashboard's under-the-hood technology map.
                         </p>
                       </div>
                       <Dialog.Close
@@ -231,10 +284,22 @@ export function ChangelogModal({ open, onClose }: Props) {
                         <X className="w-5 h-5" />
                       </Dialog.Close>
                     </header>
-                    <div
-                      className="changelog-body overflow-y-auto px-7 py-6"
-                      dangerouslySetInnerHTML={{ __html: body }}
-                    />
+                    <div className="flex shrink-0 gap-2 border-b border-border/15 bg-[hsl(var(--bg-2)/0.28)] px-6 py-3">
+                      <ModalTabButton active={activeTab === "changelog"} onClick={() => setActiveTab("changelog")}>
+                        Change Log
+                      </ModalTabButton>
+                      <ModalTabButton active={activeTab === "stack"} onClick={() => setActiveTab("stack")}>
+                        Tech Stack
+                      </ModalTabButton>
+                    </div>
+                    {activeTab === "changelog" ? (
+                      <div
+                        className="changelog-body overflow-y-auto px-7 py-6"
+                        dangerouslySetInnerHTML={{ __html: body }}
+                      />
+                    ) : (
+                      <TechStackTab />
+                    )}
                   </motion.div>
                 </Dialog.Content>
               </motion.div>
@@ -243,5 +308,63 @@ export function ChangelogModal({ open, onClose }: Props) {
         </AnimatePresence>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+function ModalTabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={active
+        ? "rounded-full border border-accent bg-accent/10 px-3 py-1.5 text-[12px] font-bold text-fg"
+        : "rounded-full border border-border/15 px-3 py-1.5 text-[12px] font-semibold text-fg-dim transition-colors hover:border-accent/50 hover:text-fg"
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
+function TechStackTab() {
+  return (
+    <div className="overflow-y-auto px-7 py-6">
+      <div className="mb-5 rounded-lg border border-accent/20 bg-accent/10 p-4">
+        <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-accent">Under the hood</div>
+        <p className="mt-1 max-w-3xl text-[13px] leading-[1.6] text-fg-dim">
+          DustPan's dashboard is a local-first Mac/Linux cockpit: Python stdlib backend, typed React UI,
+          SSE live telemetry, Tailwind tokens, accessible Radix modals, and approval-gated cleanup actions.
+        </p>
+      </div>
+      <div className="space-y-5">
+        {TECH_STACK_SECTIONS.map((section) => (
+          <section key={section.title} className="overflow-hidden rounded-lg border border-border/15">
+            <div className="border-b border-border/15 bg-[hsl(var(--bg-2)/0.55)] px-4 py-3">
+              <h3 className="m-0 text-[13px] font-bold uppercase tracking-[0.08em] text-fg">{section.title}</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] border-collapse text-left text-[12px]">
+                <thead className="bg-[hsl(var(--bg-3)/0.45)] text-[10px] uppercase tracking-[0.08em] text-fg-faint">
+                  <tr>
+                    <th className="w-[160px] px-4 py-2 font-bold">Layer</th>
+                    <th className="w-[260px] px-4 py-2 font-bold">Technology</th>
+                    <th className="px-4 py-2 font-bold">Why it is here</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.rows.map(([layer, technology, purpose]) => (
+                    <tr key={`${section.title}-${layer}`} className="border-t border-border/10">
+                      <td className="px-4 py-3 font-semibold text-fg">{layer}</td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-accent">{technology}</td>
+                      <td className="px-4 py-3 leading-[1.55] text-fg-dim">{purpose}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
   );
 }

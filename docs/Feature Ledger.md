@@ -1,6 +1,6 @@
 # Feature Ledger
 
-*Last updated: 2026-05-17 Eastern (v0.27.9)*
+*Last updated: 2026-05-17 Eastern (v0.28.2)*
 
 Status legend: **✅ shipped** · **✔️ partial / works but rough** · **🔜 next** · **❌ deferred / out of scope**
 
@@ -116,6 +116,9 @@ These five releases substantially widened DustPan from "Xcode cleaner" to "local
 | **v0.27.7** | Dev Build Rescue Payload (Plan 0030) | Adds the Red-E Play recovery lesson: Claude Desktop `vm_bundles` can be the real 10+ GB blocker, and external/network DerivedData can cause Xcode `disk I/O error`; DustPan now diagnoses both and clears the rebuildable VM bundle cache without a full Claude reset. |
 | **v0.27.8** | AI_AGENT_RULES Handbook (Plan 0031) | Adds a root AI binder and wires Ask DustPan to load compact local-law context, with read-only section lookup through `read_ai_agent_rules`. |
 | **v0.27.9** | AI_AGENT_RULES Provider Coverage | Extends compact handbook loading from Ask DustPan chat to every API-key provider call, including scan summaries and diagnosis helpers. |
+| **v0.28.0** | Realtime Server Performance analytics (Plan 0033) | Adds Mac/Linux snapshot + SSE performance APIs, Ultra Dashboard live meter wall, gauges and sparklines, process/network/service views, Detailed Activity Monitor, bottleneck radar, and DustPan's own safe DustBench benchmark. |
+| **v0.28.1** | Header status pill + stack modal | Bumps the release after the header/server-status work: top-left pill shows live LED + connected port, and the modal now has Change Log plus Tech Stack tabs with under-the-hood sections. |
+| **v0.28.2** | AI dashboard release rules | Refreshes `AI_AGENT_RULES/` so future agents preserve server-status visibility, version/changelog coupling, Tech Stack modal updates, and compact meter-rich monitoring behavior. |
 
 ## Next (v0.26+ wishlist)
 
