@@ -24,7 +24,8 @@ export function LatestFileActivity() {
   }, []);
 
   const items = payload?.items ?? [];
-  const totalMb = items.reduce((sum, item) => sum + item.size_mb, 0);
+  const totalBytes = payload?.total_size_bytes ?? items.reduce((sum, item) => sum + item.size_bytes, 0);
+  const totalMb = totalBytes / 1024 / 1024;
   const topFolders = useMemo(() => folderBars(items), [items]);
   const timeline = useMemo(() => timelineBars(items), [items]);
 
@@ -40,7 +41,7 @@ export function LatestFileActivity() {
         </div>
         <div className="grid min-w-[260px] grid-cols-3 gap-2">
           <MiniMeter label="Files" value={items.length ? String(items.length) : "--"} meter={Math.min((items.length / 24) * 100, 100)} />
-          <MiniMeter label="Size" value={`${fmt(totalMb, totalMb > 99 ? 0 : 1)} MB`} meter={Math.min((totalMb / 2048) * 100, 100)} tone="warn" />
+          <MiniMeter label="Size" value={formatFileSize(totalBytes)} meter={Math.min((totalMb / 2048) * 100, 100)} tone="warn" />
           <MiniMeter label="Scan" value={payload ? `${payload.scan_ms}ms` : "--"} meter={payload ? Math.min((payload.scan_ms / 1200) * 100, 100) : 0} tone="accent" />
         </div>
       </div>
@@ -61,7 +62,7 @@ export function LatestFileActivity() {
         <div className="grid gap-3">
           <ChartCard title="Activity by folder">
             {topFolders.map((bar) => (
-              <BarRow key={bar.label} label={bar.label} value={bar.value} detail={`${fmt(bar.mb)} MB`} />
+              <BarRow key={bar.label} label={bar.label} value={bar.value} detail={formatFileSize(bar.bytes)} />
             ))}
           </ChartCard>
           <ChartCard title="Recency pulse">
@@ -86,7 +87,7 @@ function FileRow({ item }: { item: LatestFileActivityItem }) {
         <div className="truncate text-[12px] font-bold text-fg">{item.name}</div>
         <div className="truncate text-[10px] text-fg-faint">{item.folder} · {age}</div>
       </div>
-      <span className="tabular text-[11px] font-bold text-fg">{fmt(item.size_mb, item.size_mb > 99 ? 0 : 1)} MB</span>
+      <span className="tabular text-[11px] font-bold text-fg">{formatFileSize(item.size_bytes)}</span>
       <span className="truncate text-[11px] font-semibold text-fg-dim">{item.source_app}</span>
       <span className="truncate text-[11px] text-fg-dim">{item.runner_app}</span>
       <TinyMeter value={item.activity_score} label={`${fmt(item.confidence * 100, 0)}%`} />
@@ -142,12 +143,12 @@ function TinyMeter({ value, label, tone = "safe" }: { value: number; label: stri
 
 function folderBars(items: LatestFileActivityItem[]) {
   const totals = new Map<string, number>();
-  items.forEach((item) => totals.set(item.folder, (totals.get(item.folder) ?? 0) + item.size_mb));
+  items.forEach((item) => totals.set(item.folder, (totals.get(item.folder) ?? 0) + item.size_bytes));
   const max = Math.max(...totals.values(), 1);
   return [...totals.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([label, mb]) => ({ label, mb, value: Math.min((mb / max) * 100, 100) }));
+    .map(([label, bytes]) => ({ label, bytes, value: Math.min((bytes / max) * 100, 100) }));
 }
 
 function timelineBars(items: LatestFileActivityItem[]) {
@@ -162,4 +163,12 @@ function formatAge(seconds: number) {
   if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.round(seconds / 3600)}h ago`;
   return `${Math.round(seconds / 86400)}d ago`;
+}
+
+function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${fmt(bytes / 1024, bytes < 100 * 1024 ? 1 : 0)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${fmt(bytes / 1024 / 1024, bytes < 100 * 1024 * 1024 ? 1 : 0)} MB`;
+  return `${fmt(bytes / 1024 / 1024 / 1024, 2)} GB`;
 }

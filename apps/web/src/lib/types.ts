@@ -119,6 +119,7 @@ export interface LatestFileActivityItem {
   folder: string;
   extension: string;
   mime: string | null;
+  size_bytes: number;
   size_mb: number;
   modified_ts: number;
   created_ts: number | null;
@@ -133,6 +134,8 @@ export interface LatestFileActivityPayload {
   ts: number;
   roots: Array<{ label: string; path: string }>;
   items: LatestFileActivityItem[];
+  total_size_bytes?: number;
+  total_size_mb?: number;
   errors: Array<{ root: string; error: string }>;
   scan_ms: number;
 }

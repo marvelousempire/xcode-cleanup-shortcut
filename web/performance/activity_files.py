@@ -64,14 +64,16 @@ def latest(limit: int = 24) -> dict:
                 continue
             source_app, runner_app, confidence = _infer_apps(path, label)
             age_seconds = max(0, time.time() - st.st_mtime)
-            size_mb = st.st_size / 1024 / 1024
+            size_bytes = int(st.st_size)
+            size_mb = size_bytes / 1024 / 1024
             rows.append({
                 "name": path.name,
                 "path": str(path),
                 "folder": label,
                 "extension": path.suffix.lower() or "(none)",
                 "mime": mimetypes.guess_type(path.name)[0],
-                "size_mb": round(size_mb, 2),
+                "size_bytes": size_bytes,
+                "size_mb": round(size_mb, 4),
                 "modified_ts": st.st_mtime,
                 "created_ts": getattr(st, "st_birthtime", None),
                 "age_seconds": round(age_seconds),
@@ -83,10 +85,13 @@ def latest(limit: int = 24) -> dict:
 
     rows.sort(key=lambda row: row["modified_ts"], reverse=True)
     rows = rows[:limit]
+    total_size_bytes = sum(row["size_bytes"] for row in rows)
     return {
         "ts": time.time(),
         "roots": [{"label": label, "path": str(Path(raw).expanduser())} for label, raw in SCAN_ROOTS],
         "items": rows,
+        "total_size_bytes": total_size_bytes,
+        "total_size_mb": round(total_size_bytes / 1024 / 1024, 4),
         "errors": errors,
         "scan_ms": round((time.time() - started) * 1000),
     }
