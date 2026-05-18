@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { api } from "../../lib/api";
 import type { PerformancePayload, PerformanceProcess } from "../../lib/types";
 import { cn, fmt } from "../../lib/utils";
 
@@ -7,6 +8,7 @@ type SortKey = "cpu" | "memory" | "pid" | "name";
 export function DetailedActivityMonitor({ payload }: { payload: PerformancePayload | null }) {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("cpu");
+  const [controlMessage, setControlMessage] = useState<string | null>(null);
   const processes = payload?.processes ?? [];
   const cpuTotal = processes.reduce((sum, proc) => sum + proc.cpu_pct, 0);
   const ramTotal = processes.reduce((sum, proc) => sum + proc.rss_mb, 0);
@@ -26,8 +28,13 @@ export function DetailedActivityMonitor({ payload }: { payload: PerformancePaylo
           <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">Detailed Activity Monitor</div>
           <h2 className="mt-1 text-[20px] font-bold tracking-[-0.025em] text-fg">Modern htop for humans</h2>
           <p className="mt-1 max-w-3xl text-[12px] leading-[1.55] text-fg-dim">
-            Power-user process visibility with plain-English pressure labels. It is read-only: no force quit, no kill, no hidden cleanup.
+            Power-user process visibility with plain-English pressure labels. Controls are approval-gated: Quit sends TERM first, Force sends KILL only after confirmation.
           </p>
+          {controlMessage ? (
+            <div className="mt-2 rounded-md border border-accent/20 bg-accent/10 px-3 py-2 text-[12px] text-fg-dim">
+              {controlMessage}
+            </div>
+          ) : null}
         </div>
         <div className="grid min-w-[320px] gap-2 sm:grid-cols-4">
           <MiniStat label="Processes" value={String(processes.length)} meter={Math.min((processes.length / 120) * 100, 100)} tone="accent" />
@@ -51,16 +58,18 @@ export function DetailedActivityMonitor({ payload }: { payload: PerformancePaylo
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-border/10">
-        <div className="grid grid-cols-[72px_minmax(160px,1.5fr)_120px_120px_140px] gap-3 bg-[hsl(var(--bg-3)/0.65)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">
+        <div className="grid grid-cols-[72px_minmax(160px,1.5fr)_120px_120px_140px_180px_132px] gap-3 bg-[hsl(var(--bg-3)/0.65)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-faint">
           <span>PID</span>
           <span>Process</span>
           <span>CPU</span>
           <span>Memory</span>
           <span>Meaning</span>
+          <span>Owner / runtime</span>
+          <span>Control</span>
         </div>
         <div className="max-h-[560px] overflow-auto">
           {visible.map((proc) => (
-            <ProcessRow key={`${proc.pid}-${proc.name}`} proc={proc} totalMemory={payload?.system.memory.total_mb ?? 0} />
+            <ProcessRow key={`${proc.pid}-${proc.name}`} proc={proc} totalMemory={payload?.system.memory.total_mb ?? 0} onMessage={setControlMessage} />
           ))}
           {!visible.length ? (
             <div className="px-3 py-8 text-center text-[12px] text-fg-faint">No matching processes.</div>
@@ -71,11 +80,11 @@ export function DetailedActivityMonitor({ payload }: { payload: PerformancePaylo
   );
 }
 
-function ProcessRow({ proc, totalMemory }: { proc: PerformanceProcess; totalMemory: number }) {
+function ProcessRow({ proc, totalMemory, onMessage }: { proc: PerformanceProcess; totalMemory: number; onMessage: (message: string) => void }) {
   const memoryPct = proc.mem_pct || (totalMemory ? (proc.rss_mb / totalMemory) * 100 : 0);
   const status = processStatus(proc.cpu_pct, memoryPct);
   return (
-    <div className="grid grid-cols-[72px_minmax(160px,1.5fr)_120px_120px_140px] gap-3 border-t border-border/10 px-3 py-2 text-[12px] first:border-t-0">
+    <div className="grid grid-cols-[72px_minmax(160px,1.5fr)_120px_120px_140px_180px_132px] gap-3 border-t border-border/10 px-3 py-2 text-[12px] first:border-t-0">
       <span className="tabular text-fg-faint">{proc.pid}</span>
       <div className="min-w-0">
         <div className="truncate font-semibold text-fg">{proc.name}</div>
@@ -84,6 +93,55 @@ function ProcessRow({ proc, totalMemory }: { proc: PerformanceProcess; totalMemo
       <Meter value={Math.min(proc.cpu_pct, 100)} label={`${fmt(proc.cpu_pct)}%`} />
       <Meter value={Math.min(memoryPct, 100)} label={`${fmt(proc.rss_mb)} MB`} />
       <span className={cn("rounded-full px-2 py-1 text-center text-[10px] font-bold", status.className)}>{status.label}</span>
+      <div className="min-w-0 text-[10px] text-fg-faint">
+        <div className="truncate">user: <span className="font-semibold text-fg-dim">{proc.user ?? "unknown"}</span></div>
+        <div className="truncate">runtime: <span className="tabular">{proc.elapsed ?? "unknown"}</span></div>
+      </div>
+      <ProcessControls proc={proc} onMessage={onMessage} />
+    </div>
+  );
+}
+
+function ProcessControls({ proc, onMessage }: { proc: PerformanceProcess; onMessage: (message: string) => void }) {
+  const [busy, setBusy] = useState<"graceful" | "force" | null>(null);
+  const run = async (action: "graceful" | "force") => {
+    const label = action === "graceful" ? "gracefully quit" : "FORCE QUIT";
+    const warning = action === "force"
+      ? `Force quit ${proc.name} (PID ${proc.pid})? This is like kill -9: unsaved work can be lost.`
+      : `Gracefully quit ${proc.name} (PID ${proc.pid})? This sends TERM first so the app/process can clean up.`;
+    if (!window.confirm(warning)) return;
+    setBusy(action);
+    try {
+      const result = await api.controlProcess(proc.pid, action);
+      if (result.copy_command) {
+        onMessage(`${result.message} Copy/paste if approved: ${result.copy_command}`);
+      } else {
+        onMessage(result.message || `${label} request sent to PID ${proc.pid}.`);
+      }
+    } catch (err) {
+      onMessage(err instanceof Error ? err.message : `Could not ${label} PID ${proc.pid}.`);
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <button
+        type="button"
+        onClick={() => void run("graceful")}
+        disabled={!!busy}
+        className="rounded border border-border/15 px-2 py-1 text-[10px] font-bold text-fg-dim transition-colors hover:border-accent hover:text-fg disabled:opacity-40"
+      >
+        {busy === "graceful" ? "Quitting..." : "Quit"}
+      </button>
+      <button
+        type="button"
+        onClick={() => void run("force")}
+        disabled={!!busy}
+        className="rounded border border-danger/30 bg-danger/10 px-2 py-1 text-[10px] font-bold text-danger transition-colors hover:border-danger disabled:opacity-40"
+      >
+        {busy === "force" ? "Forcing..." : "Force"}
+      </button>
     </div>
   );
 }

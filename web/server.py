@@ -103,12 +103,14 @@ try:
     from performance.activity_files import latest as latest_activity_files
     from performance.benchmark import run as run_dustbench
     from performance.benchmark import status as dustbench_status
+    from performance.processes import control_process as control_performance_process
     from performance.sampler import get_snapshot as get_performance_snapshot
     from performance.sampler import iter_live_events as iter_performance_events
 except ImportError:
     latest_activity_files = None  # type: ignore
     run_dustbench = None  # type: ignore
     dustbench_status = None  # type: ignore
+    control_performance_process = None  # type: ignore
     get_performance_snapshot = None  # type: ignore
     iter_performance_events = None  # type: ignore
 
@@ -1308,6 +1310,23 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if run_dustbench is None:
                 return self._serve_json_status(501, {"error": "benchmark_unavailable"})
             return self._serve_json(run_dustbench())
+
+        if path == "/api/performance/process/control":
+            if control_performance_process is None:
+                return self._serve_json_status(501, {"error": "process_control_unavailable"})
+            try:
+                pid = int(body.get("pid", 0))
+            except (TypeError, ValueError):
+                return self._serve_json_status(400, {"error": "invalid_pid"})
+            action = (body.get("action") or "").strip()
+            confirm = bool(body.get("confirm"))
+            result = control_performance_process(pid=pid, action=action, confirm=confirm)
+            status_code = 200 if result.get("ok") else 400
+            if result.get("error") in {"admin_required", "confirmation_required"}:
+                status_code = 409
+            if result.get("error") == "not_found":
+                status_code = 404
+            return self._serve_json_status(status_code, result)
 
         if path == "/api/ai/summary":
             category  = (body.get("category") or "").strip()

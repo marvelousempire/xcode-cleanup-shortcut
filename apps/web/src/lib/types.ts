@@ -180,6 +180,20 @@ export interface PerformanceProcess {
   cpu_pct: number;
   mem_pct: number;
   rss_mb: number;
+  user?: string;
+  elapsed?: string;
+  command?: string;
+  controllable?: boolean;
+}
+
+export interface ProcessControlResponse {
+  ok: boolean;
+  action?: "graceful" | "force";
+  signal?: "APP_QUIT" | "TERM" | "KILL";
+  message: string;
+  error?: string;
+  copy_command?: string;
+  process?: PerformanceProcess;
 }
 
 export interface PerformanceNetworkRow {

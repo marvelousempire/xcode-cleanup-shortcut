@@ -12,6 +12,7 @@ import type {
   LatestFileActivityPayload,
   PerformanceBenchmarkStatus,
   PerformancePayload,
+  ProcessControlResponse,
   Run,
 } from "./types";
 
@@ -82,6 +83,12 @@ export const api = {
   runPerformanceBenchmark: () =>
     fetch(API_BASE + "/api/performance/benchmark/run", { method: "POST", body: "{}" })
       .then((r) => r.json()) as Promise<PerformanceBenchmarkStatus["last_result"]>,
+  controlProcess: (pid: number, action: "graceful" | "force") =>
+    fetch(API_BASE + "/api/performance/process/control", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pid, action, confirm: true }),
+    }).then((r) => r.json()) as Promise<ProcessControlResponse>,
   emergencyEstimate: () => jsonFetch<EmergencyEstimate>("/api/emergency/estimate"),
   latestFiles: () => jsonFetch<LatestFileActivityPayload>("/api/disk/latest-files"),
   growth:    () => jsonFetch<GrowthPayload>("/api/growth"),

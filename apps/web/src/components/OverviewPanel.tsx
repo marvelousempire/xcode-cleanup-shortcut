@@ -71,6 +71,22 @@ export function OverviewPanel() {
               : totals.scanned > 0 ? "· all clean ✓" : "· scan first"}
           </button>
         </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <CleanTotalCard
+            label="Total safe cleanup"
+            value={totals.scanned > 0 ? `${fmt(totals.safe)} GB` : "Scan first"}
+            detail="Can be cleaned with the Safe button."
+            tone="safe"
+            active={totals.safe >= 0.001}
+          />
+          <CleanTotalCard
+            label="Total opt-in cleanup"
+            value={totals.scanned > 0 ? `${fmt(totals.optin)} GB` : "Scan first"}
+            detail="Review first, then clean with the Opt-in button."
+            tone="warn"
+            active={totals.optin >= 0.001}
+          />
+        </div>
         <div className="mt-2.5 text-[12px] leading-[1.55] tabular text-fg-dim">
           {scanning ? (
             <>Re-scanning {allCategories.length} categories in parallel…</>
@@ -210,6 +226,22 @@ export function OverviewPanel() {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function CleanTotalCard({ label, value, detail, tone, active }: { label: string; value: string; detail: string; tone: "safe" | "warn"; active: boolean }) {
+  return (
+    <div className={cn(
+      "rounded-lg border p-4 shadow-sm",
+      tone === "safe" ? "border-safe/25 bg-safe/10" : "border-warn/30 bg-warn/10",
+      !active && "opacity-75",
+    )}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.09em] text-fg-faint">{label}</div>
+      <div className={cn("mt-1 text-[34px] font-black tabular leading-none tracking-[-0.04em]", tone === "safe" ? "text-safe" : "text-warn")}>
+        {value}
+      </div>
+      <div className="mt-2 text-[12px] leading-[1.45] text-fg-dim">{detail}</div>
     </div>
   );
 }
