@@ -54,6 +54,12 @@
       "path": "ORIENTATION.md",
       "required": true,
       "content_slot": "orientation"
+    },
+    {
+      "id": "firing_order",
+      "path": "FIRING_ORDER.md",
+      "required": true,
+      "content_slot": "firing_order"
     }
   ],
   "sources": [
